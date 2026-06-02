@@ -1,6 +1,6 @@
 export function MetricCard({ label, value, accent }) {
   return (
-    <div className="rounded-2xl border border-white/70 bg-white/62 p-4 shadow-soft backdrop-blur-xl">
+    <div className="glass-surface rounded-3xl p-4">
       <div className="text-sm text-muted">{label}</div>
       <div className="mt-2 flex items-end justify-between">
         <strong className="text-3xl font-semibold text-ink">{value}</strong>

@@ -17,148 +17,120 @@ const platformLabels = {
   amazonEu: { zh: 'Amazon欧洲站', en: 'Amazon Europe' },
 };
 
-const sceneMap = {
-  'light-001': {
-    warm: {
-      zh: '庭院晚餐、木质凉亭',
-      en: 'courtyard dinner setting, wooden gazebo',
-    },
-    white: {
-      zh: '现代阳台、极简露台',
-      en: 'modern balcony, minimalist terrace',
-    },
-    colorful: {
-      zh: '节日派对、花园聚会',
-      en: 'festival party, garden gathering',
-    },
-  },
-  'light-002': {
-    warm: {
-      zh: '草坪亲子游戏区、门廊足球主题角落',
-      en: 'lawn family play area, porch soccer-themed corner',
-    },
-    white: {
-      zh: '现代阳台围栏、简洁户外运动区',
-      en: 'modern balcony railing, clean outdoor sports corner',
-    },
-    colorful: {
-      zh: '花园生日派对、儿童户外庆祝场景',
-      en: 'garden birthday party, kids outdoor celebration scene',
-    },
-  },
-  'light-003': {
-    warm: {
-      zh: '花园廊架、藤编休闲区',
-      en: 'garden pergola, rattan lounge area',
-    },
-    white: {
-      zh: '玻璃阳台、现代白色露台',
-      en: 'glass balcony, modern white terrace',
-    },
-    colorful: {
-      zh: '节庆花园、彩灯派对背景',
-      en: 'holiday garden, colorful party light backdrop',
-    },
-  },
-  'light-004': {
-    warm: {
-      zh: '庭院小径、木门入口',
-      en: 'courtyard pathway, wooden gate entrance',
-    },
-    white: {
-      zh: '极简花园步道、石板露台边缘',
-      en: 'minimal garden walkway, stone patio edge',
-    },
-    colorful: {
-      zh: '童话花园、节日草坪装饰',
-      en: 'fairy-tale garden, festive lawn decoration',
-    },
-  },
-};
-
 const imageTypeDirectives = {
   main: {
-    zh: '产品居中清晰展示，干净电商主图构图，突出太阳能灯饰外观和发光效果',
-    en: 'centered clean e-commerce composition, clear product focus, show the solar light design and glow effect',
+    zh: '主图模板：产品主体突出，强调点击率，色彩饱和度高，干净浅色背景，主体占画面中心，灯光效果清晰可见',
+    en: 'main image template: strong product hero focus, CTR-oriented composition, high saturation, clean light background, centered product, visible lighting effect',
   },
   scene: {
-    zh: '真实户外使用场景，产品自然安装，环境有生活感但不出现清晰人脸',
-    en: 'realistic outdoor usage scene, product naturally installed, lived-in atmosphere without clear human faces',
+    zh: '场景图模板：中景构图，真实生活化，欧洲户外氛围，产品自然安装在场景中，环境有质感但不抢主体',
+    en: 'lifestyle scene template: medium shot, realistic daily life feeling, European outdoor atmosphere, product naturally installed, premium environment without stealing focus',
   },
   grid: {
-    zh: '四宫格布局，分别展示整体场景、灯光细节、安装位置、太阳能面板特写',
-    en: 'four-panel layout showing full scene, lighting detail, installation position, and solar panel close-up',
+    zh: '四宫格模板：四个不同场景或角度，统一高级商业摄影风格，分别展示整体氛围、灯光细节、安装位置、太阳能面板',
+    en: 'four-panel template: four different scenes or angles, unified premium commercial photography style, show full ambience, lighting detail, installation position, and solar panel',
   },
   size: {
-    zh: '尺寸图，上半部分真实场景图，下半部分展示规格、尺寸、太阳能面板参数',
-    en: 'size chart image, top half realistic usage scene, bottom half specifications, dimensions, and solar panel parameters',
+    zh: '尺寸图模板：上半真实场景，下半尺寸参数；左侧规格对比，中间产品尺寸，右侧太阳能板尺寸',
+    en: 'size chart template: top half realistic scene, bottom half size parameters; left specification comparison, center product dimensions, right solar panel dimensions',
   },
   sku: {
-    zh: 'SKU图，清晰区分颜色版本，保持同一产品不同颜色对应不同场景类别',
-    en: 'SKU variant image, clearly separate color versions, keep each color matched to a different scene category',
+    zh: 'SKU图模板：不同规格对应不同使用场景，清晰区分规格版本，保持统一高级电商视觉',
+    en: 'SKU image template: different specifications matched with different usage scenes, clearly separate variants, consistent premium e-commerce style',
   },
 };
 
-const platformDirectives = {
-  temuEu: {
-    zh: '适合TEMU欧洲站，优先庭院、阳台、花园、门廊场景，画面直接、商品感强',
-    en: 'optimized for TEMU Europe, prioritize patio, balcony, garden, and porch scenes, direct product-focused image',
-  },
-  amazonEu: {
-    zh: '适合Amazon欧洲站，画面更干净高级，强调真实材质、安装方式和使用价值',
-    en: 'optimized for Amazon Europe, cleaner premium look, emphasize realistic material, installation, and practical value',
-  },
-};
+function pick(list) {
+  if (!Array.isArray(list) || list.length === 0) {
+    return '';
+  }
+  return list[Math.floor(Math.random() * list.length)];
+}
 
-function getScene(productId, color) {
-  return sceneMap[productId]?.[color] || sceneMap['light-001'].warm;
+function joinList(value, fallback = '') {
+  if (Array.isArray(value)) {
+    return value.filter(Boolean).join('、') || fallback;
+  }
+  return value || fallback;
 }
 
 function getLabel(source, key, fallback) {
   return source[key] || fallback;
 }
 
-export function generatePrompt(form, product) {
-  const color = getLabel(colorLabels, form.color, colorLabels.warm);
-  const imageType = getLabel(imageTypeLabels, form.imageType, imageTypeLabels.scene);
-  const platform = getLabel(platformLabels, form.platform, platformLabels.temuEu);
-  const scene = getScene(form.productId, form.color);
+export function getColorLabel(color) {
+  return getLabel(colorLabels, color, colorLabels.warm);
+}
+
+export function getImageTypeLabel(imageType) {
+  return getLabel(imageTypeLabels, imageType, imageTypeLabels.scene);
+}
+
+export function getPlatformLabel(platform) {
+  return getLabel(platformLabels, platform, platformLabels.temuEu);
+}
+
+export function generatePromptFromAssets(form, product, sku, assetPool) {
+  const color = getColorLabel(form.color);
+  const imageType = getImageTypeLabel(form.imageType);
+  const platform = getPlatformLabel(form.platform);
   const imageDirective = getLabel(imageTypeDirectives, form.imageType, imageTypeDirectives.scene);
-  const platformDirective = getLabel(platformDirectives, form.platform, platformDirectives.temuEu);
   const productNameZh = product?.name || '太阳能灯饰产品';
-  const productNameEn = product?.englishName || 'solar outdoor lighting product';
-  const specs = product?.specs || 'IP44 solar outdoor light';
-  const sellingPoints = product?.sellingPoints || 'solar powered outdoor decorative lighting';
+  const productNameEn = product?.englishName || productNameZh;
+  const skuText = sku ? `${sku.name}，${sku.length || '-'}，${sku.ledCount || '-'}，${sku.size || '-'}` : '未选择SKU';
+  const sellingPoints = joinList(product?.sellingPoints, '太阳能充电、IP44、户外装饰');
+  const pickedAssets = {
+    scene: pick(assetPool.scene),
+    composition: pick(assetPool.composition),
+    lens: pick(assetPool.lens),
+    lighting: pick(assetPool.lighting),
+    mood: pick(assetPool.mood),
+    holiday: pick(assetPool.holiday),
+    europe: pick(assetPool.europe),
+  };
 
   const chinese = [
     `${platform.zh}${imageType.zh}提示词：${productNameZh}`,
+    `规格SKU：${skuText}`,
     `颜色：${color.zh}`,
-    `指定场景：${scene.zh}`,
-    `规格卖点：${specs}；${sellingPoints}`,
-    `画面要求：${imageDirective.zh}`,
-    `平台要求：${platformDirective.zh}`,
-    '统一使用 IP44，不出现 waterproof 字样',
-    '禁止出现酒、酒杯、水印、清晰人脸',
-    '真实户外灯饰摄影，光线自然，商品主体清晰，画面干净高级',
-  ].join('，');
+    `场景词：${pickedAssets.scene}`,
+    `构图词：${pickedAssets.composition}`,
+    `镜头词：${pickedAssets.lens}`,
+    `灯光词：${pickedAssets.lighting}`,
+    `氛围词：${pickedAssets.mood}`,
+    pickedAssets.holiday ? `节日词：${pickedAssets.holiday}` : '',
+    pickedAssets.europe ? `欧洲元素词：${pickedAssets.europe}` : '',
+    `卖点：${sellingPoints}`,
+    `图片类型要求：${imageDirective.zh}`,
+    '重要规则：同一产品不同颜色必须使用不同场景素材池，禁止混用',
+    '统一使用 IP44，不出现 waterproof 字样；禁止酒、酒杯、水印、清晰人脸',
+    '真实高级商业摄影，商品主体清晰，画面干净，适合电商平台上架',
+  ].filter(Boolean).join('，');
 
   const english = [
     `${platform.en} ${imageType.en} prompt: ${productNameEn}`,
-    `${color.en} light version`,
-    `scene category: ${scene.en}`,
-    `specifications and selling points: ${specs}; ${sellingPoints}`,
-    `image requirement: ${imageDirective.en}`,
-    `platform requirement: ${platformDirective.en}`,
-    'use IP44 only, do not use the word waterproof',
-    'no alcohol, no wine glass, no watermark, no clear human face',
-    'realistic outdoor lighting photography, natural light, clear product focus, clean premium composition',
-  ].join(', ');
+    `SKU specification: ${sku?.name || '-'}, ${sku?.length || '-'}, ${sku?.ledCount || '-'}, ${sku?.size || '-'}`,
+    `color version: ${color.en}`,
+    `scene asset: ${pickedAssets.scene}`,
+    `composition asset: ${pickedAssets.composition}`,
+    `lens asset: ${pickedAssets.lens}`,
+    `lighting asset: ${pickedAssets.lighting}`,
+    `mood asset: ${pickedAssets.mood}`,
+    pickedAssets.holiday ? `holiday asset: ${pickedAssets.holiday}` : '',
+    pickedAssets.europe ? `European element asset: ${pickedAssets.europe}` : '',
+    `selling points: ${sellingPoints}`,
+    `image type requirement: ${imageDirective.en}`,
+    'important rule: different colors of the same product must use different scene asset pools, do not mix them',
+    'use IP44 only, do not use the word waterproof; no alcohol, no wine glass, no watermark, no clear human face',
+    'realistic premium commercial photography, clear product focus, clean e-commerce composition',
+  ].filter(Boolean).join(', ');
 
   return {
     chinese,
     english,
-    sceneZh: scene.zh,
-    sceneEn: scene.en,
+    pickedAssets,
+    productName: productNameZh,
+    skuName: sku?.name || '',
     colorLabel: color.zh,
     imageTypeLabel: imageType.zh,
     platformLabel: platform.zh,

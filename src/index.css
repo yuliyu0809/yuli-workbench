@@ -3,8 +3,8 @@
 @tailwind utilities;
 
 :root {
-  color: #2f2a2c;
-  background: #fffaf4;
+  color: #302a2f;
+  background: #fffaf6;
   font-synthesis: none;
   text-rendering: geometricPrecision;
   -webkit-font-smoothing: antialiased;
@@ -19,6 +19,7 @@ body {
   min-width: 1180px;
   margin: 0;
   font-family: Inter, ui-sans-serif, system-ui, "Microsoft YaHei", sans-serif;
+  background: #fffaf6;
 }
 
 button,
@@ -38,7 +39,7 @@ button:disabled {
 
 ::selection {
   background: #f4c9d8;
-  color: #2f2a2c;
+  color: #302a2f;
 }
 
 ::-webkit-scrollbar {
@@ -54,4 +55,61 @@ button:disabled {
 
 ::-webkit-scrollbar-track {
   background: #fff6f9;
+}
+
+@layer base {
+  input,
+  textarea,
+  select {
+    color-scheme: light;
+  }
+}
+
+@layer utilities {
+  .glass-surface {
+    border: 1px solid rgba(255, 255, 255, 0.72);
+    background:
+      linear-gradient(145deg, rgba(255, 255, 255, 0.76), rgba(255, 246, 250, 0.58)),
+      rgba(255, 255, 255, 0.62);
+    box-shadow: 0 16px 46px rgba(190, 121, 147, 0.10);
+    backdrop-filter: blur(18px) saturate(125%);
+  }
+
+  .glass-chip {
+    border: 1px solid rgba(255, 255, 255, 0.72);
+    background: rgba(255, 255, 255, 0.58);
+    backdrop-filter: blur(14px) saturate(120%);
+  }
+}
+
+#root {
+  min-height: 100vh;
+}
+
+[class*="bg-white/"],
+[class*="bg-[#fff"],
+[class*="bg-[#f6"],
+[class*="bg-[#f4"],
+[class*="bg-[#fff2f6]"],
+[class*="bg-[#fff7fa]"] {
+  background-color: rgba(255, 255, 255, 0.62) !important;
+}
+
+[class*="border-white/"],
+[class*="border-[#f0"],
+[class*="border-[#e8"] {
+  border-color: rgba(255, 255, 255, 0.72) !important;
+}
+
+[class*="text-[#5f"],
+[class*="text-[#8f"],
+[class*="text-[#b9"],
+[class*="text-[#837"] {
+  color: #81737b !important;
+}
+
+[class*="text-[#a85672]"],
+[class*="text-[#9f526d]"],
+[class*="text-[#b56b86]"] {
+  color: #a85672 !important;
 }

@@ -1,51 +1,135 @@
-const styleTemplates = {
-  conversion: [
-    '{name}, {keyword}, practical {scene} essential with {feature}, perfect for {audience}',
-    '{keyword} for {audience}, {feature}, stylish {name} for {scene} and daily use',
-    'Premium {name} with {feature}, {keyword} for {scene}, gift-ready choice for {audience}',
-  ],
-  simple: [
-    '{name} {keyword} with {feature} for {scene}',
-    '{feature} {name} for {audience}, {keyword}',
-    '{name}, {keyword}, {scene} accessory',
-  ],
-  keyword: [
-    '{name}, {keyword}, {feature}, {scene}, {audience}, daily use and gift option',
-    '{keyword} {name} for {scene}, {feature}, lightweight, practical, stylish',
-    '{name} for {audience}, {keyword}, {scene}, {feature}, home and travel use',
-  ],
-  gift: [
-    '{name} Gift for {audience}, {keyword} with {feature}, ideal for {scene}',
-    'Cute {name} for {audience}, {keyword}, thoughtful gift for {scene}',
-    '{feature} {name}, {keyword} gift idea for {audience} and {scene}',
-  ],
+const colorLabels = {
+  warm: { zh: '暖色', en: 'Warm White', de: 'Warmweiss', fr: 'Blanc Chaud' },
+  white: { zh: '白色', en: 'White', de: 'Weiss', fr: 'Blanc' },
+  colorful: { zh: '彩色', en: 'Multicolor', de: 'Bunt', fr: 'Multicolore' },
 };
 
-function clean(value, fallback) {
-  return value?.trim() || fallback;
+const platformLabels = {
+  temu: 'TEMU欧洲站',
+  amazon: 'Amazon欧洲站',
+  german: '德国站',
+  french: '法国站',
+};
+
+function cleanText(value) {
+  return String(value || '').replace(/waterproof/gi, '').replace(/\s+/g, ' ').trim();
 }
 
-function toTitleCase(text) {
-  return text
-    .split(' ')
-    .filter(Boolean)
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(' ');
+function uniqueList(values) {
+  return [...new Set(values.map(cleanText).filter(Boolean))];
 }
 
-export function generateTitles(form) {
-  const keyword = clean(form.keyword, 'TEMU Product');
-  const payload = {
-    name: clean(form.englishName, keyword),
-    keyword,
-    feature: clean(form.feature, 'durable and lightweight design'),
-    scene: clean(form.scene, 'home, travel and everyday use'),
-    audience: clean(form.audience, 'women, girls and families'),
+function sortSkuNames(skus = []) {
+  return [...skus].sort((a, b) => scoreSku(b.name) - scoreSku(a.name)).map((sku) => sku.name);
+}
+
+function scoreSku(name = '') {
+  const text = String(name);
+  const led = Number(text.match(/(\d+)\s*LED/i)?.[1] || 0);
+  const length = Number(text.match(/(\d+(?:\.\d+)?)\s*m/i)?.[1] || 0);
+  const pcs = Number(text.match(/(\d+)\s*PCS/i)?.[1] || 0);
+  return led * 10 + length + pcs * 5;
+}
+
+function fitLength(title, targetChars) {
+  const target = Number(targetChars) || 0;
+  if (!target || title.length <= target) {
+    return title;
+  }
+  const parts = title.split(', ');
+  const kept = [];
+  for (const part of parts) {
+    const next = [...kept, part].join(', ');
+    if (next.length <= target || kept.length < 2) {
+      kept.push(part);
+    }
+  }
+  return kept.join(', ');
+}
+
+function joinComma(values) {
+  return uniqueList(values).join(', ');
+}
+
+export function getColorLabel(color) {
+  return colorLabels[color] || colorLabels.warm;
+}
+
+export function getPlatformLabel(platform) {
+  return platformLabels[platform] || platformLabels.temu;
+}
+
+export function generateMarketplaceTitles({ product, sku, color, sellingPoints, platform, targetChars }) {
+  const productName = cleanText(product?.englishName || product?.name || 'Solar Outdoor Lights');
+  const skuName = cleanText(sku?.name || '');
+  const skuInfo = uniqueList([skuName, sku?.length, sku?.ledCount]).join(' ');
+  const sortedSpecs = sortSkuNames(product?.skus || []);
+  const colorInfo = getColorLabel(color);
+  const points = uniqueList([
+    ...(Array.isArray(sellingPoints) ? sellingPoints : String(sellingPoints || '').split(/\r?\n|,|、/)),
+    'Solar Powered',
+    '8 Lighting Modes',
+    'IP44',
+    'Outdoor Decoration',
+  ]);
+  const commonEnglish = joinComma([
+    skuInfo,
+    productName,
+    colorInfo.en,
+    'Solar Powered',
+    '8 Lighting Modes',
+    'IP44',
+    'Outdoor Decoration',
+    'Garden Patio Balcony Porch',
+  ]);
+
+  const amazonEnglish = joinComma([
+    skuInfo,
+    productName,
+    colorInfo.en,
+    'Solar Powered Outdoor String Lights',
+    '8 Lighting Modes',
+    'IP44 Garden Patio Balcony Porch Decoration',
+  ]);
+
+  const german = joinComma([
+    skuInfo,
+    productName,
+    colorInfo.de,
+    'Solarbetrieben',
+    '8 Lichtmodi',
+    'IP44',
+    'Aussen Dekoration fuer Garten Terrasse Balkon Veranda',
+  ]);
+
+  const french = joinComma([
+    skuInfo,
+    productName,
+    colorInfo.fr,
+    'Alimentation Solaire',
+    '8 Modes Lumineux',
+    'IP44',
+    'Decoration Exterieure Jardin Terrasse Balcon Porche',
+  ]);
+
+  const chinese = [
+    skuInfo,
+    product?.name || '太阳能户外灯饰',
+    colorInfo.zh,
+    '太阳能充电',
+    '8种模式',
+    'IP44',
+    '户外庭院/阳台/花园/门廊装饰',
+  ].filter(Boolean).join('，');
+
+  return {
+    platformLabel: getPlatformLabel(platform),
+    sortedSpecs,
+    sellingPoints: points,
+    english: fitLength(platform === 'amazon' ? amazonEnglish : commonEnglish, targetChars),
+    amazon: fitLength(amazonEnglish, targetChars),
+    german: fitLength(german, targetChars),
+    french: fitLength(french, targetChars),
+    chinese: fitLength(chinese, targetChars),
   };
-
-  return (styleTemplates[form.style] || styleTemplates.conversion).map((template) =>
-    toTitleCase(
-      template.replace(/\{(\w+)\}/g, (_, key) => payload[key] || '').replace(/\s+/g, ' '),
-    ),
-  );
 }

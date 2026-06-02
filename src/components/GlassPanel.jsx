@@ -1,6 +1,6 @@
 export function GlassPanel({ children, className = '' }) {
   return (
-    <section className={`rounded-2xl border border-white/70 bg-white/58 p-5 shadow-soft backdrop-blur-2xl ${className}`}>
+    <section className={`glass-surface rounded-3xl p-5 ${className}`}>
       {children}
     </section>
   );

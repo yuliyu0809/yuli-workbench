@@ -1,9 +1,9 @@
 export function Button({ children, variant = 'primary', className = '', ...props }) {
   const variants = {
-    primary: 'bg-ink text-white hover:bg-[#473f43]',
-    soft: 'bg-white/70 text-ink hover:bg-white',
+    primary: 'bg-ink text-white shadow-soft hover:bg-[#473f43]',
+    soft: 'border border-white/70 bg-white/70 text-ink hover:bg-white',
     blush: 'bg-[#f4c9d8] text-[#563441] hover:bg-[#efb8cc]',
-    ghost: 'text-muted hover:bg-white/60',
+    ghost: 'text-muted hover:bg-white/60 hover:text-ink',
   };
 
   return (

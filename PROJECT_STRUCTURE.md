@@ -32,6 +32,7 @@ Yuliの工作台/
 │  │  ├─ BackupCenter.jsx
 │  │  ├─ Dashboard.jsx
 │  │  ├─ ProfitCalculator.jsx
+│  │  ├─ ProductCenter.jsx
 │  │  ├─ PromptWorkshop.jsx
 │  │  ├─ RulesCenter.jsx
 │  │  └─ TitleWorkshop.jsx
