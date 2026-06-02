@@ -1,0 +1,277 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Yuli&#12398;&#24037;&#20316;&#21488;</title>
+    <style>
+      :root {
+        --bg: #f6f7f9;
+        --panel: #ffffff;
+        --ink: #18202c;
+        --muted: #687385;
+        --line: #e5e9f0;
+        --accent: #ff6a00;
+        --accent-dark: #d95500;
+        --green: #1f9d64;
+        --terminal: #101827;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background: var(--bg);
+        color: var(--ink);
+        font-family: "Microsoft YaHei UI", "PingFang SC", "Noto Sans SC", sans-serif;
+      }
+
+      .shell {
+        width: min(1120px, calc(100% - 32px));
+        margin: 0 auto;
+        padding: 32px 0;
+      }
+
+      .topbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 18px;
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .mark {
+        display: grid;
+        width: 42px;
+        height: 42px;
+        place-items: center;
+        border-radius: 8px;
+        background: var(--accent);
+        color: #fff;
+        font-size: 20px;
+        font-weight: 800;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: 26px;
+        line-height: 1.2;
+      }
+
+      .status {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        border: 1px solid #cfe9dc;
+        border-radius: 999px;
+        background: #eefaf4;
+        color: var(--green);
+        padding: 8px 12px;
+        font-size: 14px;
+        font-weight: 700;
+        white-space: nowrap;
+      }
+
+      .dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 999px;
+        background: var(--green);
+      }
+
+      .hero {
+        display: grid;
+        grid-template-columns: minmax(0, 1.15fr) minmax(320px, 0.85fr);
+        gap: 18px;
+        align-items: stretch;
+      }
+
+      .panel {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--panel);
+      }
+
+      .intro {
+        padding: 26px;
+      }
+
+      .eyebrow {
+        margin: 0 0 10px;
+        color: var(--accent-dark);
+        font-size: 13px;
+        font-weight: 800;
+      }
+
+      .headline {
+        margin: 0;
+        max-width: 720px;
+        font-size: 36px;
+        line-height: 1.18;
+      }
+
+      .copy {
+        margin: 16px 0 0;
+        max-width: 720px;
+        color: var(--muted);
+        font-size: 16px;
+        line-height: 1.75;
+      }
+
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 22px;
+      }
+
+      .button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 42px;
+        border-radius: 8px;
+        padding: 0 16px;
+        text-decoration: none;
+        font-size: 14px;
+        font-weight: 800;
+      }
+
+      .primary {
+        background: var(--accent);
+        color: #fff;
+      }
+
+      .secondary {
+        border: 1px solid var(--line);
+        color: var(--ink);
+        background: #fff;
+      }
+
+      .terminal {
+        padding: 18px;
+        background: var(--terminal);
+        color: #d9e6ff;
+        overflow: hidden;
+      }
+
+      .terminal-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 16px;
+        color: #93a4bd;
+        font-family: Consolas, monospace;
+        font-size: 13px;
+      }
+
+      .terminal code {
+        display: block;
+        margin: 0 0 10px;
+        white-space: pre-wrap;
+        font-family: Consolas, monospace;
+        font-size: 14px;
+        line-height: 1.6;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 14px;
+        margin-top: 18px;
+      }
+
+      .tile {
+        padding: 18px;
+      }
+
+      .tile h2 {
+        margin: 0 0 8px;
+        font-size: 16px;
+      }
+
+      .tile p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 14px;
+        line-height: 1.6;
+      }
+
+      @media (max-width: 860px) {
+        .hero,
+        .grid {
+          grid-template-columns: 1fr;
+        }
+
+        .topbar {
+          align-items: flex-start;
+          flex-direction: column;
+        }
+
+        .headline {
+          font-size: 28px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="shell">
+      <div class="topbar">
+        <div class="brand">
+          <div class="mark">Y</div>
+          <h1>Yuli&#12398;&#24037;&#20316;&#21488;</h1>
+        </div>
+        <div class="status"><span class="dot"></span>&#24050;&#19978;&#32447;</div>
+      </div>
+
+      <section class="hero">
+        <div class="panel intro">
+          <p class="eyebrow">TEMU KEYWORD WORKBENCH</p>
+          <h2 class="headline">TEMU &#29190;&#27454;&#20851;&#38190;&#35789;&#20998;&#26512;&#21161;&#25163;</h2>
+          <p class="copy">
+            &#36825;&#20010;&#20844;&#32593;&#24037;&#20316;&#21488;&#29992;&#20110;&#35775;&#38382;&#39033;&#30446;&#20837;&#21475;&#21644;&#37096;&#32626;&#29366;&#24577;&#12290;
+            &#26680;&#24515;&#25235;&#21462;&#24037;&#20855;&#20381;&#28982;&#22312; Windows &#26412;&#22320;&#36816;&#34892;&#65292;&#22240;&#20026;&#23427;&#38656;&#35201;&#20351;&#29992;&#20320;&#30005;&#33041;&#19978;&#30340; Chrome &#30331;&#24405;&#24577;&#12290;
+          </p>
+          <div class="actions">
+            <a class="button primary" href="https://github.com/" target="_blank" rel="noreferrer">&#26597;&#30475; GitHub</a>
+            <a class="button secondary" href="https://vercel.com/" target="_blank" rel="noreferrer">&#25171;&#24320; Vercel</a>
+          </div>
+        </div>
+
+        <div class="panel terminal">
+          <div class="terminal-head">
+            <span>local-run.ps1</span>
+            <span>Windows</span>
+          </div>
+          <code>&gt; pip install -r requirements.txt</code>
+          <code>&gt; playwright install chromium</code>
+          <code>&gt; python main.py</code>
+        </div>
+      </section>
+
+      <section class="grid">
+        <article class="panel tile">
+          <h2>&#25235;&#21462;&#21069; 50 &#20010;&#21830;&#21697;</h2>
+          <p>&#25552;&#21462;&#26631;&#39064;&#12289;&#20215;&#26684;&#12289;&#35780;&#35770;&#25968;&#21644;&#21830;&#21697;&#38142;&#25509;&#12290;</p>
+        </article>
+        <article class="panel tile">
+          <h2>&#29983;&#25104; Excel &#25253;&#21578;</h2>
+          <p>&#21253;&#21547;&#39640;&#39057;&#35789;&#12289;&#28909;&#38376;&#35268;&#26684;&#12289;&#26631;&#39064;&#24314;&#35758;&#21644;&#20316;&#22270;&#25552;&#31034;&#35789;&#12290;</p>
+        </article>
+        <article class="panel tile">
+          <h2>&#22797;&#29992; Chrome &#30331;&#24405;&#24577;</h2>
+          <p>&#26412;&#22320;&#20351;&#29992; chrome_user_data &#20445;&#23384; TEMU Cookie &#21644;&#30331;&#24405;&#20250;&#35805;&#12290;</p>
+        </article>
+      </section>
+    </main>
+  </body>
+</html>
