@@ -1,3 +1,5 @@
+import { globalPromptBanRules } from './globalPromptRules.js';
+
 export const defaultProducts = [
   {
     id: 'product-solar-kerosene-string',
@@ -182,6 +184,7 @@ export const defaultProducts = [
 export const sampleProducts = defaultProducts;
 
 export const operationRules = [
+  ...globalPromptBanRules,
   '同一产品不同颜色必须使用不同场景',
   '标题数字放最前面',
   '禁止出现 waterproof',

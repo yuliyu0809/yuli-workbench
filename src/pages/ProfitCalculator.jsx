@@ -1,11 +1,12 @@
 import { Calculator, Save } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Button } from '../components/Button.jsx';
 import { Field, Input, Select } from '../components/Field.jsx';
 import { GlassPanel } from '../components/GlassPanel.jsx';
 import { MetricCard } from '../components/MetricCard.jsx';
 import { PageHeader } from '../components/PageHeader.jsx';
 import { calculateSkuProfit } from '../utils/profitCalculator.js';
+import { parseDiscountInput } from '../utils/discountUtils.js';
 import { getProductSku } from '../utils/productSchema.js';
 
 function money(value) {
@@ -30,6 +31,19 @@ export function ProfitCalculator({ products, profitRecords, setProfitRecords }) 
     () => getProductSku(selectedProduct, input.skuId),
     [input.skuId, selectedProduct],
   );
+
+  useEffect(() => {
+    if (!products.length) return;
+    const validProduct = products.find((product) => product.id === input.productId) || products[0];
+    const validSku = validProduct?.skus?.find((sku) => sku.id === input.skuId) || validProduct?.skus?.[0];
+    if (validProduct && (input.productId !== validProduct.id || input.skuId !== validSku?.id)) {
+      setInput((current) => ({
+        ...current,
+        productId: validProduct.id,
+        skuId: validSku?.id || '',
+      }));
+    }
+  }, [input.productId, input.skuId, products]);
   const result = useMemo(
     () => calculateSkuProfit({ ...input, supplyPrice: selectedSku?.supplyPrice || 0 }),
     [input, selectedSku],
@@ -58,7 +72,7 @@ export function ProfitCalculator({ products, profitRecords, setProfitRecords }) 
       skuName: selectedSku.name,
       price: Number(input.price) || 0,
       roas: Number(input.roas) || 0,
-      discount: Number(input.discount) || 0,
+      discount: parseDiscountInput(input.discount),
       supplyPrice: selectedSku.supplyPrice,
       profit: result.profit,
       margin: result.margin,
@@ -117,7 +131,7 @@ export function ProfitCalculator({ products, profitRecords, setProfitRecords }) 
             <Field label="ROAS">
               <Input type="number" value={input.roas} onChange={(event) => updateField('roas', event.target.value)} />
             </Field>
-            <Field label="折扣 %">
+            <Field label="折扣（8=8折 / 0.8=8折 / 80=80%）">
               <Input type="number" value={input.discount} onChange={(event) => updateField('discount', event.target.value)} />
             </Field>
           </div>

@@ -325,3 +325,8 @@ productId
 - 增加 Excel/CSV 导出。
 - 增加一键备份全部数据。
 - 增加数据版本迁移工具。
+## Deployment
+
+- GitHub Repository: https://github.com/yuliyu0809/yuli-workbench
+- Production URL: https://yuliyu0809.github.io/yuli-workbench/
+- Deployment Method: GitHub Pages, `gh-pages` branch

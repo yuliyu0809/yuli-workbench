@@ -1,5 +1,5 @@
 import { Copy, Save, Trash2 } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Button } from '../components/Button.jsx';
 import { Field, Input, Select } from '../components/Field.jsx';
 import { GlassPanel } from '../components/GlassPanel.jsx';
@@ -56,6 +56,22 @@ export function TemuAdsAssistant({ products, adRecords, setAdRecords }) {
     [input.productId, products],
   );
   const selectedSku = useMemo(() => getProductSku(selectedProduct, input.skuId), [input.skuId, selectedProduct]);
+
+  useEffect(() => {
+    if (!products.length) return;
+    const validProduct = products.find((product) => product.id === input.productId) || products[0];
+    const validSku = validProduct?.skus?.find((sku) => sku.id === input.skuId) || validProduct?.skus?.[0];
+    if (validProduct && (input.productId !== validProduct.id || input.skuId !== validSku?.id || input.productName !== validProduct.name || input.skuName !== validSku?.name || Number(input.supplyPrice) !== Number(validSku?.supplyPrice || 0))) {
+      setInput((current) => ({
+        ...current,
+        productId: validProduct.id,
+        skuId: validSku?.id || '',
+        productName: validProduct.name,
+        skuName: validSku?.name || current.skuName,
+        supplyPrice: validSku?.supplyPrice ?? current.supplyPrice,
+      }));
+    }
+  }, [input.productId, input.productName, input.skuId, input.skuName, input.supplyPrice, products]);
 
   const roasRecommendation = useMemo(() => calculateRoasRecommendations(input), [input]);
   const adSimulation = useMemo(() => calculateAdSimulation(input), [input]);
@@ -256,7 +272,7 @@ export function TemuAdsAssistant({ products, adRecords, setAdRecords }) {
             <Field label="原售价">
               <Input type="number" value={input.originalPrice} onChange={(event) => updateField('originalPrice', event.target.value)} />
             </Field>
-            <Field label="活动折扣">
+            <Field label="活动折扣（8=8折 / 0.8=8折 / 80=80%）">
               <Input type="number" step="0.01" value={input.discount} onChange={(event) => updateField('discount', event.target.value)} />
             </Field>
             <Field label="当前ROAS">

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 
 export function useLocalStorage(key, initialValue) {
   const [value, setValue] = useState(() => {
@@ -11,7 +11,11 @@ export function useLocalStorage(key, initialValue) {
   });
 
   useEffect(() => {
-    window.localStorage.setItem(key, JSON.stringify(value));
+    try {
+      window.localStorage.setItem(key, JSON.stringify(value));
+    } catch (error) {
+      console.error(`LocalStorage 写入失败：${key}`, error);
+    }
   }, [key, value]);
 
   return [value, setValue];

@@ -1,3 +1,5 @@
+import { parseDiscountInput } from './discountUtils.js';
+
 export function calculateProfit(input) {
   const price = Number(input.price) || 0;
   const cost = Number(input.cost) || 0;
@@ -29,10 +31,10 @@ export function calculateProfit(input) {
 
 export function calculateSkuProfit(input) {
   const price = Number(input.price) || 0;
-  const discountRate = Number(input.discount) || 0;
+  const discountRate = parseDiscountInput(input.discount);
   const roas = Number(input.roas) || 0;
   const supplyPrice = Number(input.supplyPrice) || 0;
-  const actualPrice = price * (1 - discountRate / 100);
+  const actualPrice = price * discountRate;
   const adCost = roas > 0 ? actualPrice / roas : 0;
   const profit = actualPrice - supplyPrice - adCost;
   const margin = actualPrice > 0 ? (profit / actualPrice) * 100 : 0;

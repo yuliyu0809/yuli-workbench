@@ -1,14 +1,12 @@
+import { formatDiscount, parseDiscountInput } from './discountUtils.js';
+export { formatDiscount };
+
 function round(value) {
   return Number.isFinite(value) ? Number(value.toFixed(2)) : 0;
 }
 
 export function formatMoney(value) {
   return `¥${round(Number(value) || 0).toFixed(2)}`;
-}
-
-export function formatDiscount(value) {
-  const discount = Number(value) || 0;
-  return `${discount.toFixed(2)} / ${(discount * 10).toFixed(1)}折`;
 }
 
 export function calculateAdSimulation({ supplyPrice, activityPrice, roas }) {
@@ -30,7 +28,7 @@ export function calculateAdSimulation({ supplyPrice, activityPrice, roas }) {
 export function calculateActivityPrice({ supplyPrice, originalPrice, discount, roas, targetProfit }) {
   const cost = Number(supplyPrice) || 0;
   const original = Number(originalPrice) || 0;
-  const discountRate = Number(discount) || 0;
+  const discountRate = parseDiscountInput(discount);
   const roasValue = Number(roas) || 0;
   const target = Number(targetProfit) || 0;
   const activityPrice = original * discountRate;
@@ -102,7 +100,7 @@ export function calculateBundleDiscount({ supplyPrice, unitPrice, quantity, bund
   const cost = Number(supplyPrice) || 0;
   const price = Number(unitPrice) || 0;
   const qty = Number(quantity) || 0;
-  const discount = Number(bundleDiscount) || 0;
+  const discount = parseDiscountInput(bundleDiscount);
   const adCost = Number(reservedAdCost) || 0;
   const bundlePrice = price * qty * discount;
   const totalCost = cost * qty;
