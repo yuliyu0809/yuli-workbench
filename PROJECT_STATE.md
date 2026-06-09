@@ -144,8 +144,22 @@ GitHub Pages 使用 `gh-pages` 分支部署。
 push 到 `main` 后，`.github/workflows/pages.yml` 自动执行：
 
 1. 安装依赖
-2. `npm run build`
+2. 注入 Supabase 构建环境变量后执行 `npm run build`
 3. 将 `dist` 内容发布到 `gh-pages` 分支
+
+GitHub Secrets 或 GitHub Variables 必须配置：
+
+- `VITE_SUPABASE_URL`
+- `VITE_SUPABASE_ANON_KEY`
+
+workflow 会优先读取 Secrets，缺失时读取 Variables。
+
+如果构建环境缺少任一变量，workflow 必须失败，禁止静默发布 Supabase 未配置版本。
+
+前端只读取：
+
+- `import.meta.env.VITE_SUPABASE_URL`
+- `import.meta.env.VITE_SUPABASE_ANON_KEY`
 
 禁止再使用旧的 GitHub Pages Actions artifact 部署方式：
 
