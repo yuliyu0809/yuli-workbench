@@ -31,16 +31,16 @@ jobs:
 
       - name: Verify Supabase build env
         env:
-          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL || vars.VITE_SUPABASE_URL }}
-          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY || vars.VITE_SUPABASE_ANON_KEY }}
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL || vars.VITE_SUPABASE_URL || 'https://ooqfaxisqpozbujmrquc.supabase.co' }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY || vars.VITE_SUPABASE_ANON_KEY || 'sb_publishable_HcUVkNYoVUjkWa6fVyZjUA_S2lBX-yq' }}
         run: |
           test -n "$VITE_SUPABASE_URL"
           test -n "$VITE_SUPABASE_ANON_KEY"
 
       - name: Build
         env:
-          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL || vars.VITE_SUPABASE_URL }}
-          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY || vars.VITE_SUPABASE_ANON_KEY }}
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL || vars.VITE_SUPABASE_URL || 'https://ooqfaxisqpozbujmrquc.supabase.co' }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY || vars.VITE_SUPABASE_ANON_KEY || 'sb_publishable_HcUVkNYoVUjkWa6fVyZjUA_S2lBX-yq' }}
         run: npm run build
 
       - name: Deploy dist to gh-pages

@@ -154,6 +154,8 @@ GitHub Secrets 或 GitHub Variables 必须配置：
 
 workflow 会优先读取 Secrets，缺失时读取 Variables。
 
+如果 GitHub 未配置 Secrets/Variables，workflow 使用 `.env.example` 中已公开的 Supabase URL 和 publishable anon key 作为构建兜底。
+
 如果构建环境缺少任一变量，workflow 必须失败，禁止静默发布 Supabase 未配置版本。
 
 前端只读取：
