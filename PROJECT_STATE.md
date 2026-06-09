@@ -137,6 +137,21 @@ LocalStorage为备份。
 
 如果本地有真实数据、云端为空，应提示或保留本地数据，不能静默清空。
 
+## 部署规则
+
+GitHub Pages 使用 `gh-pages` 分支部署。
+
+push 到 `main` 后，`.github/workflows/pages.yml` 自动执行：
+
+1. 安装依赖
+2. `npm run build`
+3. 将 `dist` 内容发布到 `gh-pages` 分支
+
+禁止再使用旧的 GitHub Pages Actions artifact 部署方式：
+
+- `actions/upload-pages-artifact`
+- `actions/deploy-pages`
+
 ## 快速活动测算规则
 
 快速活动测算是独立临时报活动工具。
