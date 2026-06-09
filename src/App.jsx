@@ -5,6 +5,7 @@ import { useProductLibraryCloudSync } from './hooks/useProductLibraryCloudSync.j
 import { useStoreArchiveCloudSync } from './hooks/useStoreArchiveCloudSync.js';
 import { ProductInfoLibrary } from './pages/ProductInfoLibrary.jsx';
 import { ProfitCalculator } from './pages/ProfitCalculator.jsx';
+import { QuickActivityCalculator } from './pages/QuickActivityCalculator.jsx';
 import { StoreProductArchive } from './pages/StoreProductArchive.jsx';
 import { TemuAdsAssistant } from './pages/TemuAdsAssistant.jsx';
 import { getProductLibraryProducts } from './utils/productLibrary.js';
@@ -62,6 +63,7 @@ export default function App() {
   const pages = {
     storeArchive: <StoreProductArchive {...commonProps} />,
     productLibrary: <ProductInfoLibrary {...commonProps} />,
+    quickActivity: <QuickActivityCalculator />,
     profit: <ProfitCalculator {...commonProps} />,
     ads: <TemuAdsAssistant {...commonProps} />,
   };

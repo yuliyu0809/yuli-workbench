@@ -1,6 +1,7 @@
 ﻿import {
   BadgeDollarSign,
   Calculator,
+  Zap,
   LibraryBig,
   Store,
 } from 'lucide-react';
@@ -10,6 +11,7 @@ const navItems = [
   { id: 'ads', label: 'TEMU广告助手', icon: BadgeDollarSign },
   { id: 'storeArchive', label: '店铺商品档案', icon: Store },
   { id: 'productLibrary', label: '产品信息库', icon: LibraryBig },
+  { id: 'quickActivity', label: '⚡ 快速活动测算', icon: Zap },
 ];
 
 export function Sidebar({ activePage, onNavigate }) {
