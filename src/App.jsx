@@ -31,6 +31,7 @@ const today = () => {
 const money = (value) => `¥${Number(value || 0).toLocaleString('zh-CN', { maximumFractionDigits: 2 })}`;
 const discountText = (value) => value ? `${Number((value * 10).toFixed(1))}折` : '不建议打折';
 const statusOf = (record) => today() < record.startDate ? '未开始' : today() > record.endDate ? '已结束' : '进行中';
+const hasWorkspaceRecords = (data) => ['discounts', 'products', 'operations', 'tasks'].some((key) => Array.isArray(data?.[key]) && data[key].length > 0);
 const getRecommended = (cost, salePrice) => {
   const minimum = (Number(cost) + 6) / Number(salePrice);
   return [...tiers].reverse().find((tier) => tier >= minimum) ?? null;
@@ -87,8 +88,16 @@ export default function App() {
       const { data, error } = await supabase.from('public_workspace').select('data,updated_at').eq('workspace_key', 'main').maybeSingle();
       if (!alive) return;
       if (error) { setCloud('已保存到本机 · 云端待启用'); hydrated.current = true; return; }
-      if (data?.data) { skipNextPush.current = true; setWorkspace({ ...emptyWorkspace, ...data.data }); }
-      setCloud('云端已连接');
+      if (data?.data && hasWorkspaceRecords(data.data)) {
+        skipNextPush.current = true;
+        setWorkspace({ ...emptyWorkspace, ...data.data });
+        setCloud('云端已连接');
+      } else if (hasWorkspaceRecords(workspace)) {
+        const { error: uploadError } = await supabase.from('public_workspace').upsert({ workspace_key: 'main', data: workspace, updated_at: new Date().toISOString() }, { onConflict: 'workspace_key' });
+        setCloud(uploadError ? '本机数据已保留 · 云端同步失败' : '本机数据已同步到云端');
+      } else {
+        setCloud('云端已连接');
+      }
       hydrated.current = true;
     }
     load();
