@@ -200,8 +200,33 @@ function Tasks({ records, update, onEdit, onDelete }) {
   return <div className="task-grid">{section('today', '今天')}{section('week', '本周')}</div>;
 }
 function Discounts({ records, search, setSearch, onEdit, onDelete }) {
-  const filtered = records.filter((item) => `${item.productName}${item.productCode}`.toLowerCase().includes(search.toLowerCase()));
-  return <><div className="metrics"><Metric label="折扣记录" value={records.length} /><Metric label="进行中" value={records.filter((item) => statusOf(item) === '进行中').length} /><Metric label="未开始" value={records.filter((item) => statusOf(item) === '未开始').length} /><Metric label="不建议打折" value={records.filter((item) => !item.recommendedDiscount).length} /><Metric label="平均折扣" value={records.length ? discountText(records.reduce((sum, item) => sum + item.selectedDiscount, 0) / records.length) : '—'} /></div><TableShell title="商品折扣记录" subtitle="最低折扣按（成本 + 6）÷ 售价计算" search={search} setSearch={setSearch}><table><thead><tr><th>商品</th><th>店铺</th><th>成本</th><th>售价</th><th>最低折扣</th><th>推荐档位</th><th>实际折扣</th><th>折后价</th><th>折后利润</th><th>状态</th><th>操作</th></tr></thead><tbody>{filtered.map((item) => <tr key={item.id}><td><div className="product-cell"><span className="thumb">{item.imageDataUrl ? <img src={item.imageDataUrl} alt="" /> : '折'}</span><span><strong>{item.productName}</strong><small>{item.productCode}</small></span></div></td><td><Badge>{item.store}</Badge></td><td>{money(item.cost)}</td><td>{money(item.salePrice)}</td><td>{discountText(item.minimumRatio)}</td><td><Badge>{discountText(item.recommendedDiscount)}</Badge></td><td>{discountText(item.selectedDiscount)}</td><td>{money(item.discountedPrice)}</td><td className={item.profit < 0 ? 'negative' : 'positive'}>{money(item.profit)}</td><td><Badge>{statusOf(item)}</Badge></td><td><RowActions onEdit={() => onEdit(item)} onDelete={() => onDelete(item)} /></td></tr>)}{!filtered.length && <tr><td colSpan="11"><Empty text="暂无折扣记录，点击“新增折扣记录”开始录入" /></td></tr>}</tbody></table></TableShell></>;
+  const [tierFilter, setTierFilter] = useState(null);
+  const filtered = records.filter((item) => {
+    const matchesSearch = `${item.productName}${item.productCode}`.toLowerCase().includes(search.toLowerCase());
+    const matchesTier = tierFilter === null || item.recommendedDiscount === tierFilter;
+    return matchesSearch && matchesTier;
+  });
+  const toggleTier = (tier) => setTierFilter((current) => current === tier ? null : tier);
+
+  return <>
+    <div className="metrics tier-metrics">
+      {tiers.map((tier) => {
+        const count = records.filter((item) => item.recommendedDiscount === tier).length;
+        return <button type="button" className={`metric tier-metric ${tierFilter === tier ? 'selected' : ''}`} key={tier} onClick={() => toggleTier(tier)}>
+          <i />
+          <span>最低可报</span>
+          <strong>{discountText(tier)}</strong>
+          <small>{count} 个商品</small>
+        </button>;
+      })}
+    </div>
+    <TableShell title="商品折扣记录" subtitle={`按（成本 + 6）÷ 售价计算最低可报档位${tierFilter ? ` · 当前查看 ${discountText(tierFilter)}` : ''}`} search={search} setSearch={setSearch}>
+      <table><thead><tr><th>商品</th><th>店铺</th><th>成本</th><th>售价</th><th>最低折扣</th><th>最低可报</th><th>实际折扣</th><th>折后价</th><th>折后利润</th><th>状态</th><th>操作</th></tr></thead><tbody>
+        {filtered.map((item) => <tr key={item.id}><td><div className="product-cell"><span className="thumb">{item.imageDataUrl ? <img src={item.imageDataUrl} alt="" /> : '折'}</span><span><strong>{item.productName}</strong><small>{item.productCode}</small></span></div></td><td><Badge>{item.store}</Badge></td><td>{money(item.cost)}</td><td>{money(item.salePrice)}</td><td>{discountText(item.minimumRatio)}</td><td><Badge>{discountText(item.recommendedDiscount)}</Badge></td><td>{discountText(item.selectedDiscount)}</td><td>{money(item.discountedPrice)}</td><td className={item.profit < 0 ? 'negative' : 'positive'}>{money(item.profit)}</td><td><Badge>{statusOf(item)}</Badge></td><td><RowActions onEdit={() => onEdit(item)} onDelete={() => onDelete(item)} /></td></tr>)}
+        {!filtered.length && <tr><td colSpan="11"><Empty text={tierFilter ? `暂无最低可报 ${discountText(tierFilter)} 的商品` : '暂无折扣记录，点击“新增折扣记录”开始录入'} /></td></tr>}
+      </tbody></table>
+    </TableShell>
+  </>;
 }
 function DiscountForm({ editing, products, currentStore, onSubmit, onClose }) {
   const [productName, setProductName] = useState(editing?.productName || '');
