@@ -20,3 +20,5 @@ header{height:68px;padding:0 32px}header>span{font-size:11px}.store-tabs{padding
 .search{border-radius:9px;padding:8px 12px;min-width:192px}table{font-size:11px}th{padding:12px}td{padding:12px}.badge{border-radius:7px;padding:4px 8px;font-size:10px}.row-actions button{padding:5px 8px;border-radius:7px}.product-cell{gap:8px}.thumb{width:35px;height:35px;border-radius:8px;font-size:14px}
 .task-panel{min-height:250px}.task-panel .panel-title{min-height:58px}.task input{width:17px;height:17px}
 @media(max-width:1050px){.content{padding-left:20px;padding-right:20px}.metrics{grid-template-columns:repeat(3,1fr)}}
+
+.modal-backdrop{background:rgba(24,28,27,.46);backdrop-filter:blur(1.5px)}
