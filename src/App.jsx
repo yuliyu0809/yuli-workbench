@@ -13,7 +13,7 @@ const nav = [
   ['tasks', '✓', '运营任务'],
 ];
 const titles = {
-  overview: ['早上好，雨荔', '这是三个店铺今天的运营情况。'],
+  overview: ['早上好，郁荔', '这是三个店铺今天的运营情况。'],
   discounts: ['商品折扣', '按照成本与售价自动计算可承受的折扣档位。'],
   data: ['运营数据', '记录并对比 AG、DS、HX 的每日核心指标。'],
   products: ['商品档案', '集中记录商品名称、规格和对应成本价，不区分店铺。'],
@@ -187,11 +187,11 @@ export default function App() {
 
   return <div className="shell">
     <aside>
-      <div className="brand"><b>Y</b><div><strong>雨荔运营台</strong><small>STORE OS</small></div></div>
+      <div className="brand"><b>Y</b><div><strong>郁荔运营台</strong><small>STORE OS</small></div></div>
       <p className="section-label">工作区</p>
       <nav>{nav.map(([key, icon, label]) => <button key={key} className={page === key ? 'active' : ''} onClick={() => { setPage(key); setSearch(''); }}><i>{icon}</i>{label}</button>)}</nav>
       <div className="daily"><span>✦</span><strong>今日小结</strong><p>今天有 {todayTaskCount} 项运营任务，已记录 {discountProductCount} 个折扣商品。</p><button onClick={() => setPage('tasks')}>查看待办 →</button></div>
-      <div className="profile"><b>荔</b><div><strong>雨荔</strong><small>{cloud}</small></div></div>
+      <div className="profile"><b>荔</b><div><strong>郁荔</strong><small>{cloud}</small></div></div>
     </aside>
     <main>
       <header><div className="store-tabs">{[STORE_ALL, ...stores].map((name) => <button key={name} className={store === name ? 'selected' : ''} onClick={() => setStore(name)}>{name !== STORE_ALL && <em className={`dot ${name.toLowerCase()}`} />}{name}</button>)}</div><span>{new Intl.DateTimeFormat('zh-CN', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' }).format(new Date())}</span></header>
