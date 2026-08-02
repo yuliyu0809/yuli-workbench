@@ -144,6 +144,8 @@ export default function App() {
   const todayOps = visible(workspace.operations).filter((item) => item.recordDate === today());
   const totals = todayOps.reduce((sum, item) => ({ sales: sum.sales + Number(item.sales), orders: sum.orders + Number(item.orders), listed: sum.listed + Number(item.listedProducts) }), { sales: 0, orders: 0, listed: 0 });
   const pending = visible(workspace.tasks).filter((item) => !item.completed);
+  const todayTaskCount = workspace.tasks.filter((item) => item.period === 'today').length;
+  const discountProductCount = new Set(workspace.discounts.map((item) => item.productName).filter(Boolean)).size;
   const pageTitle = titles[page];
 
   const openNew = (kind) => { setEditing(null); setModal(kind); };
@@ -188,7 +190,7 @@ export default function App() {
       <div className="brand"><b>Y</b><div><strong>雨荔运营台</strong><small>STORE OS</small></div></div>
       <p className="section-label">工作区</p>
       <nav>{nav.map(([key, icon, label]) => <button key={key} className={page === key ? 'active' : ''} onClick={() => { setPage(key); setSearch(''); }}><i>{icon}</i>{label}</button>)}</nav>
-      <div className="daily"><span>✦</span><strong>今日小结</strong><p>已记录 {workspace.products.length} 个商品，今天有 {pending.filter((item) => item.period === 'today').length} 项运营任务。</p><button onClick={() => setPage('tasks')}>查看待办 →</button></div>
+      <div className="daily"><span>✦</span><strong>今日小结</strong><p>今天有 {todayTaskCount} 项运营任务，已记录 {discountProductCount} 个折扣商品。</p><button onClick={() => setPage('tasks')}>查看待办 →</button></div>
       <div className="profile"><b>荔</b><div><strong>雨荔</strong><small>{cloud}</small></div></div>
     </aside>
     <main>
