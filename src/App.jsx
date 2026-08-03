@@ -4,7 +4,7 @@ import { supabase } from './lib/supabaseClient.js';
 const STORE_ALL = '全部店铺';
 const stores = ['AG', 'DS', 'HX'];
 const tiers = [0.9, 0.85, 0.8, 0.75, 0.7];
-const emptyWorkspace = { discounts: [], products: [], operations: [], tasks: [] };
+const emptyWorkspace = { discounts: [], products: [], operations: [], tasks: [], launches: [] };
 const nav = [
   ['overview', '⌂', '运营总览'],
   ['discounts', '%', '商品折扣'],
@@ -31,7 +31,7 @@ const today = () => {
 const money = (value) => `¥${Number(value || 0).toLocaleString('zh-CN', { maximumFractionDigits: 2 })}`;
 const discountText = (value) => value ? `${Number((value * 10).toFixed(1))}折` : '不建议打折';
 const statusOf = (record) => today() < record.startDate ? '未开始' : today() > record.endDate ? '已结束' : '进行中';
-const hasWorkspaceRecords = (data) => ['discounts', 'products', 'operations', 'tasks'].some((key) => Array.isArray(data?.[key]) && data[key].length > 0);
+const hasWorkspaceRecords = (data) => ['discounts', 'products', 'operations', 'tasks', 'launches'].some((key) => Array.isArray(data?.[key]) && data[key].length > 0);
 const getRecommended = (cost, salePrice) => {
   const minimum = (Number(cost) + 6) / Number(salePrice);
   return [...tiers].reverse().find((tier) => tier >= minimum) ?? null;
@@ -174,6 +174,13 @@ export default function App() {
     const next = { id: editing?.id || uid(), title: String(data.get('title')).trim(), period: data.get('period'), store: data.get('store'), priority: data.get('priority'), note: data.get('note'), completed: editing?.completed || false, updatedAt: new Date().toISOString() };
     update('tasks', editing ? workspace.tasks.map((item) => item.id === editing.id ? next : item) : [next, ...workspace.tasks]); closeModal(); notify('任务已保存');
   };
+  const saveLaunch = (event) => {
+    event.preventDefault(); const data = new FormData(event.currentTarget);
+    let link = String(data.get('link')).trim();
+    if (link && !/^https?:\/\//i.test(link)) link = `https://${link}`;
+    const next = { id: editing?.id || uid(), title: String(data.get('title')).trim(), link, store: data.get('store'), launchDate: data.get('launchDate'), note: data.get('note'), updatedAt: new Date().toISOString() };
+    update('launches', editing ? workspace.launches.map((item) => item.id === editing.id ? next : item) : [next, ...workspace.launches]); closeModal(); notify('上新链接已保存');
+  };
   const saveDiscount = async (event) => {
     event.preventDefault(); const data = new FormData(event.currentTarget);
     const specIds = data.getAll('specId'); const specNames = data.getAll('specName'); const specCosts = data.getAll('specCost'); const specPrices = data.getAll('specSalePrice');
@@ -197,7 +204,7 @@ export default function App() {
       <header><div className="store-tabs">{[STORE_ALL, ...stores].map((name) => <button key={name} className={store === name ? 'selected' : ''} onClick={() => setStore(name)}>{name !== STORE_ALL && <em className={`dot ${name.toLowerCase()}`} />}{name}</button>)}</div><span>{new Intl.DateTimeFormat('zh-CN', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' }).format(new Date())}</span></header>
       <section className="content">
         <div className="page-head"><div><small>{store === STORE_ALL ? '三店合计' : `${store} 店铺`}</small><h1>{pageTitle[0]}</h1><p>{pageTitle[1]}</p></div>{page !== 'overview' && <button className="primary" onClick={() => openNew(page === 'data' ? 'operation' : page === 'products' ? 'product' : page === 'tasks' ? 'task' : 'discount')}>＋ 新增{page === 'data' ? '记录' : page === 'products' ? '商品' : page === 'tasks' ? '任务' : '折扣记录'}</button>}</div>
-        {page === 'overview' && <Overview totals={totals} workspace={workspace} store={store} pending={pending} setPage={setPage} />}
+        {page === 'overview' && <Overview totals={totals} workspace={workspace} store={store} pending={pending} setPage={setPage} onAdd={() => openNew('launch')} onEdit={(item) => openEdit('launch', item)} onDelete={(item) => remove('launches', item, item.title)} />}
         {page === 'discounts' && <Discounts records={visible(workspace.discounts)} search={search} setSearch={setSearch} onEdit={(item) => openEdit('discount', item)} onDelete={(item) => remove('discounts', item, item.productName)} />}
         {page === 'data' && <Operations records={visible(workspace.operations)} onEdit={(item) => openEdit('operation', item)} onDelete={(item) => remove('operations', item, `${item.store} ${item.recordDate}`)} />}
         {page === 'products' && <Products records={workspace.products} search={search} setSearch={setSearch} onEdit={(item) => openEdit('product', item)} onDelete={(item) => remove('products', item, item.productName)} />}
@@ -207,6 +214,7 @@ export default function App() {
     {modal === 'product' && <ProductForm editing={editing} onSubmit={saveProduct} onClose={closeModal} />}
     {modal === 'operation' && <Modal title={editing ? '修改运营数据' : '录入运营数据'} onClose={closeModal}><form onSubmit={saveOperation}><div className="form-grid"><Field label="店铺"><select name="store" defaultValue={editing?.store || (store === STORE_ALL ? 'AG' : store)}>{stores.map((name) => <option key={name}>{name}</option>)}</select></Field><Field label="日期"><input name="recordDate" type="date" defaultValue={editing?.recordDate || today()} required /></Field><Field label="销售额"><input name="sales" type="number" min="0" step="0.01" defaultValue={editing?.sales || 0} /></Field><Field label="订单数"><input name="orders" type="number" min="0" defaultValue={editing?.orders || 0} /></Field><Field label="退款金额"><input name="refundAmount" type="number" min="0" step="0.01" defaultValue={editing?.refundAmount || 0} /></Field><Field label="在售商品数"><input name="listedProducts" type="number" min="0" defaultValue={editing?.listedProducts || 0} /></Field></div><Field label="备注"><textarea name="note" defaultValue={editing?.note} /></Field><FormActions onClose={closeModal} /></form></Modal>}
     {modal === 'task' && <Modal title={editing ? '修改任务' : '新增任务'} onClose={closeModal}><form onSubmit={saveTask}><Field label="任务内容"><input name="title" defaultValue={editing?.title} required /></Field><div className="form-grid"><Field label="时间"><select name="period" defaultValue={editing?.period || 'today'}><option value="today">今天</option><option value="week">本周</option></select></Field><Field label="店铺"><select name="store" defaultValue={editing?.store || STORE_ALL}>{[STORE_ALL, ...stores].map((name) => <option key={name}>{name}</option>)}</select></Field><Field label="优先级"><select name="priority" defaultValue={editing?.priority || '普通'}><option>高</option><option>普通</option><option>低</option></select></Field></div><Field label="备注"><textarea name="note" defaultValue={editing?.note} /></Field><FormActions onClose={closeModal} /></form></Modal>}
+    {modal === 'launch' && <Modal title={editing ? '修改上新链接' : '新增上新链接'} onClose={closeModal}><form onSubmit={saveLaunch}><Field label="链接名称"><input name="title" defaultValue={editing?.title} placeholder="例如：夏季新款连衣裙" required /></Field><Field label="链接地址"><input name="link" type="text" defaultValue={editing?.link} placeholder="粘贴商品链接" required /></Field><div className="form-grid"><Field label="店铺"><select name="store" defaultValue={editing?.store || (store === STORE_ALL ? 'AG' : store)}>{stores.map((name) => <option key={name}>{name}</option>)}</select></Field><Field label="上新日期"><input name="launchDate" type="date" defaultValue={editing?.launchDate || today()} required /></Field></div><Field label="备注"><textarea name="note" defaultValue={editing?.note} /></Field><FormActions onClose={closeModal} /></form></Modal>}
     {modal === 'discount' && <DiscountForm editing={editing} products={workspace.products} currentStore={store} onSubmit={saveDiscount} onClose={closeModal} />}
     {toast && <div className="toast">{toast}</div>}
   </div>;
@@ -214,9 +222,27 @@ export default function App() {
 
 function FormActions({ onClose }) { return <div className="actions"><button type="button" onClick={onClose}>取消</button><button className="primary" type="submit">保存</button></div>; }
 
-function Overview({ totals, workspace, store, pending, setPage }) {
+function Overview({ totals, workspace, store, pending, setPage, onAdd, onEdit, onDelete }) {
   const filteredDiscounts = store === STORE_ALL ? workspace.discounts : workspace.discounts.filter((item) => item.store === store);
-  return <><div className="metrics"><Metric label="今日销售额" value={money(totals.sales)} /><Metric label="今日订单" value={totals.orders} /><Metric label="在售商品" value={totals.listed} /><Metric label="折扣记录" value={filteredDiscounts.length} /><Metric label="待办任务" value={pending.length} /></div><div className="overview-grid"><div className="panel"><div className="panel-title"><div><h2>近期运营记录</h2><p>数据由你录入，不展示示例数据</p></div><button onClick={() => setPage('data')}>查看全部</button></div>{workspace.operations.length ? workspace.operations.slice(0, 5).map((item) => <div className="mini-row" key={item.id}><b>{item.store}</b><span>{item.recordDate}</span><strong>{money(item.sales)}</strong></div>) : <Empty text="暂无运营数据" />}</div><div className="panel"><div className="panel-title"><div><h2>今日待办</h2><p>完成后可直接勾选</p></div><button onClick={() => setPage('tasks')}>查看任务</button></div>{pending.length ? pending.slice(0, 5).map((item) => <div className="mini-row" key={item.id}><b>{item.store}</b><span>{item.title}</span><strong>{item.priority}</strong></div>) : <Empty text="今天暂无待办" />}</div></div></>;
+  const monthKey = today().slice(0, 7);
+  const monthLaunches = (workspace.launches || [])
+    .filter((item) => item.launchDate?.startsWith(monthKey) && (store === STORE_ALL || item.store === store))
+    .sort((a, b) => String(b.launchDate).localeCompare(String(a.launchDate)));
+  const target = 31;
+  const remaining = Math.max(0, target - monthLaunches.length);
+  const progress = Math.min(100, (monthLaunches.length / target) * 100);
+  return <>
+    <div className="metrics"><Metric label="今日销售额" value={money(totals.sales)} /><Metric label="今日订单" value={totals.orders} /><Metric label="在售商品" value={totals.listed} /><Metric label="折扣记录" value={filteredDiscounts.length} /><Metric label="待办任务" value={pending.length} /></div>
+    <div className="overview-grid">
+      <div className="panel"><div className="panel-title"><div><h2>近期运营记录</h2><p>数据由你录入，不展示示例数据</p></div><button onClick={() => setPage('data')}>查看全部</button></div>{workspace.operations.length ? workspace.operations.slice(0, 5).map((item) => <div className="mini-row" key={item.id}><b>{item.store}</b><span>{item.recordDate}</span><strong>{money(item.sales)}</strong></div>) : <Empty text="暂无运营数据" />}</div>
+      <div className="panel"><div className="panel-title"><div><h2>今日待办</h2><p>完成后可直接勾选</p></div><button onClick={() => setPage('tasks')}>查看任务</button></div>{pending.length ? pending.slice(0, 5).map((item) => <div className="mini-row" key={item.id}><b>{item.store}</b><span>{item.title}</span><strong>{item.priority}</strong></div>) : <Empty text="今天暂无待办" />}</div>
+      <div className="panel launch-panel">
+        <div className="panel-title"><div><h2>本月上新</h2><p>每月目标 31 条链接 · 已完成 {monthLaunches.length} 条 · 还差 {remaining} 条</p></div><button className="launch-add" onClick={onAdd}>＋ 新增链接</button></div>
+        <div className="launch-progress"><div><span style={{ width: `${progress}%` }} /></div><strong>{monthLaunches.length} / {target}</strong></div>
+        {monthLaunches.length ? <div className="launch-list">{monthLaunches.map((item) => <div className="launch-row" key={item.id}><Badge>{item.store}</Badge><span className="launch-date">{item.launchDate}</span><a href={item.link} target="_blank" rel="noreferrer">{item.title}</a><RowActions onEdit={() => onEdit(item)} onDelete={() => onDelete(item)} /></div>)}</div> : <Empty text="本月还没有上新链接，点击“新增链接”开始记录" />}
+      </div>
+    </div>
+  </>;
 }
 function Metric({ label, value }) { return <div className="metric"><i /><span>{label}</span><strong>{value}</strong></div>; }
 function TableShell({ title, subtitle, search, setSearch, children }) { return <div className="panel table-panel"><div className="panel-title"><div><h2>{title}</h2><p>{subtitle}</p></div>{setSearch && <input className="search" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="搜索商品名称" />}</div>{children}</div>; }
