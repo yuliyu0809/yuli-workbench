@@ -3,6 +3,7 @@ import { supabase } from './lib/supabaseClient.js';
 
 const STORE_ALL = '全部店铺';
 const stores = ['AG', 'DS', 'HX'];
+const productCategories = ['灯串', '地插灯'];
 const tiers = [0.9, 0.85, 0.8, 0.75, 0.7];
 const emptyWorkspace = { discounts: [], products: [], operations: [], tasks: [], launches: [] };
 const nav = [
@@ -39,6 +40,7 @@ const getRecommended = (cost, salePrice) => {
 const normalizeProductSpecs = (product) => Array.isArray(product?.specs) && product.specs.length
   ? product.specs.map((spec) => ({ id: spec.id || uid(), name: spec.name || '默认规格', cost: Number(spec.cost || 0) }))
   : [{ id: `${product?.id || uid()}-default`, name: '默认规格', cost: Number(product?.cost || 0) }];
+const productCategoryOf = (product) => product?.category === '地插灯' ? '地插灯' : '灯串';
 const normalizeDiscountSpecs = (record) => Array.isArray(record?.specs) && record.specs.length
   ? record.specs.map((spec) => {
       const cost = Number(spec.cost || 0); const salePrice = Number(spec.salePrice || 0);
@@ -161,7 +163,7 @@ export default function App() {
     event.preventDefault(); const data = new FormData(event.currentTarget);
     const names = data.getAll('specName'); const costs = data.getAll('specCost');
     const specs = names.map((name, index) => ({ id: editing?.specs?.[index]?.id || uid(), name: String(name).trim(), cost: Number(costs[index]) })).filter((spec) => spec.name);
-    const next = { id: editing?.id || uid(), productName: String(data.get('productName')).trim(), specs, cost: specs[0]?.cost || 0, updatedAt: new Date().toISOString() };
+    const next = { id: editing?.id || uid(), category: data.get('category'), productName: String(data.get('productName')).trim(), specs, cost: specs[0]?.cost || 0, updatedAt: new Date().toISOString() };
     update('products', editing ? workspace.products.map((item) => item.id === editing.id ? next : item) : [next, ...workspace.products]); closeModal(); notify('商品档案已保存');
   };
   const saveOperation = (event) => {
@@ -281,8 +283,19 @@ function TableShell({ title, subtitle, search, setSearch, children }) { return <
 function RowActions({ onEdit, onDelete }) { return <div className="row-actions"><button onClick={onEdit}>编辑</button><button className="danger" onClick={onDelete}>删除</button></div>; }
 
 function Products({ records, search, setSearch, onEdit, onDelete }) {
-  const filtered = records.filter((item) => `${item.productName}${normalizeProductSpecs(item).map((spec) => spec.name).join('')}`.toLowerCase().includes(search.toLowerCase()));
-  return <TableShell title="商品规格成本表" subtitle="一个商品可以添加多个规格，每个规格记录自己的成本价" search={search} setSearch={setSearch}><table><thead><tr><th>商品名称</th><th>规格数量</th><th>规格与成本价</th><th>更新时间</th><th>操作</th></tr></thead><tbody>{filtered.map((item) => { const specs = normalizeProductSpecs(item); return <tr key={item.id}><td><strong>{item.productName}</strong></td><td>{specs.length} 个</td><td><div className="spec-list">{specs.map((spec) => <span key={spec.id}><b>{spec.name}</b>{money(spec.cost)}</span>)}</div></td><td>{new Date(item.updatedAt).toLocaleString('zh-CN')}</td><td><RowActions onEdit={() => onEdit(item)} onDelete={() => onDelete(item)} /></td></tr>; })}{!filtered.length && <tr><td colSpan="5"><Empty text="暂无商品档案，点击“新增商品”开始录入" /></td></tr>}</tbody></table></TableShell>;
+  const [categoryFilter, setCategoryFilter] = useState('全部商品');
+  const filtered = records.filter((item) => {
+    const matchesCategory = categoryFilter === '全部商品' || productCategoryOf(item) === categoryFilter;
+    const matchesSearch = `${item.productName}${normalizeProductSpecs(item).map((spec) => spec.name).join('')}`.toLowerCase().includes(search.toLowerCase());
+    return matchesCategory && matchesSearch;
+  });
+  return <>
+    <div className="product-category-tabs">{['全部商品', ...productCategories].map((category) => {
+      const count = category === '全部商品' ? records.length : records.filter((item) => productCategoryOf(item) === category).length;
+      return <button type="button" key={category} className={categoryFilter === category ? 'selected' : ''} onClick={() => setCategoryFilter(category)}><span>{category}</span><b>{count}</b></button>;
+    })}</div>
+    <TableShell title="商品规格成本表" subtitle="商品档案分为灯串和地插灯，每个规格分别记录成本价" search={search} setSearch={setSearch}><table><thead><tr><th>商品类别</th><th>商品名称</th><th>规格数量</th><th>规格与成本价</th><th>更新时间</th><th>操作</th></tr></thead><tbody>{filtered.map((item) => { const specs = normalizeProductSpecs(item); return <tr key={item.id}><td><Badge>{productCategoryOf(item)}</Badge></td><td><strong>{item.productName}</strong></td><td>{specs.length} 个</td><td><div className="spec-list">{specs.map((spec) => <span key={spec.id}><b>{spec.name}</b>{money(spec.cost)}</span>)}</div></td><td>{new Date(item.updatedAt).toLocaleString('zh-CN')}</td><td><RowActions onEdit={() => onEdit(item)} onDelete={() => onDelete(item)} /></td></tr>; })}{!filtered.length && <tr><td colSpan="6"><Empty text={categoryFilter === '全部商品' ? '暂无商品档案，点击“新增商品”开始录入' : `暂无${categoryFilter}商品`} /></td></tr>}</tbody></table></TableShell>
+  </>;
 }
 function Operations({ records, onEdit, onDelete }) { return <TableShell title="运营数据记录" subtitle="已保存的数据可以随时修改或删除"><table><thead><tr><th>日期</th><th>店铺</th><th>销售额</th><th>订单</th><th>退款</th><th>在售商品</th><th>操作</th></tr></thead><tbody>{records.map((item) => <tr key={item.id}><td>{item.recordDate}</td><td><Badge>{item.store}</Badge></td><td>{money(item.sales)}</td><td>{item.orders}</td><td>{money(item.refundAmount)}</td><td>{item.listedProducts}</td><td><RowActions onEdit={() => onEdit(item)} onDelete={() => onDelete(item)} /></td></tr>)}{!records.length && <tr><td colSpan="7"><Empty text="暂无运营数据，点击“新增记录”开始录入" /></td></tr>}</tbody></table></TableShell>; }
 function Tasks({ records, update, onEdit, onDelete }) {
@@ -325,7 +338,7 @@ function ProductForm({ editing, onSubmit, onClose }) {
   const updateSpec = (id, key, value) => setSpecRows((rows) => rows.map((row) => row.id === id ? { ...row, [key]: value } : row));
   const addSpec = () => setSpecRows((rows) => [...rows, { id: uid(), name: '', cost: '' }]);
   const removeSpec = (id) => setSpecRows((rows) => rows.length === 1 ? rows : rows.filter((row) => row.id !== id));
-  return <Modal title={editing ? '修改商品档案' : '新增商品档案'} onClose={onClose}><form onSubmit={onSubmit}><Field label="商品名称"><input name="productName" defaultValue={editing?.productName} required /></Field><div className="spec-editor"><div className="spec-editor-head"><b>商品规格与成本价</b><button type="button" onClick={addSpec}>＋ 添加规格</button></div>{specRows.map((spec, index) => <div className="spec-edit-row" key={spec.id}><span>{index + 1}</span><input name="specName" value={spec.name} onChange={(event) => updateSpec(spec.id, 'name', event.target.value)} placeholder="例如：黑色-S" required /><input name="specCost" type="number" min="0" step="0.01" value={spec.cost} onChange={(event) => updateSpec(spec.id, 'cost', event.target.value)} placeholder="成本价" required /><button type="button" className="danger" disabled={specRows.length === 1} onClick={() => removeSpec(spec.id)}>删除</button></div>)}</div><FormActions onClose={onClose} /></form></Modal>;
+  return <Modal title={editing ? '修改商品档案' : '新增商品档案'} onClose={onClose}><form onSubmit={onSubmit}><div className="form-grid"><Field label="商品类别"><select name="category" defaultValue={productCategoryOf(editing)}>{productCategories.map((category) => <option key={category}>{category}</option>)}</select></Field><Field label="商品名称"><input name="productName" defaultValue={editing?.productName} required /></Field></div><div className="spec-editor"><div className="spec-editor-head"><b>商品规格与成本价</b><button type="button" onClick={addSpec}>＋ 添加规格</button></div>{specRows.map((spec, index) => <div className="spec-edit-row" key={spec.id}><span>{index + 1}</span><input name="specName" value={spec.name} onChange={(event) => updateSpec(spec.id, 'name', event.target.value)} placeholder="例如：黑色-S" required /><input name="specCost" type="number" min="0" step="0.01" value={spec.cost} onChange={(event) => updateSpec(spec.id, 'cost', event.target.value)} placeholder="成本价" required /><button type="button" className="danger" disabled={specRows.length === 1} onClick={() => removeSpec(spec.id)}>删除</button></div>)}</div><FormActions onClose={onClose} /></form></Modal>;
 }
 function DiscountForm({ editing, products, currentStore, onSubmit, onClose }) {
   const [productName, setProductName] = useState(editing?.productName || '');
