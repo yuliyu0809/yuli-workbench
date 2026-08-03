@@ -239,10 +239,42 @@ function Overview({ totals, workspace, store, pending, setPage, onAdd, onEdit, o
       <div className="panel launch-panel">
         <div className="panel-title"><div><h2>本月上新</h2><p>每月目标 31 条链接 · 已完成 {monthLaunches.length} 条 · 还差 {remaining} 条</p></div><button className="launch-add" onClick={onAdd}>＋ 新增链接</button></div>
         <div className="launch-progress"><div><span style={{ width: `${progress}%` }} /></div><strong>{monthLaunches.length} / {target}</strong></div>
+        <LaunchChart records={monthLaunches} target={target} />
         {monthLaunches.length ? <div className="launch-list">{monthLaunches.map((item) => <div className="launch-row" key={item.id}><Badge>{item.store}</Badge><span className="launch-date">{item.launchDate}</span><a href={item.link} target="_blank" rel="noreferrer">{item.title}</a><RowActions onEdit={() => onEdit(item)} onDelete={() => onDelete(item)} /></div>)}</div> : <Empty text="本月还没有上新链接，点击“新增链接”开始记录" />}
       </div>
     </div>
   </>;
+}
+function LaunchChart({ records, target }) {
+  const now = new Date();
+  const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+  const currentDay = Math.min(now.getDate(), daysInMonth);
+  const counts = records.reduce((result, item) => {
+    const day = Number(String(item.launchDate || '').slice(8, 10));
+    if (day >= 1 && day <= daysInMonth) result[day] = (result[day] || 0) + 1;
+    return result;
+  }, {});
+  let cumulative = 0;
+  const actual = Array.from({ length: currentDay }, (_, index) => {
+    const day = index + 1; cumulative += counts[day] || 0; return { day, value: cumulative };
+  });
+  const ideal = Array.from({ length: daysInMonth }, (_, index) => ({ day: index + 1, value: target * ((index + 1) / daysInMonth) }));
+  const x = (day) => 52 + ((day - 1) / Math.max(1, daysInMonth - 1)) * 716;
+  const y = (value) => 18 + (1 - Math.min(value, target) / target) * 142;
+  const points = (rows) => rows.map((point) => `${x(point.day).toFixed(1)},${y(point.value).toFixed(1)}`).join(' ');
+  const yTicks = [0, 8, 16, 24, 31];
+  const xTicks = [...new Set([1, 8, 15, 22, daysInMonth])].filter((day) => day <= daysInMonth);
+  const latest = actual[actual.length - 1] || { day: 1, value: 0 };
+  return <div className="launch-chart">
+    <div className="chart-head"><strong>本月累计上新趋势</strong><div><span className="legend actual" />实际进度<span className="legend ideal" />理想进度</div></div>
+    <svg viewBox="0 0 800 190" role="img" aria-label={`本月已完成 ${records.length} 条，上新目标 ${target} 条`}>
+      {yTicks.map((tick) => <g key={tick}><line className="chart-grid" x1="52" x2="768" y1={y(tick)} y2={y(tick)} /><text x="42" y={y(tick) + 4} textAnchor="end">{tick}</text></g>)}
+      {xTicks.map((tick) => <text key={tick} x={x(tick)} y="181" textAnchor="middle">{tick}日</text>)}
+      <polyline className="ideal-line" points={points(ideal)} />
+      <polyline className="actual-line" points={points(actual)} />
+      <circle className="actual-dot" cx={x(latest.day)} cy={y(latest.value)} r="4.5" />
+    </svg>
+  </div>;
 }
 function Metric({ label, value }) { return <div className="metric"><i /><span>{label}</span><strong>{value}</strong></div>; }
 function TableShell({ title, subtitle, search, setSearch, children }) { return <div className="panel table-panel"><div className="panel-title"><div><h2>{title}</h2><p>{subtitle}</p></div>{setSearch && <input className="search" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="搜索商品名称" />}</div>{children}</div>; }
