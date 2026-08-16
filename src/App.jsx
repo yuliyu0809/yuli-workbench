@@ -71,7 +71,7 @@ const referenceState = (ownPrice, peerPrices, updatedAt) => {
   const validOwnPrice = Number.isFinite(Number(ownPrice)) && Number(ownPrice) > 0;
   const difference = peerMinimum == null || !validOwnPrice ? null : Number(ownPrice) - peerMinimum;
   const age = updatedAt ? (Date.now() - new Date(updatedAt).getTime()) / 86400000 : Infinity;
-  const level = difference == null ? 'missing' : difference > 1 ? 'risk' : difference > 0 ? 'notice' : 'safe';
+  const level = difference == null ? 'missing' : difference < -1 ? 'risk' : difference < 0 ? 'notice' : 'safe';
   return { peerMinimum, difference, stale: age > 7, level };
 };
 const resolveReferenceProduct = (reference, products, discounts) => {
@@ -411,18 +411,18 @@ function PriceReferences({ discounts, allDiscounts, products, references, search
     const matchesFilter = filter === 'all' || (filter === 'stale' ? row.stale : row.level === filter);
     return matchesSearch && matchesFilter;
   });
-  const stateLabel = (level) => ({ safe: '价格安全', notice: '略高', risk: '高价风险', missing: '待补价格' }[level]);
+  const stateLabel = (level) => ({ safe: '价格安全', notice: '略低', risk: '低价风险', missing: '待补价格' }[level]);
 
   return <>
     <div className="reference-metrics">
       <button type="button" className={filter === 'safe' ? 'selected' : ''} onClick={() => setFilter(filter === 'safe' ? 'all' : 'safe')}><span className="reference-dot safe" /><small>价格安全</small><strong>{counts.safe}</strong><em>个规格</em></button>
-      <button type="button" className={filter === 'notice' ? 'selected' : ''} onClick={() => setFilter(filter === 'notice' ? 'all' : 'notice')}><span className="reference-dot notice" /><small>略高但未超 ¥1</small><strong>{counts.notice}</strong><em>个规格</em></button>
-      <button type="button" className={filter === 'risk' ? 'selected' : ''} onClick={() => setFilter(filter === 'risk' ? 'all' : 'risk')}><span className="reference-dot risk" /><small>高价风险</small><strong>{counts.risk}</strong><em>个规格</em></button>
+      <button type="button" className={filter === 'notice' ? 'selected' : ''} onClick={() => setFilter(filter === 'notice' ? 'all' : 'notice')}><span className="reference-dot notice" /><small>略低但未超 ¥1</small><strong>{counts.notice}</strong><em>个规格</em></button>
+      <button type="button" className={filter === 'risk' ? 'selected' : ''} onClick={() => setFilter(filter === 'risk' ? 'all' : 'risk')}><span className="reference-dot risk" /><small>低价风险</small><strong>{counts.risk}</strong><em>个规格</em></button>
       <button type="button" className={filter === 'stale' ? 'selected' : ''} onClick={() => setFilter(filter === 'stale' ? 'all' : 'stale')}><span className="reference-dot stale" /><small>超过7天未更新</small><strong>{counts.stale}</strong><em>个规格</em></button>
     </div>
-    <TableShell title="同事售价参考" subtitle="直接关联商品档案，并自动匹配各店铺的折扣售价；高出同事最低价超过 ¥1 时标红" search={search} setSearch={setSearch}>
+    <TableShell title="同事售价参考" subtitle="直接关联商品档案，并自动匹配各店铺的折扣售价；低于同事最低价超过 ¥1 时标红" search={search} setSearch={setSearch}>
       <table className="reference-table"><thead><tr><th>商品</th><th>店铺</th><th>规格</th><th>你的售价</th><th>同事价格</th><th>同事最低价</th><th>价差</th><th>风险状态</th><th>更新时间</th><th>操作</th></tr></thead><tbody>
-        {filtered.map((row) => <tr className={row.level === 'risk' ? 'risk-row' : ''} key={`${row.reference.id}-${row.productSpec.id}-${row.discount?.id || 'unmatched'}`}><td><div className="product-cell"><span className="thumb">{row.discount?.imageDataUrl ? <img src={row.discount.imageDataUrl} alt="" /> : '价'}</span><span><strong>{row.product.productName}</strong><small>{productCategoryOf(row.product)}</small></span></div></td><td>{row.discount ? <Badge>{row.discount.store}</Badge> : '—'}</td><td><strong>{row.productSpec.name}</strong></td><td>{row.ownPrice == null ? '未录入售价' : money(row.ownPrice)}</td><td>{row.peerPrices.map(money).join('、') || '—'}</td><td><strong>{row.peerMinimum == null ? '—' : money(row.peerMinimum)}</strong></td><td className={row.level === 'risk' ? 'negative' : row.difference > 0 ? 'reference-notice' : row.difference == null ? '' : 'positive'}>{row.difference == null ? '—' : signedMoney(row.difference)}</td><td><span className={`risk-badge ${row.level}`}>{stateLabel(row.level)}</span>{row.stale && <span className="stale-badge">待更新</span>}</td><td>{new Date(row.reference.updatedAt).toLocaleDateString('zh-CN')}</td><td><RowActions onEdit={() => onEdit(row.reference)} onDelete={() => onDelete(row.reference)} /></td></tr>)}
+        {filtered.map((row) => <tr className={row.level === 'risk' ? 'risk-row' : ''} key={`${row.reference.id}-${row.productSpec.id}-${row.discount?.id || 'unmatched'}`}><td><div className="product-cell"><span className="thumb">{row.discount?.imageDataUrl ? <img src={row.discount.imageDataUrl} alt="" /> : '价'}</span><span><strong>{row.product.productName}</strong><small>{productCategoryOf(row.product)}</small></span></div></td><td>{row.discount ? <Badge>{row.discount.store}</Badge> : '—'}</td><td><strong>{row.productSpec.name}</strong></td><td>{row.ownPrice == null ? '未录入售价' : money(row.ownPrice)}</td><td>{row.peerPrices.map(money).join('、') || '—'}</td><td><strong>{row.peerMinimum == null ? '—' : money(row.peerMinimum)}</strong></td><td className={row.level === 'risk' ? 'negative' : row.difference < 0 ? 'reference-notice' : row.difference == null ? '' : 'positive'}>{row.difference == null ? '—' : signedMoney(row.difference)}</td><td><span className={`risk-badge ${row.level}`}>{stateLabel(row.level)}</span>{row.stale && <span className="stale-badge">待更新</span>}</td><td>{new Date(row.reference.updatedAt).toLocaleDateString('zh-CN')}</td><td><RowActions onEdit={() => onEdit(row.reference)} onDelete={() => onDelete(row.reference)} /></td></tr>)}
         {!filtered.length && <tr><td colSpan="10"><Empty text={rows.length ? '当前筛选条件下暂无记录' : '暂无同事售价，点击“录入同事售价”开始记录'} /></td></tr>}
       </tbody></table>
     </TableShell>
@@ -476,7 +476,7 @@ function PriceReferenceForm({ editing, products, discounts, allDiscounts, onSubm
           <input name="referencePrices" defaultValue={savedPrices(spec)} placeholder="如：29.9、28.9" aria-label={`${spec.name}的同事售价`} />
         </div>)}
       </div>
-      <div className="reference-rule"><b>判断规则</b><span>你的售价高出同事最低价超过 ¥1，将自动标记为高价风险。</span></div>
+      <div className="reference-rule"><b>判断规则</b><span>你的售价低于同事最低价超过 ¥1，将自动标记为低价风险。</span></div>
       <Field label="备注"><textarea name="note" defaultValue={editing?.note} placeholder="可选填" /></Field><FormActions onClose={onClose} />
     </form> : <><Empty text="请先在商品档案中新增商品，再录入同事售价" /><div className="actions"><button type="button" onClick={onClose}>关闭</button></div></>}
   </Modal>;
