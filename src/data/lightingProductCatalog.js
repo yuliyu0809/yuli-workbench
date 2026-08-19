@@ -1,5 +1,5 @@
-// 由《灯饰产品价格表（20260818）.xls》整理生成。
-export const lightingCatalogVersion = '20260818';
+// 商品与供货价来自《利润核算参考表（20260818）.xls》，利润字段由网站按原表公式实时计算。
+export const lightingCatalogVersion = '20260818-profit-v1';
 export const lightingProductCatalog = [
   {
     "id": "P0001",
