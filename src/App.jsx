@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { supabase } from './lib/supabaseClient.js';
+import { lightingCatalogVersion, lightingProductCatalog } from './data/lightingProductCatalog.js';
 
 const STORE_ALL = '全部店铺';
 const stores = ['AG', 'DS', 'HX'];
@@ -17,7 +18,7 @@ const titles = {
   overview: ['早上好，郁荔', '这是三个店铺今天的运营情况。'],
   discounts: ['商品折扣', '按照成本与售价自动计算可承受的折扣档位。'],
   data: ['运营数据', '记录并对比 AG、DS、HX 的每日核心指标。'],
-  products: ['商品档案', '集中记录商品名称、规格和对应成本价，不区分店铺。'],
+  products: ['商品档案', '已按《灯饰产品价格表（20260818）》整理，保留商品规格、供货成本与包装信息。'],
   tasks: ['运营任务', '把每天要做的事放在一个清晰的队列里。'],
 };
 
@@ -39,7 +40,16 @@ const getRecommended = (cost, salePrice) => {
   return [...tiers].reverse().find((tier) => tier >= minimum) ?? null;
 };
 const normalizeProductSpecs = (product) => Array.isArray(product?.specs) && product.specs.length
-  ? product.specs.map((spec) => ({ id: spec.id || uid(), name: spec.name || '默认规格', cost: Number(spec.cost || 0) }))
+  ? product.specs.map((spec) => ({
+      ...spec,
+      id: spec.id || uid(),
+      name: spec.name || '默认规格',
+      cost: Number(spec.cost || 0),
+      packageSize: spec.packageSize || '',
+      itemWeight: spec.itemWeight ?? '',
+      packageWeight: spec.packageWeight ?? '',
+      cartonQty: spec.cartonQty ?? '',
+    }))
   : [{ id: `${product?.id || uid()}-default`, name: '默认规格', cost: Number(product?.cost || 0) }];
 const productCategoryOf = (product) => product?.category === '地插灯' ? '地插灯' : '灯串';
 const normalizeDiscountSpecs = (record) => Array.isArray(record?.specs) && record.specs.length
@@ -84,9 +94,22 @@ const resolveReferenceProduct = (reference, products, discounts) => {
 function readLocal() {
   try {
     const parsed = JSON.parse(localStorage.getItem('yuli.public.workspace.v1') || 'null');
-    return parsed && typeof parsed === 'object' ? { ...emptyWorkspace, ...parsed } : emptyWorkspace;
-  } catch { return emptyWorkspace; }
+    const current = parsed && typeof parsed === 'object' ? { ...emptyWorkspace, ...parsed } : { ...emptyWorkspace };
+    if (current.productCatalogVersion === lightingCatalogVersion) return current;
+    return { ...current, products: lightingProductCatalog, productCatalogVersion: lightingCatalogVersion };
+  } catch {
+    return { ...emptyWorkspace, products: lightingProductCatalog, productCatalogVersion: lightingCatalogVersion };
+  }
 }
+
+const applyLightingCatalog = (data) => {
+  const current = { ...emptyWorkspace, ...(data && typeof data === 'object' ? data : {}) };
+  if (current.productCatalogVersion === lightingCatalogVersion) return { workspace: current, changed: false };
+  return {
+    workspace: { ...current, products: lightingProductCatalog, productCatalogVersion: lightingCatalogVersion },
+    changed: true,
+  };
+};
 
 async function imageToDataUrl(file) {
   if (!file) return '';
@@ -134,9 +157,15 @@ export default function App() {
       if (!alive) return;
       if (error) { setCloud('已保存到本机 · 云端待启用'); hydrated.current = true; return; }
       if (data?.data && hasWorkspaceRecords(data.data)) {
+        const migrated = applyLightingCatalog(data.data);
         skipNextPush.current = true;
-        setWorkspace({ ...emptyWorkspace, ...data.data });
-        setCloud('云端已连接');
+        setWorkspace(migrated.workspace);
+        if (migrated.changed) {
+          const { error: catalogError } = await supabase.from('public_workspace').upsert({ workspace_key: 'main', data: migrated.workspace, updated_at: new Date().toISOString() }, { onConflict: 'workspace_key' });
+          setCloud(catalogError ? '商品档案已更新到本机 · 云端同步失败' : '商品档案已更新并同步');
+        } else {
+          setCloud('云端已连接');
+        }
       } else if (hasWorkspaceRecords(workspace)) {
         const { error: uploadError } = await supabase.from('public_workspace').upsert({ workspace_key: 'main', data: workspace, updated_at: new Date().toISOString() }, { onConflict: 'workspace_key' });
         setCloud(uploadError ? '本机数据已保留 · 云端同步失败' : '本机数据已同步到云端');
@@ -179,9 +208,19 @@ export default function App() {
 
   const saveProduct = (event) => {
     event.preventDefault(); const data = new FormData(event.currentTarget);
-    const names = data.getAll('specName'); const costs = data.getAll('specCost');
-    const specs = names.map((name, index) => ({ id: editing?.specs?.[index]?.id || uid(), name: String(name).trim(), cost: Number(costs[index]) })).filter((spec) => spec.name);
-    const next = { id: editing?.id || uid(), category: data.get('category'), productName: String(data.get('productName')).trim(), specs, cost: specs[0]?.cost || 0, updatedAt: new Date().toISOString() };
+    const specIds = data.getAll('specId'); const names = data.getAll('specName'); const costs = data.getAll('specCost');
+    const packageSizes = data.getAll('specPackageSize'); const itemWeights = data.getAll('specItemWeight');
+    const packageWeights = data.getAll('specPackageWeight'); const cartonQtys = data.getAll('specCartonQty');
+    const specs = names.map((name, index) => ({
+      id: specIds[index] || uid(),
+      name: String(name).trim(),
+      cost: Number(costs[index]),
+      packageSize: String(packageSizes[index] || '').trim(),
+      itemWeight: itemWeights[index] === '' ? '' : Number(itemWeights[index]),
+      packageWeight: packageWeights[index] === '' ? '' : Number(packageWeights[index]),
+      cartonQty: cartonQtys[index] === '' ? '' : Number(cartonQtys[index]),
+    })).filter((spec) => spec.name);
+    const next = { id: editing?.id || uid(), category: data.get('category'), sourceCategory: String(data.get('sourceCategory') || '').trim(), productName: String(data.get('productName')).trim(), specs, cost: specs[0]?.cost || 0, imageDataUrl: editing?.imageDataUrl || '', imageNote: editing?.imageNote || '', updatedAt: new Date().toISOString() };
     update('products', editing ? workspace.products.map((item) => item.id === editing.id ? next : item) : [next, ...workspace.products]); closeModal(); notify('商品档案已保存');
   };
   const saveOperation = (event) => {
@@ -321,17 +360,25 @@ function RowActions({ onEdit, onDelete }) { return <div className="row-actions">
 
 function Products({ records, search, setSearch, onEdit, onDelete }) {
   const [categoryFilter, setCategoryFilter] = useState('全部商品');
+  const totalSpecs = records.reduce((total, item) => total + normalizeProductSpecs(item).length, 0);
+  const originalCategoryCount = new Set(records.map((item) => item.sourceCategory).filter(Boolean)).size;
   const filtered = records.filter((item) => {
     const matchesCategory = categoryFilter === '全部商品' || productCategoryOf(item) === categoryFilter;
-    const matchesSearch = `${item.productName}${normalizeProductSpecs(item).map((spec) => spec.name).join('')}`.toLowerCase().includes(search.toLowerCase());
+    const matchesSearch = `${item.productName}${item.sourceCategory || ''}${normalizeProductSpecs(item).map((spec) => `${spec.name}${spec.packageSize || ''}`).join('')}`.toLowerCase().includes(search.toLowerCase());
     return matchesCategory && matchesSearch;
   });
   return <>
+    <div className="catalog-summary">
+      <div><small>商品</small><strong>{records.length}</strong></div>
+      <div><small>规格</small><strong>{totalSpecs}</strong></div>
+      <div><small>原价格表分类</small><strong>{originalCategoryCount}</strong></div>
+      <p>来源：灯饰产品价格表（20260818）<br />原表图片公式不兼容，图片暂时留空</p>
+    </div>
     <div className="product-category-tabs">{['全部商品', ...productCategories].map((category) => {
       const count = category === '全部商品' ? records.length : records.filter((item) => productCategoryOf(item) === category).length;
       return <button type="button" key={category} className={categoryFilter === category ? 'selected' : ''} onClick={() => setCategoryFilter(category)}><span>{category}</span><b>{count}</b></button>;
     })}</div>
-    <TableShell title="商品规格成本表" subtitle="商品档案分为灯串和地插灯，每个规格分别记录成本价" search={search} setSearch={setSearch}><table><thead><tr><th>商品类别</th><th>商品名称</th><th>规格数量</th><th>规格与成本价</th><th>更新时间</th><th>操作</th></tr></thead><tbody>{filtered.map((item) => { const specs = normalizeProductSpecs(item); return <tr key={item.id}><td><Badge>{productCategoryOf(item)}</Badge></td><td><strong>{item.productName}</strong></td><td>{specs.length} 个</td><td><div className="spec-list">{specs.map((spec) => <span key={spec.id}><b>{spec.name}</b>{money(spec.cost)}</span>)}</div></td><td>{new Date(item.updatedAt).toLocaleString('zh-CN')}</td><td><RowActions onEdit={() => onEdit(item)} onDelete={() => onDelete(item)} /></td></tr>; })}{!filtered.length && <tr><td colSpan="6"><Empty text={categoryFilter === '全部商品' ? '暂无商品档案，点击“新增商品”开始录入' : `暂无${categoryFilter}商品`} /></td></tr>}</tbody></table></TableShell>
+    <TableShell title="灯饰产品价格表" subtitle="按商品查看规格、成本价及包装资料；点击规格数量可展开详情" search={search} setSearch={setSearch}><table><thead><tr><th>商品类别</th><th>商品名称</th><th>原价格表分类</th><th>规格与成本</th><th>成本范围</th><th>操作</th></tr></thead><tbody>{filtered.map((item) => { const specs = normalizeProductSpecs(item); return <tr key={item.id}><td><Badge>{productCategoryOf(item)}</Badge></td><td><strong>{item.productName}</strong></td><td>{item.sourceCategory || '—'}</td><td><details className="catalog-specs"><summary>{specs.length} 个规格</summary><div>{specs.map((spec) => <span key={spec.id}><b>{spec.name}</b><strong>{money(spec.cost)}</strong><small>包装：{spec.packageSize || '—'}　单品重：{spec.itemWeight || '—'}　包装重：{spec.packageWeight || '—'}　装箱数：{spec.cartonQty || '—'}</small></span>)}</div></details></td><td><strong>{valueRange(specs.map((spec) => spec.cost), money)}</strong></td><td><RowActions onEdit={() => onEdit(item)} onDelete={() => onDelete(item)} /></td></tr>; })}{!filtered.length && <tr><td colSpan="6"><Empty text={categoryFilter === '全部商品' ? '暂无商品档案，点击“新增商品”开始录入' : `暂无${categoryFilter}商品`} /></td></tr>}</tbody></table></TableShell>
   </>;
 }
 function Operations({ records, onEdit, onDelete }) { return <TableShell title="运营数据记录" subtitle="已保存的数据可以随时修改或删除"><table><thead><tr><th>日期</th><th>店铺</th><th>销售额</th><th>订单</th><th>退款</th><th>在售商品</th><th>操作</th></tr></thead><tbody>{records.map((item) => <tr key={item.id}><td>{item.recordDate}</td><td><Badge>{item.store}</Badge></td><td>{money(item.sales)}</td><td>{item.orders}</td><td>{money(item.refundAmount)}</td><td>{item.listedProducts}</td><td><RowActions onEdit={() => onEdit(item)} onDelete={() => onDelete(item)} /></td></tr>)}{!records.length && <tr><td colSpan="7"><Empty text="暂无运营数据，点击“新增记录”开始录入" /></td></tr>}</tbody></table></TableShell>; }
@@ -431,9 +478,9 @@ function PriceReferences({ discounts, allDiscounts, products, references, search
 function ProductForm({ editing, onSubmit, onClose }) {
   const [specRows, setSpecRows] = useState(() => normalizeProductSpecs(editing));
   const updateSpec = (id, key, value) => setSpecRows((rows) => rows.map((row) => row.id === id ? { ...row, [key]: value } : row));
-  const addSpec = () => setSpecRows((rows) => [...rows, { id: uid(), name: '', cost: '' }]);
+  const addSpec = () => setSpecRows((rows) => [...rows, { id: uid(), name: '', cost: '', packageSize: '', itemWeight: '', packageWeight: '', cartonQty: '' }]);
   const removeSpec = (id) => setSpecRows((rows) => rows.length === 1 ? rows : rows.filter((row) => row.id !== id));
-  return <Modal title={editing ? '修改商品档案' : '新增商品档案'} onClose={onClose}><form onSubmit={onSubmit}><div className="form-grid"><Field label="商品类别"><select name="category" defaultValue={productCategoryOf(editing)}>{productCategories.map((category) => <option key={category}>{category}</option>)}</select></Field><Field label="商品名称"><input name="productName" defaultValue={editing?.productName} required /></Field></div><div className="spec-editor"><div className="spec-editor-head"><b>商品规格与成本价</b><button type="button" onClick={addSpec}>＋ 添加规格</button></div>{specRows.map((spec, index) => <div className="spec-edit-row" key={spec.id}><span>{index + 1}</span><input name="specName" value={spec.name} onChange={(event) => updateSpec(spec.id, 'name', event.target.value)} placeholder="例如：黑色-S" required /><input name="specCost" type="number" min="0" step="0.01" value={spec.cost} onChange={(event) => updateSpec(spec.id, 'cost', event.target.value)} placeholder="成本价" required /><button type="button" className="danger" disabled={specRows.length === 1} onClick={() => removeSpec(spec.id)}>删除</button></div>)}</div><FormActions onClose={onClose} /></form></Modal>;
+  return <Modal title={editing ? '修改商品档案' : '新增商品档案'} onClose={onClose}><form className="catalog-form" onSubmit={onSubmit}><div className="form-grid"><Field label="商品类别"><select name="category" defaultValue={productCategoryOf(editing)}>{productCategories.map((category) => <option key={category}>{category}</option>)}</select></Field><Field label="商品名称"><input name="productName" defaultValue={editing?.productName} required /></Field></div><Field label="原价格表分类"><input name="sourceCategory" defaultValue={editing?.sourceCategory} placeholder="例如：铜线灯串" /></Field><div className="spec-editor catalog-spec-editor"><div className="spec-editor-head"><b>规格、成本及包装资料</b><button type="button" onClick={addSpec}>＋ 添加规格</button></div>{specRows.map((spec, index) => <div className="catalog-spec-edit-row" key={spec.id}><span>{index + 1}</span><input type="hidden" name="specId" value={spec.id} /><input name="specName" value={spec.name} onChange={(event) => updateSpec(spec.id, 'name', event.target.value)} placeholder="规格" required /><input name="specCost" type="number" min="0" step="0.01" value={spec.cost} onChange={(event) => updateSpec(spec.id, 'cost', event.target.value)} placeholder="成本价" required /><input name="specPackageSize" value={spec.packageSize || ''} onChange={(event) => updateSpec(spec.id, 'packageSize', event.target.value)} placeholder="包装尺寸" /><input name="specItemWeight" value={spec.itemWeight || ''} onChange={(event) => updateSpec(spec.id, 'itemWeight', event.target.value)} placeholder="单品重量" /><input name="specPackageWeight" value={spec.packageWeight || ''} onChange={(event) => updateSpec(spec.id, 'packageWeight', event.target.value)} placeholder="包装重量" /><input name="specCartonQty" value={spec.cartonQty || ''} onChange={(event) => updateSpec(spec.id, 'cartonQty', event.target.value)} placeholder="装箱数" /><button type="button" className="danger" disabled={specRows.length === 1} onClick={() => removeSpec(spec.id)}>删除</button></div>)}</div><FormActions onClose={onClose} /></form></Modal>;
 }
 function DiscountForm({ editing, products, currentStore, onSubmit, onClose }) {
   const [productName, setProductName] = useState(editing?.productName || '');
