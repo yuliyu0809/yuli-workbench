@@ -96,18 +96,29 @@ renderAllAfterSync=function(){rollDailyTasks();ensureZodiacPreference();renderDa
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'){rollDailyTasks();renderDailyQuote();render();renderCalendar()}});
 document.querySelector('.reminder-card')?.remove();document.getElementById('reminderModal')?.remove();
 const nutritionMenus=[
-  {breakfast:'燕麦牛奶碗＋水煮蛋＋香蕉',lunch:'杂粮饭＋清蒸鱼＋西兰花胡萝卜',dinner:'红薯＋番茄豆腐虾仁＋菠菜',snack:'无糖酸奶或一小把坚果'},
-  {breakfast:'全麦吐司＋煎蛋＋牛奶＋苹果',lunch:'糙米饭＋香菇鸡肉＋两种时蔬',dinner:'玉米＋冬瓜牛肉汤＋凉拌黄瓜',snack:'橙子或原味酸奶'},
-  {breakfast:'小米南瓜粥＋鸡蛋＋一份水果',lunch:'藜麦饭＋番茄炖牛腩＋青菜',dinner:'荞麦面＋鸡丝＋菌菇青菜',snack:'牛奶或少量核桃'},
-  {breakfast:'杂粮馒头＋无糖豆浆＋鸡蛋',lunch:'米饭＋芹菜虾仁＋香菇菜心',dinner:'山药＋清蒸鸡腿肉＋彩椒西兰花',snack:'猕猴桃或原味酸奶'},
-  {breakfast:'玉米＋牛奶＋鸡蛋＋小番茄',lunch:'杂粮饭＋豆腐烧鱼＋清炒油麦菜',dinner:'南瓜粥＋瘦肉菌菇＋凉拌菠菜',snack:'梨或一小把杏仁'},
-  {breakfast:'原味酸奶燕麦＋蓝莓＋鸡蛋',lunch:'糙米饭＋青椒牛肉＋蒜蓉生菜',dinner:'紫薯＋虾仁蒸蛋＋番茄青菜汤',snack:'苹果或无糖豆浆'},
-  {breakfast:'红薯＋无糖豆浆＋鸡蛋＋橙子',lunch:'米饭＋清炖鸡肉＋木耳西兰花',dinner:'杂粮粥＋香煎豆腐＋两种时蔬',snack:'牛奶或少量坚果'}
+  {lunch:'鸡腿杂粮饭：米饭半份，多选两种蔬菜，酱汁分装',dinner:'红薯＋番茄豆腐虾仁＋菠菜',snack:'无糖酸奶或一小把坚果'},
+  {lunch:'番茄牛肉饭：备注少油，另加一份青菜',dinner:'玉米＋冬瓜排骨汤＋凉拌黄瓜',snack:'苹果或奇异果'},
+  {lunch:'清汤麻辣烫：多蔬菜＋豆制品＋瘦肉，少喝汤',dinner:'南瓜＋香菇蒸鸡＋芦笋',snack:'原味酸奶＋少量坚果'},
+  {lunch:'日式烤鱼定食：米饭适量，多选蔬菜，少酱汁',dinner:'山药＋清蒸鲈鱼＋炒时蔬',snack:'橙子或圣女果'},
+  {lunch:'越南牛肉粉：加蔬菜和牛肉，汤不要喝完',dinner:'菌菇豆腐汤＋玉米＋凉拌木耳',snack:'梨或无糖酸奶'},
+  {lunch:'虾仁蛋炒饭：备注少油，再点一份清炒青菜',dinner:'莲藕排骨汤＋小份米饭＋青菜',snack:'一小把毛豆或核桃'},
+  {lunch:'沙县鸡腿饭：去部分鸡皮，米饭半份，加烫青菜',dinner:'番茄鸡蛋荞麦面＋青菜',snack:'苹果切片＋无糖酸奶'},
+  {lunch:'海南鸡饭：少皮，酱汁分装，额外加蔬菜',dinner:'小米粥＋芹菜炒牛肉＋木耳',snack:'香蕉或纯牛奶'},
+  {lunch:'砂锅米线：加鸡蛋或豆腐、牛肉和两份青菜',dinner:'杂粮饭＋清蒸鸡腿＋西兰花',snack:'蓝莓或一小把杏仁'},
+  {lunch:'韩式拌饭：少酱，多蔬菜，保留鸡蛋和牛肉',dinner:'蒸南瓜＋虾仁豆腐煲＋油麦菜',snack:'猕猴桃或无糖豆浆'},
+  {lunch:'轻食能量碗：谷物＋鸡肉或虾＋蔬菜，不要只点沙拉',dinner:'玉米＋番茄牛腩＋清炒菜心',snack:'原味酸奶＋草莓'},
+  {lunch:'粤式蒸饭：排骨或鸡肉配青菜，备注少油',dinner:'山药粥＋香煎豆腐＋菌菇青菜',snack:'橙子或少量腰果'},
+  {lunch:'牛肉盖饭：少汁，加温泉蛋和一份蔬菜',dinner:'小份米饭＋清蒸鱼＋番茄炒蛋',snack:'梨或纯牛奶'},
+  {lunch:'宫保鸡丁套餐：少油少汁，米饭半份，加青菜',dinner:'紫薯＋萝卜牛肉汤＋凉拌菠菜',snack:'圣女果＋一小把核桃'},
+  {lunch:'馄饨或水饺：搭配烫青菜和鸡蛋，少喝汤',dinner:'荞麦面＋鸡胸肉＋西葫芦',snack:'苹果或无糖酸奶'},
+  {lunch:'黄焖鸡米饭：少油少汤，多加青菜，米饭半份',dinner:'玉米＋冬瓜虾仁汤＋炒时蔬',snack:'香蕉＋少量花生'},
+  {lunch:'烤肉拌饭：酱少放，多蔬菜，肉选瘦一点',dinner:'杂粮粥＋蒸蛋＋清炒西兰花',snack:'火龙果或无糖豆浆'},
+  {lunch:'豆腐菌菇饭：加鸡蛋或鸡肉补充蛋白，米饭适量',dinner:'土豆炖牛肉＋小份米饭＋凉拌黄瓜',snack:'葡萄柚或原味酸奶'}
 ];
 function nutritionMenuIndex(){let d=new Date(),seed=d.getFullYear()*372+(d.getMonth()+1)*31+d.getDate();return(seed+(Number(data.nutritionVariant)||0))%nutritionMenus.length}
-function renderNutrition(){let menu=nutritionMenus[nutritionMenuIndex()],container=document.getElementById('nutritionMeals');if(!container)return;container.innerHTML=[['🌤️','早餐',menu.breakfast],['☀️','午餐',menu.lunch],['🌙','晚餐',menu.dinner],['🍎','加餐',menu.snack]].map(([icon,label,food])=>`<div class="meal-card"><span class="meal-icon">${icon}</span><div><small>${label}</small><strong>${esc(food)}</strong></div></div>`).join('');document.getElementById('nutritionDate').textContent=new Intl.DateTimeFormat('zh-CN',{month:'long',day:'numeric'}).format(new Date())+' · 今日搭配'}
+function renderNutrition(){let menu=nutritionMenus[nutritionMenuIndex()],container=document.getElementById('nutritionMeals');if(!container)return;container.innerHTML=[['🛵','外卖午餐',menu.lunch],['🌙','晚餐',menu.dinner],['🍎','加餐',menu.snack]].map(([icon,label,food])=>`<div class="meal-card"><span class="meal-icon">${icon}</span><div><small>${label}</small><strong>${esc(food)}</strong></div></div>`).join('');document.getElementById('nutritionDate').textContent=new Intl.DateTimeFormat('zh-CN',{month:'long',day:'numeric'}).format(new Date())+' · 今日搭配'}
 function changeNutritionMenu(){data.nutritionVariant=(Number(data.nutritionVariant)||0)+1;save();renderNutrition()}
-function setupNutritionView(){let section=document.createElement('section');section.className='nutrition-view standalone';section.id='nutrition-section';section.innerHTML='<div class="nutrition-hero"><div class="nutrition-hero-top"><span class="nutrition-hero-icon">🥗</span><div><p class="kicker">BALANCED MEALS</p><h2>好好吃饭，慢慢养身体</h2><p>每餐尽量照顾到主食、蔬菜和优质蛋白。</p></div></div><div class="nutrition-balance"><span>🍚 主食</span><span>🥬 蔬菜</span><span>🥚 蛋白</span><span>🍎 水果奶类</span></div></div><div class="nutrition-head"><div><p class="kicker" id="nutritionDate"></p><h2>今日营养推荐</h2></div><button class="nutrition-swap" onclick="changeNutritionMenu()">换一组</button></div><div class="meal-list" id="nutritionMeals"></div><div class="nutrition-tip"><strong>搭配小提示</strong><br>食材尽量多样，少油少盐；不用追求每一餐完美，一整天搭配均衡就很好。</div><p class="nutrition-note">日常饮食灵感，不替代医疗或个体营养建议；食物过敏、孕期或疾病饮食请遵医嘱。</p>';document.getElementById('tasks-section').insertAdjacentElement('afterend',section);let kitchenButton=document.querySelector('[data-view="kitchen"]');kitchenButton.insertAdjacentHTML('beforebegin','<button data-view="nutrition" onclick="switchView(\'nutrition\')"><span>🥗</span>饮食</button>');renderNutrition()}
+function setupNutritionView(){let section=document.createElement('section');section.className='nutrition-view standalone';section.id='nutrition-section';section.innerHTML='<div class="nutrition-hero"><div class="nutrition-hero-top"><span class="nutrition-hero-icon">🥗</span><div><p class="kicker">BALANCED MEALS</p><h2>好好吃饭，慢慢养身体</h2><p>午餐点外卖，也可以尽量照顾到主食、蔬菜和优质蛋白。</p></div></div><div class="nutrition-balance"><span>🍚 主食</span><span>🥬 蔬菜</span><span>🥚 蛋白</span><span>🍎 水果奶类</span></div></div><div class="nutrition-head"><div><p class="kicker" id="nutritionDate"></p><h2>今日营养推荐</h2></div><button class="nutrition-swap" onclick="changeNutritionMenu()">换一组</button></div><div class="meal-list" id="nutritionMeals"></div><div class="nutrition-tip"><strong>外卖小提示</strong><br>优先选少油少盐、酱汁分装，主动加一份蔬菜；不用追求每一餐完美，一整天搭配均衡就很好。</div><p class="nutrition-note">18 组搭配依次轮换，不会很快重复。日常饮食灵感，不替代医疗或个体营养建议；食物过敏、孕期或疾病饮食请遵医嘱。</p>';document.getElementById('tasks-section').insertAdjacentElement('afterend',section);let kitchenButton=document.querySelector('[data-view="kitchen"]');kitchenButton.insertAdjacentHTML('beforebegin','<button data-view="nutrition" onclick="switchView(\'nutrition\')"><span>🥗</span>饮食</button>');renderNutrition()}
 const switchViewBeforeNutrition=switchView;switchView=function(view){let nutrition=document.getElementById('nutrition-section');if(nutrition)nutrition.style.display='none';if(view!=='nutrition'){switchViewBeforeNutrition(view);return}switchViewBeforeNutrition('today');document.getElementById('focus-section').style.display='none';document.getElementById('tasks-section').style.display='none';nutrition.style.display='block';document.getElementById('pageTitle').textContent='营养推荐';document.querySelectorAll('[data-view]').forEach(button=>button.classList.toggle('active',button.dataset.view==='nutrition'));closeNav();window.scrollTo({top:0,behavior:'smooth'})};
 setupNutritionView();
 function setupDeviceBackupUI(){let card=document.querySelector('#me-section .sync-card');if(!card)return;let icon=card.querySelector('.sync-icon'),title=card.querySelector('.sync-card-copy strong');if(icon)icon.textContent='📦';if(title)title.textContent='设备备份';renderCloudStatus()}
