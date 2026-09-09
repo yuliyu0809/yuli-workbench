@@ -1,5 +1,5 @@
-// 商品与供货价来自《利润核算参考表（20260818）.xls》，利润字段由网站按原表公式实时计算。
-export const lightingCatalogVersion = '20260818-profit-v1';
+// 商品与供货价来自《利润核算参考表（20260820）(2).xls》，利润字段由网站按原表公式实时计算。
+export const lightingCatalogVersion = '20260820-profit-v1';
 export const lightingProductCatalog = [
   {
     "id": "P0001",
@@ -3317,7 +3317,7 @@ export const lightingProductCatalog = [
     "specs": [
       {
         "id": "P0097-spec-1",
-        "name": "2+0.3米20灯（1件装）",
+        "name": "2+0.5米20灯（1件装）",
         "cost": 2.5,
         "packageSize": "18*18",
         "itemWeight": 11.7,
@@ -3327,7 +3327,7 @@ export const lightingProductCatalog = [
       },
       {
         "id": "P0097-spec-2",
-        "name": "5+0.3米50灯（1件装）",
+        "name": "5+0.5米50灯（1件装）",
         "cost": 3,
         "packageSize": "18*18",
         "itemWeight": 18,
@@ -3337,7 +3337,7 @@ export const lightingProductCatalog = [
       },
       {
         "id": "P0097-spec-3",
-        "name": "2+0.3米20灯（3件装）",
+        "name": "2+0.5米20灯（3件装）",
         "cost": 4,
         "packageSize": "18*18",
         "itemWeight": 23.4,
@@ -3347,7 +3347,7 @@ export const lightingProductCatalog = [
       },
       {
         "id": "P0097-spec-4",
-        "name": "5+0.3米50灯（3件装）",
+        "name": "5+0.5米50灯（3件装）",
         "cost": 5.5,
         "packageSize": "18*18",
         "itemWeight": 36,
@@ -3357,7 +3357,7 @@ export const lightingProductCatalog = [
       },
       {
         "id": "P0097-spec-5",
-        "name": "2+0.3米20灯（7件装）",
+        "name": "2+0.5米20灯（7件装）",
         "cost": 7,
         "packageSize": "24*24*8",
         "itemWeight": 81.8,
@@ -3367,7 +3367,7 @@ export const lightingProductCatalog = [
       },
       {
         "id": "P0097-spec-6",
-        "name": "5+0.3米50灯（7件装）",
+        "name": "5+0.5米50灯（7件装）",
         "cost": 11,
         "packageSize": "24*24*8",
         "itemWeight": 126,
@@ -3377,7 +3377,7 @@ export const lightingProductCatalog = [
       },
       {
         "id": "P0097-spec-7",
-        "name": "2+0.3米20灯（14件装）",
+        "name": "2+0.5米20灯（14件装）",
         "cost": 13,
         "packageSize": "28*28*8",
         "itemWeight": 163.8,
@@ -3387,7 +3387,7 @@ export const lightingProductCatalog = [
       },
       {
         "id": "P0097-spec-8",
-        "name": "5+0.3米50灯（14件装）",
+        "name": "5+0.5米50灯（14件装）",
         "cost": 20,
         "packageSize": "28*28*8",
         "itemWeight": 252,
@@ -3456,7 +3456,7 @@ export const lightingProductCatalog = [
     "specs": [
       {
         "id": "P0100-spec-1",
-        "name": "2+0.3米20灯（1件装）",
+        "name": "2+0.5米20灯（1件装）",
         "cost": 2.5,
         "packageSize": "18*18",
         "itemWeight": 22.2,
@@ -3466,7 +3466,7 @@ export const lightingProductCatalog = [
       },
       {
         "id": "P0100-spec-2",
-        "name": "5+0.3米50灯（1件装）",
+        "name": "5+0.5米50灯（1件装）",
         "cost": 3,
         "packageSize": "18*18",
         "itemWeight": 30.2,
@@ -3476,7 +3476,7 @@ export const lightingProductCatalog = [
       },
       {
         "id": "P0100-spec-3",
-        "name": "2+0.3米20灯（3件装）",
+        "name": "2+0.5米20灯（3件装）",
         "cost": 4,
         "packageSize": "18*18",
         "itemWeight": 66.6,
@@ -3486,7 +3486,7 @@ export const lightingProductCatalog = [
       },
       {
         "id": "P0100-spec-4",
-        "name": "5+0.3米50灯（3件装）",
+        "name": "5+0.5米50灯（3件装）",
         "cost": 5.5,
         "packageSize": "18*18",
         "itemWeight": 90.6,
@@ -3496,7 +3496,7 @@ export const lightingProductCatalog = [
       },
       {
         "id": "P0100-spec-5",
-        "name": "2+0.3米20灯（7件装）",
+        "name": "2+0.5米20灯（7件装）",
         "cost": 7,
         "packageSize": "24*24*8",
         "itemWeight": 155.4,
@@ -3506,7 +3506,7 @@ export const lightingProductCatalog = [
       },
       {
         "id": "P0100-spec-6",
-        "name": "5+0.3米50灯（7件装）",
+        "name": "5+0.5米50灯（7件装）",
         "cost": 11,
         "packageSize": "24*24*8",
         "itemWeight": 211.4,
@@ -3516,7 +3516,7 @@ export const lightingProductCatalog = [
       },
       {
         "id": "P0100-spec-7",
-        "name": "2+0.3米20灯（14件装）",
+        "name": "2+0.5米20灯（14件装）",
         "cost": 13,
         "packageSize": "28*28*8",
         "itemWeight": 310.8,
@@ -3526,7 +3526,7 @@ export const lightingProductCatalog = [
       },
       {
         "id": "P0100-spec-8",
-        "name": "5+0.3米50灯（14件装）",
+        "name": "5+0.5米50灯（14件装）",
         "cost": 20,
         "packageSize": "28*28*8",
         "itemWeight": 422.8,
@@ -3595,7 +3595,7 @@ export const lightingProductCatalog = [
     "specs": [
       {
         "id": "P0103-spec-1",
-        "name": "3.3米20灯",
+        "name": "3+0.8米20灯",
         "cost": 3.5,
         "packageSize": "18*18",
         "itemWeight": 27.3,
@@ -3605,7 +3605,7 @@ export const lightingProductCatalog = [
       },
       {
         "id": "P0103-spec-2",
-        "name": "4.8米30灯",
+        "name": "4.5+0.8米30灯",
         "cost": 4,
         "packageSize": "18*18",
         "itemWeight": 38.2,
@@ -3628,7 +3628,7 @@ export const lightingProductCatalog = [
     "specs": [
       {
         "id": "P0104-spec-1",
-        "name": "3.3米20灯",
+        "name": "3+0.8米20灯",
         "cost": 12,
         "packageSize": "28*28*8",
         "itemWeight": 96,
@@ -3638,7 +3638,7 @@ export const lightingProductCatalog = [
       },
       {
         "id": "P0104-spec-2",
-        "name": "4.8米30灯",
+        "name": "4.5+0.8米30灯",
         "cost": 16,
         "packageSize": "28*28*8",
         "itemWeight": 138,
@@ -3661,7 +3661,7 @@ export const lightingProductCatalog = [
     "specs": [
       {
         "id": "P0105-spec-1",
-        "name": "3.3米20灯",
+        "name": "3+0.8米20灯",
         "cost": 12,
         "packageSize": "28*28*8",
         "itemWeight": 96,
@@ -3671,7 +3671,7 @@ export const lightingProductCatalog = [
       },
       {
         "id": "P0105-spec-2",
-        "name": "4.8米30灯",
+        "name": "4.5+0.8米30灯",
         "cost": 16,
         "packageSize": "28*28*8",
         "itemWeight": 138,
@@ -3694,7 +3694,7 @@ export const lightingProductCatalog = [
     "specs": [
       {
         "id": "P0106-spec-1",
-        "name": "3.3米20灯",
+        "name": "3+0.8米20灯",
         "cost": 12,
         "packageSize": "28*28*8",
         "itemWeight": 137,
@@ -3704,7 +3704,7 @@ export const lightingProductCatalog = [
       },
       {
         "id": "P0106-spec-2",
-        "name": "4.8米30灯",
+        "name": "4.5+0.8米30灯",
         "cost": 16,
         "packageSize": "28*28*8",
         "itemWeight": 197,
@@ -3727,7 +3727,7 @@ export const lightingProductCatalog = [
     "specs": [
       {
         "id": "P0107-spec-1",
-        "name": "3.3米20灯",
+        "name": "3+0.8米20灯",
         "cost": 10,
         "packageSize": "28*28*8",
         "itemWeight": 142,
@@ -3737,7 +3737,7 @@ export const lightingProductCatalog = [
       },
       {
         "id": "P0107-spec-2",
-        "name": "4.8米30灯",
+        "name": "4.5+0.8米30灯",
         "cost": 13,
         "packageSize": "28*28*8",
         "itemWeight": 197,
@@ -3760,7 +3760,7 @@ export const lightingProductCatalog = [
     "specs": [
       {
         "id": "P0108-spec-1",
-        "name": "3.3米20灯",
+        "name": "3+0.8米20灯",
         "cost": 10.5,
         "packageSize": "28*28*8",
         "itemWeight": 120,
@@ -3770,7 +3770,7 @@ export const lightingProductCatalog = [
       },
       {
         "id": "P0108-spec-2",
-        "name": "4.8米30灯",
+        "name": "4.5+0.8米30灯",
         "cost": 14,
         "packageSize": "28*28*8",
         "itemWeight": 174,
@@ -3793,7 +3793,7 @@ export const lightingProductCatalog = [
     "specs": [
       {
         "id": "P0109-spec-1",
-        "name": "3.3米20灯",
+        "name": "3+0.8米20灯",
         "cost": 10.5,
         "packageSize": "28*28*8",
         "itemWeight": 200,
@@ -3803,7 +3803,7 @@ export const lightingProductCatalog = [
       },
       {
         "id": "P0109-spec-2",
-        "name": "4.8米30灯",
+        "name": "4.5+0.8米30灯",
         "cost": 14,
         "packageSize": "28*28*8",
         "itemWeight": 294,
@@ -3826,7 +3826,7 @@ export const lightingProductCatalog = [
     "specs": [
       {
         "id": "P0110-spec-1",
-        "name": "3.3米20灯",
+        "name": "3+0.8米20灯",
         "cost": 10,
         "packageSize": "28*28*8",
         "itemWeight": 172,
@@ -3836,7 +3836,7 @@ export const lightingProductCatalog = [
       },
       {
         "id": "P0110-spec-2",
-        "name": "4.8米30灯",
+        "name": "4.5+0.8米30灯",
         "cost": 13,
         "packageSize": "28*28*8",
         "itemWeight": 252,
@@ -3859,7 +3859,7 @@ export const lightingProductCatalog = [
     "specs": [
       {
         "id": "P0111-spec-1",
-        "name": "3.3米20灯",
+        "name": "3+0.8米20灯",
         "cost": 10,
         "packageSize": "28*28*8",
         "itemWeight": 167,
@@ -3869,7 +3869,7 @@ export const lightingProductCatalog = [
       },
       {
         "id": "P0111-spec-2",
-        "name": "4.8米30灯",
+        "name": "4.5+0.8米30灯",
         "cost": 13,
         "packageSize": "28*28*8",
         "itemWeight": 241,
@@ -3892,7 +3892,7 @@ export const lightingProductCatalog = [
     "specs": [
       {
         "id": "P0112-spec-1",
-        "name": "3.3米20灯",
+        "name": "3+0.8米20灯",
         "cost": 9,
         "packageSize": "28*28*8",
         "itemWeight": 109,
@@ -3902,7 +3902,7 @@ export const lightingProductCatalog = [
       },
       {
         "id": "P0112-spec-2",
-        "name": "4.8米30灯",
+        "name": "4.5+0.8米30灯",
         "cost": 12,
         "packageSize": "28*28*8",
         "itemWeight": 158,
@@ -3925,7 +3925,7 @@ export const lightingProductCatalog = [
     "specs": [
       {
         "id": "P0113-spec-1",
-        "name": "3.3米20灯",
+        "name": "3+0.8米20灯",
         "cost": 9.5,
         "packageSize": "28*28*8",
         "itemWeight": 87,
@@ -3935,7 +3935,7 @@ export const lightingProductCatalog = [
       },
       {
         "id": "P0113-spec-2",
-        "name": "4.8米30灯",
+        "name": "4.5+0.8米30灯",
         "cost": 12.5,
         "packageSize": "28*28*8",
         "itemWeight": 125,
@@ -3958,7 +3958,7 @@ export const lightingProductCatalog = [
     "specs": [
       {
         "id": "P0114-spec-1",
-        "name": "3.3米20灯",
+        "name": "3+0.8米20灯",
         "cost": 12,
         "packageSize": "28*28*8",
         "itemWeight": 135,
@@ -3968,7 +3968,7 @@ export const lightingProductCatalog = [
       },
       {
         "id": "P0114-spec-2",
-        "name": "4.8米30灯",
+        "name": "4.5+0.8米30灯",
         "cost": 16.5,
         "packageSize": "28*28*8",
         "itemWeight": 197,
@@ -3991,7 +3991,7 @@ export const lightingProductCatalog = [
     "specs": [
       {
         "id": "P0115-spec-1",
-        "name": "3.3米20灯",
+        "name": "3+0.8米20灯",
         "cost": 12,
         "packageSize": "28*28*8",
         "itemWeight": 132,
@@ -4001,7 +4001,7 @@ export const lightingProductCatalog = [
       },
       {
         "id": "P0115-spec-2",
-        "name": "4.8米30灯",
+        "name": "4.5+0.8米30灯",
         "cost": 16.5,
         "packageSize": "28*28*8",
         "itemWeight": 194,

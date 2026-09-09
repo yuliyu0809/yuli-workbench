@@ -18,7 +18,7 @@ const titles = {
   overview: ['早上好，郁荔', '这是三个店铺今天的运营情况。'],
   discounts: ['商品折扣', '按照利润核算参考表自动计算可承受的折扣档位。'],
   data: ['运营数据', '记录并对比 AG、DS、HX 的每日核心指标。'],
-  products: ['商品档案', '已按《利润核算参考表（20260818）》重新整理全部商品、规格与利润价格。'],
+  products: ['商品档案', '已按《利润核算参考表（20260820）》重新整理全部商品、规格与利润价格。'],
   tasks: ['运营任务', '把每天要做的事放在一个清晰的队列里。'],
 };
 
@@ -34,8 +34,17 @@ const launchQuantity = (item) => Math.max(1, Number(item?.quantity) || 1);
 const money = (value) => `¥${Number(value || 0).toLocaleString('zh-CN', { maximumFractionDigits: 2 })}`;
 const signedMoney = (value) => `${Number(value) > 0 ? '+' : Number(value) < 0 ? '−' : ''}${money(Math.abs(Number(value) || 0))}`;
 const discountText = (value) => value ? `${Number((value * 10).toFixed(1))}折` : '不建议打折';
-const profitRates = { afterSales: 0.05, advertising: 0.15 };
-const targetProfitRate = (cost) => Number(cost) >= 25 ? 0.18 : 0.2;
+const profitRates = { afterSales: 0.05, advertising: 0.125 };
+const targetProfitRate = (cost) => {
+  const supplyCost = Number(cost || 0);
+  if (supplyCost <= 6) return 0.3;
+  if (supplyCost <= 12) return 0.25;
+  if (supplyCost <= 18) return 0.2;
+  if (supplyCost <= 24) return 0.17;
+  if (supplyCost <= 30) return 0.15;
+  if (supplyCost <= 36) return 0.13;
+  return 0.12;
+};
 const profitMetrics = (cost) => {
   const supplyCost = Number(cost || 0);
   const targetRate = targetProfitRate(supplyCost);
@@ -110,17 +119,39 @@ function readLocal() {
     const parsed = JSON.parse(localStorage.getItem('yuli.public.workspace.v1') || 'null');
     const current = parsed && typeof parsed === 'object' ? { ...emptyWorkspace, ...parsed } : { ...emptyWorkspace };
     if (current.productCatalogVersion === lightingCatalogVersion) return current;
-    return { ...current, products: lightingProductCatalog, productCatalogVersion: lightingCatalogVersion };
+    return migrateCatalogVersion(current);
   } catch {
     return { ...emptyWorkspace, products: lightingProductCatalog, productCatalogVersion: lightingCatalogVersion };
   }
 }
 
+const migrateCatalogVersion = (current) => {
+  const catalogById = new Map(lightingProductCatalog.map((product) => [product.id, product]));
+  const catalogByName = new Map(lightingProductCatalog.map((product) => [product.productName, product]));
+  const syncSpecs = (savedSpecs, product) => (savedSpecs || []).map((spec) => {
+    const catalogSpec = product?.specs?.find((item) => item.id === spec.id || item.id === spec.specId);
+    if (!catalogSpec) return spec;
+    return spec.specId ? { ...spec, specName: catalogSpec.name } : { ...spec, name: catalogSpec.name };
+  });
+  const discounts = (current.discounts || []).map((record) => {
+    const product = catalogByName.get(record.productName);
+    if (!product) return record;
+    const specs = syncSpecs(record.specs, product);
+    const limitingSpec = specs.find((spec) => spec.id === record.specs?.find((item) => item.name === record.limitingSpecName)?.id);
+    return { ...record, specs, limitingSpecName: limitingSpec?.name || record.limitingSpecName };
+  });
+  const priceReferences = (current.priceReferences || []).map((record) => {
+    const product = catalogById.get(record.productId);
+    return product ? { ...record, specs: syncSpecs(record.specs, product) } : record;
+  });
+  return { ...current, products: lightingProductCatalog, discounts, priceReferences, productCatalogVersion: lightingCatalogVersion };
+};
+
 const applyLightingCatalog = (data) => {
   const current = { ...emptyWorkspace, ...(data && typeof data === 'object' ? data : {}) };
   if (current.productCatalogVersion === lightingCatalogVersion) return { workspace: current, changed: false };
   return {
-    workspace: { ...current, products: lightingProductCatalog, productCatalogVersion: lightingCatalogVersion },
+    workspace: migrateCatalogVersion(current),
     changed: true,
   };
 };
@@ -381,13 +412,13 @@ function Products({ records, search, setSearch, onEdit, onDelete }) {
     <div className="catalog-summary">
       <div><small>商品</small><strong>{records.length}</strong></div>
       <div><small>规格</small><strong>{totalSpecs}</strong></div>
-      <p>来源：利润核算参考表（20260818）<br />售后物流 5% · 广告费 15% · 供货价低于 ¥25 按利润 20%，¥25 起按利润 18%</p>
+      <p>来源：利润核算参考表（20260820）<br />售后物流 5% · 广告费 12.5% · 利润率按供货价区间 30%–12% 分段计算</p>
     </div>
     <div className="product-category-tabs">{['全部商品', ...sourceCategories].map((category) => {
       const count = category === '全部商品' ? records.length : records.filter((item) => item.sourceCategory === category).length;
       return <button type="button" key={category} className={categoryFilter === category ? 'selected' : ''} onClick={() => setCategoryFilter(category)}><span>{category}</span><b>{count}</b></button>;
     })}</div>
-    <TableShell title="利润核算参考表" subtitle={`当前查看：${categoryFilter}；点击规格数量展开表格中的全部核算数据`} search={search} setSearch={setSearch}><table className="profit-catalog-table"><thead><tr><th>分类标题</th><th>商品名称</th><th>规格利润核算</th><th>供货价范围</th><th>最低售价范围</th><th>操作</th></tr></thead><tbody>{filtered.map((item) => { const specs = normalizeProductSpecs(item); return <tr key={item.id}><td><Badge>{item.sourceCategory || '未分类'}</Badge></td><td><strong>{item.productName}</strong></td><td><details className="catalog-specs profit-specs"><summary>{specs.length} 个规格</summary><div className="profit-spec-table"><div className="profit-spec-head"><b>规格</b><b>供货价</b><b>售后5%</b><b>广告15%</b><b>利润</b><b>8.5折日常价</b><b>9折日常价</b><b>最低售价</b></div>{specs.map((spec) => <div className="profit-spec-row" key={spec.id}><strong>{spec.name}</strong><span>{money(spec.cost)}</span><span>{money(spec.afterSalesCost)}</span><span>{money(spec.advertisingCost)}</span><span>{money(spec.targetProfit)}</span><span>{money(spec.dailyPrice85)}</span><span>{money(spec.dailyPrice90)}</span><b>{money(spec.minimumSalePrice)}</b></div>)}</div></details></td><td><strong>{valueRange(specs.map((spec) => spec.cost), money)}</strong></td><td><strong>{valueRange(specs.map((spec) => spec.minimumSalePrice), money)}</strong></td><td><RowActions onEdit={() => onEdit(item)} onDelete={() => onDelete(item)} /></td></tr>; })}{!filtered.length && <tr><td colSpan="6"><Empty text={categoryFilter === '全部商品' ? '暂无商品档案，点击“新增商品”开始录入' : `暂无“${categoryFilter}”商品`} /></td></tr>}</tbody></table></TableShell>
+    <TableShell title="利润核算参考表" subtitle={`当前查看：${categoryFilter}；点击规格数量展开表格中的全部核算数据`} search={search} setSearch={setSearch}><table className="profit-catalog-table"><thead><tr><th>分类标题</th><th>商品名称</th><th>规格利润核算</th><th>供货价范围</th><th>最低售价范围</th><th>操作</th></tr></thead><tbody>{filtered.map((item) => { const specs = normalizeProductSpecs(item); return <tr key={item.id}><td><Badge>{item.sourceCategory || '未分类'}</Badge></td><td><strong>{item.productName}</strong></td><td><details className="catalog-specs profit-specs"><summary>{specs.length} 个规格</summary><div className="profit-spec-table"><div className="profit-spec-head"><b>规格</b><b>供货价</b><b>售后5%</b><b>广告12.5%</b><b>利润</b><b>8.5折日常价</b><b>9折日常价</b><b>最低售价</b></div>{specs.map((spec) => <div className="profit-spec-row" key={spec.id}><strong>{spec.name}</strong><span>{money(spec.cost)}</span><span>{money(spec.afterSalesCost)}</span><span>{money(spec.advertisingCost)}</span><span>{money(spec.targetProfit)}</span><span>{money(spec.dailyPrice85)}</span><span>{money(spec.dailyPrice90)}</span><b>{money(spec.minimumSalePrice)}</b></div>)}</div></details></td><td><strong>{valueRange(specs.map((spec) => spec.cost), money)}</strong></td><td><strong>{valueRange(specs.map((spec) => spec.minimumSalePrice), money)}</strong></td><td><RowActions onEdit={() => onEdit(item)} onDelete={() => onDelete(item)} /></td></tr>; })}{!filtered.length && <tr><td colSpan="6"><Empty text={categoryFilter === '全部商品' ? '暂无商品档案，点击“新增商品”开始录入' : `暂无“${categoryFilter}”商品`} /></td></tr>}</tbody></table></TableShell>
   </>;
 }
 function Operations({ records, onEdit, onDelete }) { return <TableShell title="运营数据记录" subtitle="已保存的数据可以随时修改或删除"><table><thead><tr><th>日期</th><th>店铺</th><th>销售额</th><th>订单</th><th>退款</th><th>在售商品</th><th>操作</th></tr></thead><tbody>{records.map((item) => <tr key={item.id}><td>{item.recordDate}</td><td><Badge>{item.store}</Badge></td><td>{money(item.sales)}</td><td>{item.orders}</td><td>{money(item.refundAmount)}</td><td>{item.listedProducts}</td><td><RowActions onEdit={() => onEdit(item)} onDelete={() => onDelete(item)} /></td></tr>)}{!records.length && <tr><td colSpan="7"><Empty text="暂无运营数据，点击“新增记录”开始录入" /></td></tr>}</tbody></table></TableShell>; }
@@ -430,7 +461,7 @@ function DiscountActivity({ records, search, setSearch, onEdit, onDelete }) {
         </button>;
       })}
     </div>
-    <TableShell title="商品折扣记录" subtitle={`按利润表最低售价 ÷ 当前售价计算最低可报档位（售后5% + 广告15% + 目标利润18%/20%）${tierFilter ? ` · 当前查看可报 ${discountText(tierFilter)} 的商品` : ''}`} search={search} setSearch={setSearch}>
+    <TableShell title="商品折扣记录" subtitle={`按利润表最低售价 ÷ 当前售价计算最低可报档位（售后5% + 广告12.5% + 分段目标利润）${tierFilter ? ` · 当前查看可报 ${discountText(tierFilter)} 的商品` : ''}`} search={search} setSearch={setSearch}>
       <table><thead><tr><th>商品</th><th>店铺</th><th>供货价</th><th>当前售价</th><th>最低售价</th><th>最低折扣</th><th>最低可报</th><th>活动价</th><th>预计利润</th><th>操作</th></tr></thead><tbody>
         {filtered.map((item) => { const specs = normalizeDiscountSpecs(item); const summary = summarizeDiscountSpecs(specs); const reportableDiscount = summary.recommendedDiscount; const profits = reportableDiscount ? specs.map((spec) => netProfitAtPrice(spec.cost, spec.salePrice * reportableDiscount)) : []; return <tr key={item.id}><td><div className="product-cell"><span className="thumb">{item.imageDataUrl ? <img src={item.imageDataUrl} alt="" /> : '折'}</span><span><strong>{item.productName}</strong><small>{item.productCode}{specs.length > 1 ? ` · ${specs.length}个规格 · 限制规格：${summary.limitingSpec?.name}` : ` · ${specs[0]?.name}`}</small></span></div></td><td><Badge>{item.store}</Badge></td><td>{valueRange(specs.map((spec) => spec.cost), money)}</td><td>{valueRange(specs.map((spec) => spec.salePrice), money)}</td><td>{valueRange(specs.map((spec) => profitMetrics(spec.cost).minimumSalePrice), money)}</td><td>{discountText(summary.minimumRatio)}</td><td><Badge>{discountText(reportableDiscount)}</Badge></td><td>{reportableDiscount ? valueRange(specs.map((spec) => spec.salePrice * reportableDiscount), money) : '—'}</td><td className={profits.length && Math.min(...profits) < 0 ? 'negative' : 'positive'}>{profits.length ? `最低 ${money(Math.min(...profits))}` : '—'}</td><td><RowActions onEdit={() => onEdit(item)} onDelete={() => onDelete(item)} /></td></tr>; })}
         {!filtered.length && <tr><td colSpan="10"><Empty text={tierFilter ? `暂无可以报 ${discountText(tierFilter)} 的商品` : '暂无折扣记录，点击“新增折扣记录”开始录入'} /></td></tr>}
@@ -490,7 +521,7 @@ function ProductForm({ editing, onSubmit, onClose }) {
   const addSpec = () => setSpecRows((rows) => [...rows, { id: uid(), name: '', cost: '' }]);
   const removeSpec = (id) => setSpecRows((rows) => rows.length === 1 ? rows : rows.filter((row) => row.id !== id));
   const categoryOptions = editing?.sourceCategory && !sourceProductCategories.includes(editing.sourceCategory) ? [editing.sourceCategory, ...sourceProductCategories] : sourceProductCategories;
-  return <Modal title={editing ? '修改商品档案' : '新增商品档案'} onClose={onClose}><form className="catalog-form" onSubmit={onSubmit}><div className="form-grid"><Field label="分类标题"><select name="sourceCategory" defaultValue={editing?.sourceCategory || sourceProductCategories[0]} required>{categoryOptions.map((category) => <option key={category}>{category}</option>)}</select></Field><Field label="商品名称"><input name="productName" defaultValue={editing?.productName} required /></Field></div><div className="spec-editor catalog-spec-editor"><div className="spec-editor-head"><div><b>规格与供货价</b><small>其余利润数据将完全按照参考表公式自动计算</small></div><button type="button" onClick={addSpec}>＋ 添加规格</button></div>{specRows.map((spec, index) => <div className="catalog-spec-edit-row profit-catalog-edit-row" key={spec.id}><span>{index + 1}</span><input type="hidden" name="specId" value={spec.id} /><input name="specName" value={spec.name} onChange={(event) => updateSpec(spec.id, 'name', event.target.value)} placeholder="规格" required /><input name="specCost" type="number" min="0" step="0.01" value={spec.cost} onChange={(event) => updateSpec(spec.id, 'cost', event.target.value)} placeholder="供货价" required /><b>{money(profitMetrics(spec.cost).minimumSalePrice)}</b><button type="button" className="danger" disabled={specRows.length === 1} onClick={() => removeSpec(spec.id)}>删除</button></div>)}</div><div className="calc-note">自动核算：售后物流 5% · 广告费 15% · 供货价低于 ¥25 按利润 20%，¥25 起按利润 18%</div><FormActions onClose={onClose} /></form></Modal>;
+  return <Modal title={editing ? '修改商品档案' : '新增商品档案'} onClose={onClose}><form className="catalog-form" onSubmit={onSubmit}><div className="form-grid"><Field label="分类标题"><select name="sourceCategory" defaultValue={editing?.sourceCategory || sourceProductCategories[0]} required>{categoryOptions.map((category) => <option key={category}>{category}</option>)}</select></Field><Field label="商品名称"><input name="productName" defaultValue={editing?.productName} required /></Field></div><div className="spec-editor catalog-spec-editor"><div className="spec-editor-head"><div><b>规格与供货价</b><small>其余利润数据将完全按照参考表公式自动计算</small></div><button type="button" onClick={addSpec}>＋ 添加规格</button></div>{specRows.map((spec, index) => <div className="catalog-spec-edit-row profit-catalog-edit-row" key={spec.id}><span>{index + 1}</span><input type="hidden" name="specId" value={spec.id} /><input name="specName" value={spec.name} onChange={(event) => updateSpec(spec.id, 'name', event.target.value)} placeholder="规格" required /><input name="specCost" type="number" min="0" step="0.01" value={spec.cost} onChange={(event) => updateSpec(spec.id, 'cost', event.target.value)} placeholder="供货价" required /><b>{money(profitMetrics(spec.cost).minimumSalePrice)}</b><button type="button" className="danger" disabled={specRows.length === 1} onClick={() => removeSpec(spec.id)}>删除</button></div>)}</div><div className="calc-note">自动核算：售后物流 5% · 广告费 12.5% · 目标利润率按供货价区间 30%–12% 分段计算</div><FormActions onClose={onClose} /></form></Modal>;
 }
 function DiscountForm({ editing, products, currentStore, onSubmit, onClose }) {
   const [productName, setProductName] = useState(editing?.productName || '');
