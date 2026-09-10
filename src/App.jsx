@@ -6,7 +6,10 @@ const STORE_ALL = '全部店铺';
 const stores = ['AG', 'DS', 'HX'];
 const sourceProductCategories = [...new Set(lightingProductCatalog.map((item) => item.sourceCategory).filter(Boolean))];
 const tiers = [0.9, 0.85, 0.8, 0.75, 0.7];
-const emptyWorkspace = { discounts: [], priceReferences: [], products: [], operations: [], tasks: [], launches: [] };
+const buyerAppealUrl = 'https://seller.kuajingmaihuo.com/questionnaire?surveyId=185879097376';
+const dailyFormMiniProgram = '#小程序://腾讯文档/d1X1NPShvA6gzZE';
+const emptyListingHelper = { chineseTitle: '', englishTitle: '', lengthCm: '', lengthM: '' };
+const emptyWorkspace = { discounts: [], priceReferences: [], products: [], operations: [], tasks: [], launches: [], dailyFormCompletedDate: '', listingHelper: emptyListingHelper };
 const nav = [
   ['overview', '⌂', '运营总览'],
   ['discounts', '%', '商品折扣'],
@@ -183,6 +186,7 @@ export default function App() {
   const [search, setSearch] = useState('');
   const [discountView, setDiscountView] = useState('activity');
   const [toast, setToast] = useState('');
+  const [translationBusy, setTranslationBusy] = useState(false);
   const [cloud, setCloud] = useState('正在连接云端…');
   const hydrated = useRef(false);
   const skipNextPush = useRef(false);
@@ -240,7 +244,15 @@ export default function App() {
   const pending = visible(workspace.tasks).filter((item) => !item.completed);
   const todayTaskCount = workspace.tasks.filter((item) => item.period === 'today').length;
   const discountProductCount = new Set(workspace.discounts.map((item) => item.productName).filter(Boolean)).size;
+  const dailyFormDone = workspace.dailyFormCompletedDate === today();
   const pageTitle = titles[page];
+  const pageReminder = {
+    overview: `今日运营提醒：${todayTaskCount ? `有 ${todayTaskCount} 项任务待处理` : '今天暂无待办'}，已记录 ${discountProductCount} 个折扣商品。`,
+    discounts: '折扣档位按商品中限制最高的规格判断，点选档位即可快速筛选。',
+    data: '每天按店铺记录一次核心数据，后续对比会更清晰。',
+    products: `当前价格表版本 ${lightingCatalogVersion}，修改商品后会自动同步到云端。`,
+    tasks: '把今天必须完成的事情放在“今天”，其余安排到“本周”。',
+  }[page];
 
   const openNew = (kind) => { setEditing(null); setModal(kind); };
   const openEdit = (kind, item) => { setEditing(item); setModal(kind); };
@@ -249,6 +261,59 @@ export default function App() {
     if (!confirm(`确定删除“${label}”吗？`)) return;
     update(key, workspace[key].filter((row) => row.id !== item.id));
     notify('已删除');
+  };
+  const copyDailyFormEntry = async () => {
+    try {
+      await navigator.clipboard.writeText(dailyFormMiniProgram);
+      notify('入口已复制，请粘贴到微信打开');
+    } catch {
+      const textarea = document.createElement('textarea');
+      textarea.value = dailyFormMiniProgram;
+      textarea.style.position = 'fixed';
+      textarea.style.opacity = '0';
+      document.body.appendChild(textarea);
+      textarea.select();
+      const copied = document.execCommand('copy');
+      textarea.remove();
+      notify(copied ? '入口已复制，请粘贴到微信打开' : '复制失败，请稍后重试');
+    }
+  };
+  const toggleDailyForm = () => {
+    update('dailyFormCompletedDate', dailyFormDone ? '' : today());
+    notify(dailyFormDone ? '已恢复为今日待填写' : '已记录今日填表完成');
+  };
+  const updateListingHelper = (key, value) => update('listingHelper', { ...emptyListingHelper, ...(workspace.listingHelper || {}), [key]: value });
+  const copyListingText = async (value, label) => {
+    if (!String(value || '').trim()) { notify(`请先填写${label}`); return; }
+    try {
+      await navigator.clipboard.writeText(String(value));
+      notify(`${label}已复制`);
+    } catch {
+      notify('复制失败，请选中文字复制');
+    }
+  };
+  const translateListingTitle = async () => {
+    const source = String(workspace.listingHelper?.chineseTitle || '').trim();
+    if (!source) { notify('请先填写中文标题'); return; }
+    if (new TextEncoder().encode(source).length > 480) { notify('标题太长，请缩短后再翻译'); return; }
+    setTranslationBusy(true);
+    try {
+      const response = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(source)}&langpair=zh-CN%7Cen`);
+      const data = await response.json();
+      const rawTranslation = data?.responseData?.translatedText;
+      if (!response.ok || !rawTranslation) throw new Error('translation failed');
+      const translated = new DOMParser().parseFromString(String(rawTranslation), 'text/html').documentElement.textContent.trim();
+      updateListingHelper('englishTitle', translated);
+      notify('英文标题已生成，请检查后使用');
+    } catch {
+      notify('暂时无法翻译，请稍后重试');
+    } finally {
+      setTranslationBusy(false);
+    }
+  };
+  const clearListingHelper = () => {
+    update('listingHelper', { ...emptyListingHelper });
+    notify('上新助手已清空');
   };
 
   const saveProduct = (event) => {
@@ -311,17 +376,18 @@ export default function App() {
 
   return <div className="shell">
     <aside>
-      <div className="brand"><b>Y</b><div><strong>郁荔运营台</strong><small>STORE OS</small></div></div>
+      <div className="brand"><b>Y</b><div><strong>郁荔运营台</strong><small>GREEN WORKSPACE</small></div></div>
       <p className="section-label">工作区</p>
-      <nav>{nav.map(([key, icon, label]) => <button key={key} className={page === key ? 'active' : ''} onClick={() => { setPage(key); setSearch(''); }}><i>{icon}</i>{label}</button>)}</nav>
-      <div className="daily"><span>✦</span><strong>今日小结</strong><p>今天有 {todayTaskCount} 项运营任务，已记录 {discountProductCount} 个折扣商品。</p><button onClick={() => setPage('tasks')}>查看待办 →</button></div>
+      <nav>{nav.map(([key, icon, label], index) => <button key={key} className={page === key ? 'active' : ''} onClick={() => { setPage(key); setSearch(''); }}><span className="nav-index">{String(index + 1).padStart(2, '0')}</span><i>{icon}</i><span>{label}</span></button>)}</nav>
+      <div className="daily"><span>✦</span><strong>今日小结</strong><p>今天有 {todayTaskCount} 项运营任务，已记录 {discountProductCount} 个折扣商品；每日填表{dailyFormDone ? '已完成' : '待填写'}。</p><button onClick={() => setPage('tasks')}>查看待办 →</button></div>
       <div className="profile"><b>荔</b><div><strong>郁荔</strong><small>{cloud}</small></div></div>
     </aside>
     <main>
-      <header><div className="store-tabs">{[STORE_ALL, ...stores].map((name) => <button key={name} className={store === name ? 'selected' : ''} onClick={() => setStore(name)}>{name !== STORE_ALL && <em className={`dot ${name.toLowerCase()}`} />}{name}</button>)}</div><span>{new Intl.DateTimeFormat('zh-CN', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' }).format(new Date())}</span></header>
-      <section className="content">
+      <header><div className="store-tabs">{[STORE_ALL, ...stores].map((name) => <button key={name} className={store === name ? 'selected' : ''} onClick={() => setStore(name)}>{name !== STORE_ALL && <em className={`dot ${name.toLowerCase()}`} />}{name}</button>)}</div><div className="header-actions"><a className="quick-link" href={buyerAppealUrl} target="_blank" rel="noreferrer">↗ 买手申诉入口</a><span className="header-date">{new Intl.DateTimeFormat('zh-CN', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' }).format(new Date())}</span></div></header>
+      <section key={page} className="content page-transition">
         <div className="page-head"><div><small>{store === STORE_ALL ? '三店合计' : `${store} 店铺`}</small><h1>{pageTitle[0]}</h1><p>{pageTitle[1]}</p></div>{page !== 'overview' && <button className="primary" onClick={() => openNew(page === 'data' ? 'operation' : page === 'products' ? 'product' : page === 'tasks' ? 'task' : discountView === 'reference' ? 'priceReference' : 'discount')}>＋ {page === 'data' ? '新增记录' : page === 'products' ? '新增商品' : page === 'tasks' ? '新增任务' : discountView === 'reference' ? '录入同事售价' : '新增折扣记录'}</button>}</div>
-        {page === 'overview' && <Overview totals={totals} workspace={workspace} store={store} pending={pending} setPage={setPage} onAdd={() => openNew('launch')} onEdit={(item) => openEdit('launch', item)} onDelete={(item) => remove('launches', item, `${item.store} ${item.launchDate} ${launchQuantity(item)}条`)} />}
+        <div className="workspace-note"><span>🌿</span><strong>温柔待办</strong><p>{pageReminder}</p></div>
+        {page === 'overview' && <Overview totals={totals} workspace={workspace} store={store} pending={pending} setPage={setPage} dailyFormDone={dailyFormDone} onCopyDailyForm={copyDailyFormEntry} onToggleDailyForm={toggleDailyForm} listingHelper={{ ...emptyListingHelper, ...(workspace.listingHelper || {}) }} translationBusy={translationBusy} onTranslateListingTitle={translateListingTitle} onUpdateListingHelper={updateListingHelper} onCopyListingText={copyListingText} onClearListingHelper={clearListingHelper} onAdd={() => openNew('launch')} onEdit={(item) => openEdit('launch', item)} onDelete={(item) => remove('launches', item, `${item.store} ${item.launchDate} ${launchQuantity(item)}条`)} />}
         {page === 'discounts' && <Discounts mode={discountView} setMode={setDiscountView} records={visible(workspace.discounts)} allDiscounts={workspace.discounts} products={workspace.products} references={workspace.priceReferences || []} search={search} setSearch={setSearch} onEdit={(item) => openEdit('discount', item)} onDelete={(item) => remove('discounts', item, item.productName)} onEditReference={(item) => openEdit('priceReference', item)} onDeleteReference={(item) => remove('priceReferences', item, '同事售价记录')} />}
         {page === 'data' && <Operations records={visible(workspace.operations)} onEdit={(item) => openEdit('operation', item)} onDelete={(item) => remove('operations', item, `${item.store} ${item.recordDate}`)} />}
         {page === 'products' && <Products records={workspace.products} search={search} setSearch={setSearch} onEdit={(item) => openEdit('product', item)} onDelete={(item) => remove('products', item, item.productName)} />}
@@ -340,7 +406,7 @@ export default function App() {
 
 function FormActions({ onClose }) { return <div className="actions"><button type="button" onClick={onClose}>取消</button><button className="primary" type="submit">保存</button></div>; }
 
-function Overview({ totals, workspace, store, pending, setPage, onAdd, onEdit, onDelete }) {
+function Overview({ totals, workspace, store, pending, setPage, dailyFormDone, onCopyDailyForm, onToggleDailyForm, listingHelper, translationBusy, onTranslateListingTitle, onUpdateListingHelper, onCopyListingText, onClearListingHelper, onAdd, onEdit, onDelete }) {
   const filteredDiscounts = store === STORE_ALL ? workspace.discounts : workspace.discounts.filter((item) => item.store === store);
   const monthKey = today().slice(0, 7);
   const monthLaunches = (workspace.launches || [])
@@ -352,6 +418,12 @@ function Overview({ totals, workspace, store, pending, setPage, onAdd, onEdit, o
   const progress = Math.min(100, (monthlyQuantity / target) * 100);
   return <>
     <div className="metrics"><Metric label="今日销售额" value={money(totals.sales)} /><Metric label="今日订单" value={totals.orders} /><Metric label="在售商品" value={totals.listed} /><Metric label="折扣记录" value={filteredDiscounts.length} /><Metric label="待办任务" value={pending.length} /></div>
+    <div className={`daily-form-card ${dailyFormDone ? 'completed' : ''}`}>
+      <div className="daily-form-icon">表</div>
+      <div className="daily-form-copy"><div><h2>每日腾讯文档</h2><span className={`daily-form-status ${dailyFormDone ? 'done' : ''}`}>{dailyFormDone ? '今日已填写' : '今日待填写'}</span></div><p>每天填写一次。先复制小程序入口，再粘贴到微信聊天框中打开。</p></div>
+      <div className="daily-form-actions"><button type="button" onClick={onCopyDailyForm}>复制小程序入口</button><button type="button" className={dailyFormDone ? 'undo' : 'primary'} onClick={onToggleDailyForm}>{dailyFormDone ? '取消完成' : '今日已填'}</button></div>
+    </div>
+    <ListingHelper value={listingHelper} translating={translationBusy} onTranslate={onTranslateListingTitle} onChange={onUpdateListingHelper} onCopy={onCopyListingText} onClear={onClearListingHelper} />
     <div className="overview-grid">
       <div className="panel"><div className="panel-title"><div><h2>近期运营记录</h2><p>数据由你录入，不展示示例数据</p></div><button onClick={() => setPage('data')}>查看全部</button></div>{workspace.operations.length ? workspace.operations.slice(0, 5).map((item) => <div className="mini-row" key={item.id}><b>{item.store}</b><span>{item.recordDate}</span><strong>{money(item.sales)}</strong></div>) : <Empty text="暂无运营数据" />}</div>
       <div className="panel"><div className="panel-title"><div><h2>今日待办</h2><p>完成后可直接勾选</p></div><button onClick={() => setPage('tasks')}>查看任务</button></div>{pending.length ? pending.slice(0, 5).map((item) => <div className="mini-row" key={item.id}><b>{item.store}</b><span>{item.title}</span><strong>{item.priority}</strong></div>) : <Empty text="今天暂无待办" />}</div>
@@ -363,6 +435,36 @@ function Overview({ totals, workspace, store, pending, setPage, onAdd, onEdit, o
       </div>
     </div>
   </>;
+}
+function ListingHelper({ value, translating, onTranslate, onChange, onCopy, onClear }) {
+  const numberValue = (key) => {
+    const parsed = Number(value[key]);
+    return value[key] !== '' && Number.isFinite(parsed) && parsed >= 0 ? parsed : null;
+  };
+  const inch = (key) => {
+    const parsed = numberValue(key);
+    return parsed == null ? '—' : (parsed / 2.54).toFixed(2);
+  };
+  const inchResult = numberValue('lengthCm') == null ? '—' : `${inch('lengthCm')} in`;
+  const meters = numberValue('lengthM');
+  const feetResult = meters == null ? '—' : `${(meters * 3.28084).toFixed(2)} ft`;
+  return <div className="listing-helper panel">
+    <div className="listing-helper-head"><div><h2>上新标题与尺寸助手</h2><p>中英文标题和换算内容会自动保存，方便写商品链接时直接复制。</p></div><button type="button" onClick={onClear}>清空</button></div>
+    <div className="listing-helper-grid">
+      <section className="title-helper">
+        <div className="helper-section-title"><strong>标题翻译</strong><span>中文 → 英文</span></div>
+        <label><span>中文标题</span><textarea value={value.chineseTitle} onChange={(event) => onChange('chineseTitle', event.target.value)} placeholder="输入需要翻译的中文商品标题" /></label>
+        <div className="title-helper-actions"><button type="button" className="translate-button" disabled={translating} onClick={onTranslate}>{translating ? '正在翻译…' : '翻译成英文'}</button><button type="button" onClick={() => onCopy(value.chineseTitle, '中文标题')}>复制中文</button></div>
+        <label><span>英文标题</span><textarea value={value.englishTitle} onChange={(event) => onChange('englishTitle', event.target.value)} placeholder="翻译结果会显示在这里，也可以继续修改" /></label>
+        <button type="button" className="copy-primary" onClick={() => onCopy(value.englishTitle, '英文标题')}>复制英文标题</button>
+      </section>
+      <section className="size-helper">
+        <div className="helper-section-title"><strong>尺寸换算</strong><span>cm → in · m → ft</span></div>
+        <div className="meter-converter"><label><span>厘米（cm）</span><input type="number" min="0" step="0.01" value={value.lengthCm} onChange={(event) => onChange('lengthCm', event.target.value)} placeholder="0" /></label><div><span>英寸结果</span><strong>{inchResult}</strong></div><button type="button" onClick={() => onCopy(inchResult === '—' ? '' : inchResult, '英寸结果')}>复制</button></div>
+        <div className="meter-converter"><label><span>长度（m）</span><input type="number" min="0" step="0.01" value={value.lengthM} onChange={(event) => onChange('lengthM', event.target.value)} placeholder="0" /></label><div><span>英尺结果</span><strong>{feetResult}</strong></div><button type="button" onClick={() => onCopy(feetResult === '—' ? '' : feetResult, '英尺结果')}>复制</button></div>
+      </section>
+    </div>
+  </div>;
 }
 function LaunchChart({ records, target }) {
   const now = new Date();
