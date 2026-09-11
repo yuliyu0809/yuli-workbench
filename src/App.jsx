@@ -63,7 +63,12 @@ const profitMetrics = (cost) => {
   };
 };
 const netProfitAtPrice = (cost, price) => Number(price || 0) * (1 - profitRates.afterSales - profitRates.advertising) - Number(cost || 0);
-const hasWorkspaceRecords = (data) => ['discounts', 'priceReferences', 'products', 'operations', 'tasks', 'launches'].some((key) => Array.isArray(data?.[key]) && data[key].length > 0);
+// The product catalog is bundled with every fresh browser. Only user-entered
+// records count when deciding whether an empty cloud workspace may be claimed,
+// otherwise a newly opened browser could replace real data with a blank copy.
+const hasWorkspaceRecords = (data) => ['discounts', 'priceReferences', 'operations', 'tasks', 'launches'].some((key) => Array.isArray(data?.[key]) && data[key].length > 0)
+  || Boolean(data?.dailyFormCompletedDate)
+  || Object.values(data?.listingHelper || {}).some((value) => String(value || '').trim());
 const getRecommended = (cost, salePrice) => {
   const minimum = profitMetrics(cost).minimumSalePrice / Number(salePrice);
   return [...tiers].reverse().find((tier) => tier >= minimum) ?? null;
