@@ -172,7 +172,7 @@ const retryCloudRequest = async (operation, attempts = 4) => {
       result = await Promise.race([
         Promise.resolve(operation()),
         new Promise((resolve) => {
-          timeoutId = window.setTimeout(() => resolve({ error: new Error('cloud request timed out') }), 4000);
+          timeoutId = window.setTimeout(() => resolve({ error: new Error('cloud request timed out') }), 30000);
         }),
       ]);
     } catch (error) {
