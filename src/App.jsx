@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { supabase } from './lib/supabaseClient.js';
+import { cloudWorkspace } from './lib/cloudWorkspaceClient.js';
 import { lightingCatalogVersion, lightingProductCatalog } from './data/lightingProductCatalog.js';
 
 const STORE_ALL = '全部店铺';
@@ -159,7 +159,7 @@ const applyLightingCatalog = (data) => {
   };
 };
 
-const retrySupabase = async (operation, attempts = 4) => {
+const retryCloudRequest = async (operation, attempts = 4) => {
   let result = { error: new Error('cloud request failed') };
   for (let attempt = 0; attempt < attempts; attempt += 1) {
     let timeoutId;
@@ -237,15 +237,15 @@ export default function App() {
   useEffect(() => {
     let alive = true;
     async function load() {
-      if (!supabase) { setCloud('仅保存到本机'); hydrated.current = true; return; }
-      const { data, error } = await retrySupabase(() => supabase.from('public_workspace').select('data,updated_at').eq('workspace_key', 'main').maybeSingle(), 5);
+      if (!cloudWorkspace.isConfigured) { setCloud('仅保存到本机'); hydrated.current = true; return; }
+      const { data, error } = await retryCloudRequest(() => cloudWorkspace.read(), 5);
       if (!alive) return;
       if (error) { loadFailedRef.current = true; setCloud('云端读取失败 · 请点同步'); hydrated.current = true; return; }
       loadFailedRef.current = false;
       lastCloudUpdatedAtRef.current = data?.updated_at || '';
       if (localDirtyRef.current && hasWorkspaceRecords(workspace)) {
         const updatedAt = new Date().toISOString();
-        const { error: uploadError } = await retrySupabase(() => supabase.from('public_workspace').upsert({ workspace_key: 'main', data: workspace, updated_at: updatedAt }, { onConflict: 'workspace_key' }), 5);
+        const { error: uploadError } = await retryCloudRequest(() => cloudWorkspace.write(workspace), 5);
         pushFailedRef.current = Boolean(uploadError);
         if (!uploadError) {
           lastCloudUpdatedAtRef.current = updatedAt;
@@ -260,7 +260,7 @@ export default function App() {
         setWorkspace(migrated.workspace);
         if (migrated.changed) {
           const updatedAt = new Date().toISOString();
-          const { error: catalogError } = await retrySupabase(() => supabase.from('public_workspace').upsert({ workspace_key: 'main', data: migrated.workspace, updated_at: updatedAt }, { onConflict: 'workspace_key' }));
+          const { error: catalogError } = await retryCloudRequest(() => cloudWorkspace.write(migrated.workspace));
           pushFailedRef.current = Boolean(catalogError);
           if (!catalogError) lastCloudUpdatedAtRef.current = updatedAt;
           setCloud(catalogError ? '商品档案已更新到本机 · 云端同步失败' : '商品档案已更新并同步');
@@ -269,7 +269,7 @@ export default function App() {
         }
       } else if (hasWorkspaceRecords(workspace)) {
         const updatedAt = new Date().toISOString();
-        const { error: uploadError } = await retrySupabase(() => supabase.from('public_workspace').upsert({ workspace_key: 'main', data: workspace, updated_at: updatedAt }, { onConflict: 'workspace_key' }));
+        const { error: uploadError } = await retryCloudRequest(() => cloudWorkspace.write(workspace));
         pushFailedRef.current = Boolean(uploadError);
         if (!uploadError) lastCloudUpdatedAtRef.current = updatedAt;
         setCloud(uploadError ? '本机数据已保留 · 云端同步失败' : '本机数据已同步到云端');
@@ -287,12 +287,12 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    if (!hydrated.current || !supabase) return;
+    if (!hydrated.current || !cloudWorkspace.isConfigured) return;
     if (skipNextPush.current) { skipNextPush.current = false; return; }
     const timer = window.setTimeout(async () => {
       setCloud('正在同步…');
       const updatedAt = new Date().toISOString();
-      const { error } = await retrySupabase(() => supabase.from('public_workspace').upsert({ workspace_key: 'main', data: workspace, updated_at: updatedAt }, { onConflict: 'workspace_key' }), 5);
+      const { error } = await retryCloudRequest(() => cloudWorkspace.write(workspace), 5);
       pushFailedRef.current = Boolean(error);
       if (!error) {
         lastCloudUpdatedAtRef.current = updatedAt;
@@ -305,11 +305,11 @@ export default function App() {
   }, [workspace]);
 
   const retryCloudSync = async () => {
-    if (!supabase || syncing) { if (!supabase) notify('云端尚未配置'); return; }
+    if (!cloudWorkspace.isConfigured || syncing) { if (!cloudWorkspace.isConfigured) notify('云端尚未配置'); return; }
     setSyncing(true);
     setCloud('正在重新连接…');
     if (loadFailedRef.current && !localDirtyRef.current) {
-      const { data, error } = await retrySupabase(() => supabase.from('public_workspace').select('data,updated_at').eq('workspace_key', 'main').maybeSingle(), 5);
+      const { data, error } = await retryCloudRequest(() => cloudWorkspace.read(), 5);
       if (!error) {
         loadFailedRef.current = false;
         pushFailedRef.current = false;
@@ -328,7 +328,7 @@ export default function App() {
       }
     } else {
       const updatedAt = new Date().toISOString();
-      const { error } = await retrySupabase(() => supabase.from('public_workspace').upsert({ workspace_key: 'main', data: workspaceRef.current, updated_at: updatedAt }, { onConflict: 'workspace_key' }), 5);
+      const { error } = await retryCloudRequest(() => cloudWorkspace.write(workspaceRef.current), 5);
       pushFailedRef.current = Boolean(error);
       if (!error) {
         loadFailedRef.current = false;
@@ -346,7 +346,7 @@ export default function App() {
   };
 
   useEffect(() => {
-    if (!supabase) return undefined;
+    if (!cloudWorkspace.isConfigured) return undefined;
     let alive = true;
     const syncInBackground = async () => {
       if (!alive || !hydrated.current || backgroundSyncRef.current) return;
@@ -355,7 +355,7 @@ export default function App() {
       try {
         if (localDirtyRef.current || pushFailedRef.current) {
           const updatedAt = new Date().toISOString();
-          const { error } = await retrySupabase(() => supabase.from('public_workspace').upsert({ workspace_key: 'main', data: workspaceRef.current, updated_at: updatedAt }, { onConflict: 'workspace_key' }), 3);
+          const { error } = await retryCloudRequest(() => cloudWorkspace.write(workspaceRef.current), 3);
           pushFailedRef.current = Boolean(error);
           if (!error) {
             loadFailedRef.current = false;
@@ -369,7 +369,7 @@ export default function App() {
           return;
         }
 
-        const { data, error } = await retrySupabase(() => supabase.from('public_workspace').select('data,updated_at').eq('workspace_key', 'main').maybeSingle(), 3);
+        const { data, error } = await retryCloudRequest(() => cloudWorkspace.read(), 3);
         if (error) { loadFailedRef.current = true; setCloud('云端暂时断开 · 正在自动重试'); return; }
         loadFailedRef.current = false;
         if (data?.data && data.updated_at && data.updated_at > lastCloudUpdatedAtRef.current) {
