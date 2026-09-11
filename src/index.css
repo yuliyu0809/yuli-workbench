@@ -531,3 +531,8 @@ tbody tr:hover,tbody tr:hover td{background:#f7fbf5}
   .conversion-result{grid-template-columns:1fr;text-align:left}
   .conversion-result strong{text-align:left}
 }
+
+.profile>div{min-width:0;flex:1}
+.profile>button{flex:0 0 auto;padding:6px 9px;color:#2c674b;background:#fff;border:1px solid #bfd1c0;border-radius:999px;font-size:11px;font-weight:700;cursor:pointer}
+.profile>button:hover{background:#eef6eb;border-color:#8fb098}
+.profile>button:disabled{opacity:.58;cursor:wait}

@@ -159,6 +159,28 @@ const applyLightingCatalog = (data) => {
   };
 };
 
+const retrySupabase = async (operation, attempts = 4) => {
+  let result = { error: new Error('cloud request failed') };
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    let timeoutId;
+    try {
+      result = await Promise.race([
+        Promise.resolve(operation()),
+        new Promise((resolve) => {
+          timeoutId = window.setTimeout(() => resolve({ error: new Error('cloud request timed out') }), 4000);
+        }),
+      ]);
+    } catch (error) {
+      result = { error };
+    } finally {
+      window.clearTimeout(timeoutId);
+    }
+    if (!result?.error) return result;
+    if (attempt < attempts - 1) await new Promise((resolve) => window.setTimeout(resolve, 500 * (2 ** attempt)));
+  }
+  return result;
+};
+
 async function imageToDataUrl(file) {
   if (!file) return '';
   const image = await createImageBitmap(file);
@@ -188,38 +210,75 @@ export default function App() {
   const [toast, setToast] = useState('');
   const [translationBusy, setTranslationBusy] = useState(false);
   const [cloud, setCloud] = useState('正在连接云端…');
+  const [syncing, setSyncing] = useState(false);
   const hydrated = useRef(false);
   const skipNextPush = useRef(false);
+  const workspaceRef = useRef(workspace);
+  const loadFailedRef = useRef(false);
+  const pushFailedRef = useRef(false);
+  const localDirtyRef = useRef(localStorage.getItem('yuli.public.workspace.dirty.v1') === '1');
+  const backgroundSyncRef = useRef(false);
+  const lastCloudUpdatedAtRef = useRef('');
 
-  const update = (key, records) => setWorkspace((current) => ({ ...current, [key]: records }));
+  const update = (key, records) => setWorkspace((current) => {
+    const next = { ...current, [key]: records };
+    workspaceRef.current = next;
+    localDirtyRef.current = true;
+    localStorage.setItem('yuli.public.workspace.dirty.v1', '1');
+    return next;
+  });
   const notify = (text) => { setToast(text); window.setTimeout(() => setToast(''), 2200); };
 
   useEffect(() => {
+    workspaceRef.current = workspace;
     localStorage.setItem('yuli.public.workspace.v1', JSON.stringify(workspace));
   }, [workspace]);
 
   useEffect(() => {
     let alive = true;
     async function load() {
-      if (!supabase) { setCloud('已保存到本机'); hydrated.current = true; return; }
-      const { data, error } = await supabase.from('public_workspace').select('data,updated_at').eq('workspace_key', 'main').maybeSingle();
+      if (!supabase) { setCloud('仅保存到本机'); hydrated.current = true; return; }
+      const { data, error } = await retrySupabase(() => supabase.from('public_workspace').select('data,updated_at').eq('workspace_key', 'main').maybeSingle(), 5);
       if (!alive) return;
-      if (error) { setCloud('已保存到本机 · 云端待启用'); hydrated.current = true; return; }
-      if (data?.data && hasWorkspaceRecords(data.data)) {
+      if (error) { loadFailedRef.current = true; setCloud('云端读取失败 · 请点同步'); hydrated.current = true; return; }
+      loadFailedRef.current = false;
+      lastCloudUpdatedAtRef.current = data?.updated_at || '';
+      if (localDirtyRef.current && hasWorkspaceRecords(workspace)) {
+        const updatedAt = new Date().toISOString();
+        const { error: uploadError } = await retrySupabase(() => supabase.from('public_workspace').upsert({ workspace_key: 'main', data: workspace, updated_at: updatedAt }, { onConflict: 'workspace_key' }), 5);
+        pushFailedRef.current = Boolean(uploadError);
+        if (!uploadError) {
+          lastCloudUpdatedAtRef.current = updatedAt;
+          localDirtyRef.current = false;
+          localStorage.removeItem('yuli.public.workspace.dirty.v1');
+        }
+        setCloud(uploadError ? '本机数据已保留 · 云端同步失败' : '本机数据已同步到云端');
+      } else if (data?.data && hasWorkspaceRecords(data.data)) {
         const migrated = applyLightingCatalog(data.data);
         skipNextPush.current = true;
+        workspaceRef.current = migrated.workspace;
         setWorkspace(migrated.workspace);
         if (migrated.changed) {
-          const { error: catalogError } = await supabase.from('public_workspace').upsert({ workspace_key: 'main', data: migrated.workspace, updated_at: new Date().toISOString() }, { onConflict: 'workspace_key' });
+          const updatedAt = new Date().toISOString();
+          const { error: catalogError } = await retrySupabase(() => supabase.from('public_workspace').upsert({ workspace_key: 'main', data: migrated.workspace, updated_at: updatedAt }, { onConflict: 'workspace_key' }));
+          pushFailedRef.current = Boolean(catalogError);
+          if (!catalogError) lastCloudUpdatedAtRef.current = updatedAt;
           setCloud(catalogError ? '商品档案已更新到本机 · 云端同步失败' : '商品档案已更新并同步');
         } else {
           setCloud('云端已连接');
         }
       } else if (hasWorkspaceRecords(workspace)) {
-        const { error: uploadError } = await supabase.from('public_workspace').upsert({ workspace_key: 'main', data: workspace, updated_at: new Date().toISOString() }, { onConflict: 'workspace_key' });
+        const updatedAt = new Date().toISOString();
+        const { error: uploadError } = await retrySupabase(() => supabase.from('public_workspace').upsert({ workspace_key: 'main', data: workspace, updated_at: updatedAt }, { onConflict: 'workspace_key' }));
+        pushFailedRef.current = Boolean(uploadError);
+        if (!uploadError) lastCloudUpdatedAtRef.current = updatedAt;
         setCloud(uploadError ? '本机数据已保留 · 云端同步失败' : '本机数据已同步到云端');
       } else {
         setCloud('云端已连接');
+      }
+      if (!pushFailedRef.current) {
+        localDirtyRef.current = false;
+        localStorage.removeItem('yuli.public.workspace.dirty.v1');
       }
       hydrated.current = true;
     }
@@ -232,11 +291,115 @@ export default function App() {
     if (skipNextPush.current) { skipNextPush.current = false; return; }
     const timer = window.setTimeout(async () => {
       setCloud('正在同步…');
-      const { error } = await supabase.from('public_workspace').upsert({ workspace_key: 'main', data: workspace, updated_at: new Date().toISOString() }, { onConflict: 'workspace_key' });
+      const updatedAt = new Date().toISOString();
+      const { error } = await retrySupabase(() => supabase.from('public_workspace').upsert({ workspace_key: 'main', data: workspace, updated_at: updatedAt }, { onConflict: 'workspace_key' }), 5);
+      pushFailedRef.current = Boolean(error);
+      if (!error) {
+        lastCloudUpdatedAtRef.current = updatedAt;
+        localDirtyRef.current = false;
+        localStorage.removeItem('yuli.public.workspace.dirty.v1');
+      }
       setCloud(error ? '已保存到本机 · 云端同步失败' : '已同步到云端');
     }, 700);
     return () => clearTimeout(timer);
   }, [workspace]);
+
+  const retryCloudSync = async () => {
+    if (!supabase || syncing) { if (!supabase) notify('云端尚未配置'); return; }
+    setSyncing(true);
+    setCloud('正在重新连接…');
+    if (loadFailedRef.current && !localDirtyRef.current) {
+      const { data, error } = await retrySupabase(() => supabase.from('public_workspace').select('data,updated_at').eq('workspace_key', 'main').maybeSingle(), 5);
+      if (!error) {
+        loadFailedRef.current = false;
+        pushFailedRef.current = false;
+        lastCloudUpdatedAtRef.current = data?.updated_at || '';
+        if (data?.data && hasWorkspaceRecords(data.data)) {
+          const migrated = applyLightingCatalog(data.data);
+          skipNextPush.current = true;
+          workspaceRef.current = migrated.workspace;
+          setWorkspace(migrated.workspace);
+        }
+        setCloud('云端已连接');
+        notify('已从云端重新读取资料');
+      } else {
+        setCloud('云端读取失败 · 请稍后重试');
+        notify('云端仍未连接，资料已保留在本机');
+      }
+    } else {
+      const updatedAt = new Date().toISOString();
+      const { error } = await retrySupabase(() => supabase.from('public_workspace').upsert({ workspace_key: 'main', data: workspaceRef.current, updated_at: updatedAt }, { onConflict: 'workspace_key' }), 5);
+      pushFailedRef.current = Boolean(error);
+      if (!error) {
+        loadFailedRef.current = false;
+        lastCloudUpdatedAtRef.current = updatedAt;
+        localDirtyRef.current = false;
+        localStorage.removeItem('yuli.public.workspace.dirty.v1');
+        setCloud('已同步到云端');
+        notify('资料已同步，其他浏览器刷新后可见');
+      } else {
+        setCloud('已保存到本机 · 云端同步失败');
+        notify('云端仍未连接，稍后可以再次同步');
+      }
+    }
+    setSyncing(false);
+  };
+
+  useEffect(() => {
+    if (!supabase) return undefined;
+    let alive = true;
+    const syncInBackground = async () => {
+      if (!alive || !hydrated.current || backgroundSyncRef.current) return;
+      if (!navigator.onLine) { setCloud('当前离线 · 恢复网络后自动同步'); return; }
+      backgroundSyncRef.current = true;
+      try {
+        if (localDirtyRef.current || pushFailedRef.current) {
+          const updatedAt = new Date().toISOString();
+          const { error } = await retrySupabase(() => supabase.from('public_workspace').upsert({ workspace_key: 'main', data: workspaceRef.current, updated_at: updatedAt }, { onConflict: 'workspace_key' }), 3);
+          pushFailedRef.current = Boolean(error);
+          if (!error) {
+            loadFailedRef.current = false;
+            localDirtyRef.current = false;
+            lastCloudUpdatedAtRef.current = updatedAt;
+            localStorage.removeItem('yuli.public.workspace.dirty.v1');
+            setCloud('已自动同步到云端');
+          } else {
+            setCloud('已保存到本机 · 等待自动同步');
+          }
+          return;
+        }
+
+        const { data, error } = await retrySupabase(() => supabase.from('public_workspace').select('data,updated_at').eq('workspace_key', 'main').maybeSingle(), 3);
+        if (error) { loadFailedRef.current = true; setCloud('云端暂时断开 · 正在自动重试'); return; }
+        loadFailedRef.current = false;
+        if (data?.data && data.updated_at && data.updated_at > lastCloudUpdatedAtRef.current) {
+          const migrated = applyLightingCatalog(data.data);
+          skipNextPush.current = true;
+          workspaceRef.current = migrated.workspace;
+          setWorkspace(migrated.workspace);
+          lastCloudUpdatedAtRef.current = data.updated_at;
+          setCloud('已获取其他浏览器的新数据');
+        } else {
+          setCloud('云端已连接 · 自动同步');
+        }
+      } finally {
+        backgroundSyncRef.current = false;
+      }
+    };
+    const onFocus = () => syncInBackground();
+    const onVisible = () => { if (document.visibilityState === 'visible') syncInBackground(); };
+    const timer = window.setInterval(syncInBackground, 10000);
+    window.addEventListener('online', onFocus);
+    window.addEventListener('focus', onFocus);
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      alive = false;
+      window.clearInterval(timer);
+      window.removeEventListener('online', onFocus);
+      window.removeEventListener('focus', onFocus);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
+  }, []);
 
   const visible = (records) => store === STORE_ALL ? records : records.filter((item) => item.store === store || item.store === STORE_ALL);
   const todayOps = visible(workspace.operations).filter((item) => item.recordDate === today());
@@ -380,7 +543,7 @@ export default function App() {
       <p className="section-label">工作区</p>
       <nav>{nav.map(([key, icon, label], index) => <button key={key} className={page === key ? 'active' : ''} onClick={() => { setPage(key); setSearch(''); }}><span className="nav-index">{String(index + 1).padStart(2, '0')}</span><i>{icon}</i><span>{label}</span></button>)}</nav>
       <div className="daily"><span>✦</span><strong>今日小结</strong><p>今天有 {todayTaskCount} 项运营任务，已记录 {discountProductCount} 个折扣商品；每日填表{dailyFormDone ? '已完成' : '待填写'}。</p><button onClick={() => setPage('tasks')}>查看待办 →</button></div>
-      <div className="profile"><b>荔</b><div><strong>郁荔</strong><small>{cloud}</small></div></div>
+      <div className="profile"><b>荔</b><div><strong>郁荔</strong><small>{cloud}</small></div><button type="button" onClick={retryCloudSync} disabled={syncing}>{syncing ? '同步中' : '同步'}</button></div>
     </aside>
     <main>
       <header><div className="store-tabs">{[STORE_ALL, ...stores].map((name) => <button key={name} className={store === name ? 'selected' : ''} onClick={() => setStore(name)}>{name !== STORE_ALL && <em className={`dot ${name.toLowerCase()}`} />}{name}</button>)}</div><div className="header-actions"><a className="quick-link" href={buyerAppealUrl} target="_blank" rel="noreferrer">↗ 买手申诉入口</a><span className="header-date">{new Intl.DateTimeFormat('zh-CN', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' }).format(new Date())}</span></div></header>
