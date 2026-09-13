@@ -11,8 +11,13 @@ const request = async (options = {}) => {
         ...options.headers,
       },
     });
-    if (!response.ok) throw new Error(`cloud request failed (${response.status})`);
-    return { data: await response.json(), error: null };
+    const data = await response.json().catch(() => null);
+    if (!response.ok) {
+      const error = new Error(`cloud request failed (${response.status})`);
+      error.status = response.status;
+      return { data, error };
+    }
+    return { data, error: null };
   } catch (error) {
     return { data: null, error };
   }
@@ -21,5 +26,5 @@ const request = async (options = {}) => {
 export const cloudWorkspace = {
   isConfigured: true,
   read: () => request(),
-  write: (data) => request({ method: 'PUT', body: JSON.stringify({ data }) }),
+  write: (data, baseUpdatedAt = '') => request({ method: 'PUT', body: JSON.stringify({ data, base_updated_at: baseUpdatedAt || null }) }),
 };

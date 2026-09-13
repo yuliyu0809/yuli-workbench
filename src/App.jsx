@@ -69,6 +69,24 @@ const netProfitAtPrice = (cost, price) => Number(price || 0) * (1 - profitRates.
 const hasWorkspaceRecords = (data) => ['discounts', 'priceReferences', 'operations', 'tasks', 'launches'].some((key) => Array.isArray(data?.[key]) && data[key].length > 0)
   || Boolean(data?.dailyFormCompletedDate)
   || Object.values(data?.listingHelper || {}).some((value) => String(value || '').trim());
+const mergeRecordLists = (cloudRecords, localRecords) => {
+  const merged = new Map((cloudRecords || []).map((record) => [record.id, record]));
+  (localRecords || []).forEach((record) => merged.set(record.id, record));
+  return [...merged.values()];
+};
+const mergeWorkspaces = (cloudData, localData) => {
+  const cloud = { ...emptyWorkspace, ...(cloudData || {}) };
+  const local = { ...emptyWorkspace, ...(localData || {}) };
+  return {
+    ...cloud,
+    ...local,
+    discounts: mergeRecordLists(cloud.discounts, local.discounts),
+    priceReferences: mergeRecordLists(cloud.priceReferences, local.priceReferences),
+    operations: mergeRecordLists(cloud.operations, local.operations),
+    tasks: mergeRecordLists(cloud.tasks, local.tasks),
+    launches: mergeRecordLists(cloud.launches, local.launches),
+  };
+};
 const getRecommended = (cost, salePrice) => {
   const minimum = profitMetrics(cost).minimumSalePrice / Number(salePrice);
   return [...tiers].reverse().find((tier) => tier >= minimum) ?? null;
@@ -180,7 +198,7 @@ const retryCloudRequest = async (operation, attempts = 4) => {
     } finally {
       window.clearTimeout(timeoutId);
     }
-    if (!result?.error) return result;
+    if (!result?.error || result.error.status === 409) return result;
     if (attempt < attempts - 1) await new Promise((resolve) => window.setTimeout(resolve, 500 * (2 ** attempt)));
   }
   return result;
@@ -233,6 +251,22 @@ export default function App() {
     return next;
   });
   const notify = (text) => { setToast(text); window.setTimeout(() => setToast(''), 2200); };
+  const saveToCloud = async (nextWorkspace, attempts = 5) => {
+    let candidate = nextWorkspace;
+    let result = await retryCloudRequest(() => cloudWorkspace.write(candidate, lastCloudUpdatedAtRef.current), attempts);
+    if (result.error?.status === 409 && result.data?.data) {
+      candidate = mergeWorkspaces(result.data.data, candidate);
+      lastCloudUpdatedAtRef.current = result.data.updated_at || '';
+      result = await retryCloudRequest(() => cloudWorkspace.write(candidate, lastCloudUpdatedAtRef.current), attempts);
+      if (!result.error) {
+        skipNextPush.current = true;
+        workspaceRef.current = candidate;
+        setWorkspace(candidate);
+      }
+    }
+    if (!result.error) lastCloudUpdatedAtRef.current = result.data?.updated_at || lastCloudUpdatedAtRef.current;
+    return { ...result, workspace: candidate };
+  };
 
   useEffect(() => {
     workspaceRef.current = workspace;
@@ -249,11 +283,15 @@ export default function App() {
       loadFailedRef.current = false;
       lastCloudUpdatedAtRef.current = data?.updated_at || '';
       if (localDirtyRef.current && hasWorkspaceRecords(workspace)) {
-        const updatedAt = new Date().toISOString();
-        const { error: uploadError } = await retryCloudRequest(() => cloudWorkspace.write(workspace), 5);
+        const pendingWorkspace = data?.data && hasWorkspaceRecords(data.data) ? mergeWorkspaces(data.data, workspace) : workspace;
+        if (pendingWorkspace !== workspace) {
+          skipNextPush.current = true;
+          workspaceRef.current = pendingWorkspace;
+          setWorkspace(pendingWorkspace);
+        }
+        const { error: uploadError } = await saveToCloud(pendingWorkspace, 5);
         pushFailedRef.current = Boolean(uploadError);
         if (!uploadError) {
-          lastCloudUpdatedAtRef.current = updatedAt;
           localDirtyRef.current = false;
           localStorage.removeItem('yuli.public.workspace.dirty.v1');
         }
@@ -264,19 +302,15 @@ export default function App() {
         workspaceRef.current = migrated.workspace;
         setWorkspace(migrated.workspace);
         if (migrated.changed) {
-          const updatedAt = new Date().toISOString();
-          const { error: catalogError } = await retryCloudRequest(() => cloudWorkspace.write(migrated.workspace));
+          const { error: catalogError } = await saveToCloud(migrated.workspace);
           pushFailedRef.current = Boolean(catalogError);
-          if (!catalogError) lastCloudUpdatedAtRef.current = updatedAt;
           setCloud(catalogError ? '商品档案已更新到本机 · 云端同步失败' : '商品档案已更新并同步');
         } else {
           setCloud('云端已连接');
         }
       } else if (hasWorkspaceRecords(workspace)) {
-        const updatedAt = new Date().toISOString();
-        const { error: uploadError } = await retryCloudRequest(() => cloudWorkspace.write(workspace));
+        const { error: uploadError } = await saveToCloud(workspace);
         pushFailedRef.current = Boolean(uploadError);
-        if (!uploadError) lastCloudUpdatedAtRef.current = updatedAt;
         setCloud(uploadError ? '本机数据已保留 · 云端同步失败' : '本机数据已同步到云端');
       } else {
         setCloud('云端已连接');
@@ -296,11 +330,9 @@ export default function App() {
     if (skipNextPush.current) { skipNextPush.current = false; return; }
     const timer = window.setTimeout(async () => {
       setCloud('正在同步…');
-      const updatedAt = new Date().toISOString();
-      const { error } = await retryCloudRequest(() => cloudWorkspace.write(workspace), 5);
+      const { error } = await saveToCloud(workspace, 5);
       pushFailedRef.current = Boolean(error);
       if (!error) {
-        lastCloudUpdatedAtRef.current = updatedAt;
         localDirtyRef.current = false;
         localStorage.removeItem('yuli.public.workspace.dirty.v1');
       }
@@ -332,12 +364,10 @@ export default function App() {
         notify('云端仍未连接，资料已保留在本机');
       }
     } else {
-      const updatedAt = new Date().toISOString();
-      const { error } = await retryCloudRequest(() => cloudWorkspace.write(workspaceRef.current), 5);
+      const { error } = await saveToCloud(workspaceRef.current, 5);
       pushFailedRef.current = Boolean(error);
       if (!error) {
         loadFailedRef.current = false;
-        lastCloudUpdatedAtRef.current = updatedAt;
         localDirtyRef.current = false;
         localStorage.removeItem('yuli.public.workspace.dirty.v1');
         setCloud('已同步到云端');
@@ -359,13 +389,11 @@ export default function App() {
       backgroundSyncRef.current = true;
       try {
         if (localDirtyRef.current || pushFailedRef.current) {
-          const updatedAt = new Date().toISOString();
-          const { error } = await retryCloudRequest(() => cloudWorkspace.write(workspaceRef.current), 3);
+          const { error } = await saveToCloud(workspaceRef.current, 3);
           pushFailedRef.current = Boolean(error);
           if (!error) {
             loadFailedRef.current = false;
             localDirtyRef.current = false;
-            lastCloudUpdatedAtRef.current = updatedAt;
             localStorage.removeItem('yuli.public.workspace.dirty.v1');
             setCloud('已自动同步到云端');
           } else {
