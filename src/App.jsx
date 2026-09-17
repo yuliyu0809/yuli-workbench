@@ -5,7 +5,7 @@ import { lightingCatalogVersion, lightingProductCatalog } from './data/lightingP
 const STORE_ALL = '全部店铺';
 const stores = ['AG', 'DS', 'HX'];
 const sourceProductCategories = [...new Set(lightingProductCatalog.map((item) => item.sourceCategory).filter(Boolean))];
-const tiers = [0.9, 0.85, 0.8, 0.75, 0.7];
+const tiers = [0.9, 0.85, 0.8, 0.75, 0.7, 0.65, 0.6];
 const buyerAppealUrl = 'https://seller.kuajingmaihuo.com/questionnaire?surveyId=185879097376';
 const dailyFormMiniProgram = '#小程序://腾讯文档/d1X1NPShvA6gzZE';
 const emptyListingHelper = { chineseTitle: '', englishTitle: '', lengthCm: '', lengthM: '' };
