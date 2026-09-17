@@ -273,7 +273,6 @@ export default function App() {
   const [modal, setModal] = useState(null);
   const [editing, setEditing] = useState(null);
   const [search, setSearch] = useState('');
-  const [discountView, setDiscountView] = useState('activity');
   const [toast, setToast] = useState('');
   const [translationBusy, setTranslationBusy] = useState(false);
   const [cloud, setCloud] = useState('正在连接云端…');
@@ -690,10 +689,10 @@ export default function App() {
     <main>
       <header><div className="store-tabs">{[STORE_ALL, ...stores].map((name) => <button key={name} className={store === name ? 'selected' : ''} onClick={() => setStore(name)}>{name !== STORE_ALL && <em className={`dot ${name.toLowerCase()}`} />}{name}</button>)}</div><div className="header-actions"><a className="quick-link" href={buyerAppealUrl} target="_blank" rel="noreferrer">↗ 买手申诉入口</a><span className="header-date">{new Intl.DateTimeFormat('zh-CN', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' }).format(new Date())}</span></div></header>
       <section key={page} className="content page-transition">
-        <div className="page-head"><div><small>{store === STORE_ALL ? '三店合计' : `${store} 店铺`}</small><h1>{pageTitle[0]}</h1><p>{pageTitle[1]}</p></div>{page !== 'overview' && <button className="primary" onClick={() => openNew(page === 'data' ? 'operation' : page === 'products' ? 'product' : page === 'tasks' ? 'task' : discountView === 'reference' ? 'priceReference' : 'discount')}>＋ {page === 'data' ? '新增记录' : page === 'products' ? '新增商品' : page === 'tasks' ? '新增任务' : discountView === 'reference' ? '录入同事售价' : '新增折扣记录'}</button>}</div>
+        <div className="page-head"><div><small>{store === STORE_ALL ? '三店合计' : `${store} 店铺`}</small><h1>{pageTitle[0]}</h1><p>{pageTitle[1]}</p></div>{page !== 'overview' && <button className="primary" onClick={() => openNew(page === 'data' ? 'operation' : page === 'products' ? 'product' : page === 'tasks' ? 'task' : 'discount')}>＋ {page === 'data' ? '新增记录' : page === 'products' ? '新增商品' : page === 'tasks' ? '新增任务' : '新增折扣记录'}</button>}</div>
         <div className="workspace-note"><span>🌿</span><strong>温柔待办</strong><p>{pageReminder}</p></div>
         {page === 'overview' && <Overview totals={totals} workspace={workspace} store={store} pending={pending} setPage={setPage} dailyFormDone={dailyFormDone} onCopyDailyForm={copyDailyFormEntry} onToggleDailyForm={toggleDailyForm} listingHelper={{ ...emptyListingHelper, ...(workspace.listingHelper || {}) }} translationBusy={translationBusy} onTranslateListingTitle={translateListingTitle} onUpdateListingHelper={updateListingHelper} onCopyListingText={copyListingText} onClearListingHelper={clearListingHelper} onAdd={() => openNew('launch')} onEdit={(item) => openEdit('launch', item)} onDelete={(item) => remove('launches', item, `${item.store} ${item.launchDate} ${launchQuantity(item)}条`)} />}
-        {page === 'discounts' && <Discounts mode={discountView} setMode={setDiscountView} records={visible(workspace.discounts)} allDiscounts={workspace.discounts} products={workspace.products} references={workspace.priceReferences || []} search={search} setSearch={setSearch} onEdit={(item) => openEdit('discount', item)} onDelete={(item) => remove('discounts', item, item.productName)} onEditReference={(item) => openEdit('priceReference', item)} onDeleteReference={(item) => remove('priceReferences', item, '同事售价记录')} />}
+        {page === 'discounts' && <Discounts records={visible(workspace.discounts)} search={search} setSearch={setSearch} onEdit={(item) => openEdit('discount', item)} onDelete={(item) => remove('discounts', item, item.productName)} />}
         {page === 'data' && <Operations records={visible(workspace.operations)} onEdit={(item) => openEdit('operation', item)} onDelete={(item) => remove('operations', item, `${item.store} ${item.recordDate}`)} />}
         {page === 'products' && <Products records={workspace.products} search={search} setSearch={setSearch} onEdit={(item) => openEdit('product', item)} onDelete={(item) => remove('products', item, item.productName)} />}
         {page === 'tasks' && <Tasks records={visible(workspace.tasks)} update={(records) => update('tasks', records)} onEdit={(item) => openEdit('task', item)} onDelete={(item) => remove('tasks', item, item.title)} />}
@@ -704,7 +703,6 @@ export default function App() {
     {modal === 'task' && <Modal title={editing ? '修改任务' : '新增任务'} onClose={closeModal}><form onSubmit={saveTask}><Field label="任务内容"><input name="title" defaultValue={editing?.title} required /></Field><div className="form-grid"><Field label="时间"><select name="period" defaultValue={editing?.period || 'today'}><option value="today">今天</option><option value="week">本周</option></select></Field><Field label="店铺"><select name="store" defaultValue={editing?.store || STORE_ALL}>{[STORE_ALL, ...stores].map((name) => <option key={name}>{name}</option>)}</select></Field><Field label="优先级"><select name="priority" defaultValue={editing?.priority || '普通'}><option>高</option><option>普通</option><option>低</option></select></Field></div><Field label="备注"><textarea name="note" defaultValue={editing?.note} /></Field><FormActions onClose={closeModal} /></form></Modal>}
     {modal === 'launch' && <Modal title={editing ? '修改上新记录' : '新增上新记录'} onClose={closeModal}><form onSubmit={saveLaunch}><div className="form-grid"><Field label="店铺"><select name="store" defaultValue={editing?.store || (store === STORE_ALL ? 'AG' : store)}>{stores.map((name) => <option key={name}>{name}</option>)}</select></Field><Field label="上新日期"><input name="launchDate" type="date" defaultValue={editing?.launchDate || today()} required /></Field><Field label="上新条数"><input name="quantity" type="number" min="1" step="1" defaultValue={launchQuantity(editing)} required /></Field></div><Field label="备注"><textarea name="note" defaultValue={editing?.note} placeholder="可选填" /></Field><FormActions onClose={closeModal} /></form></Modal>}
     {modal === 'discount' && <DiscountForm editing={editing} products={workspace.products} currentStore={store} onSubmit={saveDiscount} onClose={closeModal} />}
-    {modal === 'priceReference' && <PriceReferenceForm editing={editing} products={workspace.products} discounts={visible(workspace.discounts)} allDiscounts={workspace.discounts} onSubmit={savePriceReference} onClose={closeModal} />}
     {toast && <div className="toast">{toast}</div>}
   </div>;
 }
@@ -833,16 +831,8 @@ function Tasks({ records, update, onEdit, onDelete }) {
   const section = (period, title) => { const rows = records.filter((item) => item.period === period); return <div className="panel task-panel"><div className="panel-title"><h2>{title}</h2><Badge>{rows.length}</Badge></div>{rows.map((item) => <div className={`task ${item.completed ? 'done' : ''}`} key={item.id}><input type="checkbox" checked={item.completed} onChange={() => update(records.map((row) => row.id === item.id ? { ...row, completed: !row.completed } : row))} /><div><strong>{item.title}</strong><small>{item.store} · {item.priority}优先级</small></div><RowActions onEdit={() => onEdit(item)} onDelete={() => onDelete(item)} /></div>)}{!rows.length && <Empty text="暂无任务" />}</div>; };
   return <div className="task-grid">{section('today', '今天')}{section('week', '本周')}</div>;
 }
-function Discounts({ mode, setMode, records, allDiscounts, products, references, search, setSearch, onEdit, onDelete, onEditReference, onDeleteReference }) {
-  return <>
-    <div className="discount-view-tabs">
-      <button type="button" className={mode === 'activity' ? 'selected' : ''} onClick={() => { setMode('activity'); setSearch(''); }}>活动折扣</button>
-      <button type="button" className={mode === 'reference' ? 'selected' : ''} onClick={() => { setMode('reference'); setSearch(''); }}>同事售价参考</button>
-    </div>
-    {mode === 'activity'
-      ? <DiscountActivity records={records} search={search} setSearch={setSearch} onEdit={onEdit} onDelete={onDelete} />
-      : <PriceReferences discounts={records} allDiscounts={allDiscounts} products={products} references={references} search={search} setSearch={setSearch} onEdit={onEditReference} onDelete={onDeleteReference} />}
-  </>;
+function Discounts({ records, search, setSearch, onEdit, onDelete }) {
+  return <DiscountActivity records={records} search={search} setSearch={setSearch} onEdit={onEdit} onDelete={onDelete} />;
 }
 
 function DiscountActivity({ records, search, setSearch, onEdit, onDelete }) {
