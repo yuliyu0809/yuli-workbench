@@ -103,9 +103,9 @@ const mergeBackupWorkspaces = (currentData, backupData) => {
 };
 const getRecommended = (cost, salePrice) => {
   const minimum = profitMetrics(cost).minimumSalePrice / Number(salePrice);
+  if (minimum < tiers[tiers.length - 1]) return minimum;
   const fixedTier = [...tiers].reverse().find((tier) => tier >= minimum);
-  if (fixedTier) return fixedTier;
-  return minimum < tiers[tiers.length - 1] ? minimum : null;
+  return fixedTier ?? null;
 };
 const normalizeProductSpecs = (product) => Array.isArray(product?.specs) && product.specs.length
   ? product.specs.map((spec) => ({
