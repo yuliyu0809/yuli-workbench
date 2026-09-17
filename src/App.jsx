@@ -87,6 +87,20 @@ const mergeWorkspaces = (cloudData, localData) => {
     launches: mergeRecordLists(cloud.launches, local.launches),
   };
 };
+const mergeBackupWorkspaces = (currentData, backupData) => {
+  const current = { ...emptyWorkspace, ...(currentData || {}) };
+  const backup = { ...emptyWorkspace, ...(backupData || {}) };
+  return {
+    ...current,
+    ...backup,
+    products: mergeRecordLists(current.products, backup.products),
+    discounts: mergeRecordLists(current.discounts, backup.discounts),
+    priceReferences: mergeRecordLists(current.priceReferences, backup.priceReferences),
+    operations: mergeRecordLists(current.operations, backup.operations),
+    tasks: mergeRecordLists(current.tasks, backup.tasks),
+    launches: mergeRecordLists(current.launches, backup.launches),
+  };
+};
 const getRecommended = (cost, salePrice) => {
   const minimum = profitMetrics(cost).minimumSalePrice / Number(salePrice);
   return [...tiers].reverse().find((tier) => tier >= minimum) ?? null;
@@ -242,6 +256,7 @@ export default function App() {
   const localDirtyRef = useRef(localStorage.getItem('yuli.public.workspace.dirty.v1') === '1');
   const backgroundSyncRef = useRef(false);
   const lastCloudUpdatedAtRef = useRef('');
+  const backupInputRef = useRef(null);
 
   const update = (key, records) => setWorkspace((current) => {
     const next = { ...current, [key]: records };
@@ -378,6 +393,62 @@ export default function App() {
       }
     }
     setSyncing(false);
+  };
+
+  const exportBackup = async () => {
+    const stamp = today().replaceAll('-', '');
+    const fileName = `郁荔工作台备份-${stamp}.json`;
+    const contents = JSON.stringify({
+      type: 'yuli-workbench-backup',
+      version: 1,
+      exportedAt: new Date().toISOString(),
+      workspace: workspaceRef.current,
+    }, null, 2);
+    try {
+      if ('showSaveFilePicker' in window) {
+        const handle = await window.showSaveFilePicker({
+          suggestedName: fileName,
+          types: [{ description: '郁荔工作台备份', accept: { 'application/json': ['.json'] } }],
+        });
+        const writable = await handle.createWritable();
+        await writable.write(contents);
+        await writable.close();
+        notify('备份已保存，可以安全拔出 U 盘');
+        return;
+      }
+      const url = URL.createObjectURL(new Blob([contents], { type: 'application/json' }));
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = fileName;
+      link.click();
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+      notify('备份已下载，请把文件复制到 U 盘');
+    } catch (error) {
+      if (error?.name !== 'AbortError') notify('备份保存失败，请换一个位置再试');
+    }
+  };
+
+  const importBackup = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    try {
+      const parsed = JSON.parse(await file.text());
+      const rawWorkspace = parsed?.type === 'yuli-workbench-backup' ? parsed.workspace : parsed?.workspace || parsed;
+      if (!rawWorkspace || typeof rawWorkspace !== 'object' || Array.isArray(rawWorkspace)) throw new Error('invalid backup');
+      const migrated = applyLightingCatalog(rawWorkspace).workspace;
+      const merged = mergeBackupWorkspaces(workspaceRef.current, migrated);
+      workspaceRef.current = merged;
+      localDirtyRef.current = true;
+      localStorage.setItem('yuli.public.workspace.dirty.v1', '1');
+      localStorage.setItem('yuli.public.workspace.v1', JSON.stringify(merged));
+      setWorkspace(merged);
+      setCloud('U盘资料已导入 · 正在同步…');
+      notify('U盘资料已导入并与本机资料合并');
+    } catch {
+      notify('无法读取这个备份文件，请选择工作台导出的 JSON 文件');
+    } finally {
+      event.target.value = '';
+    }
   };
 
   useEffect(() => {
@@ -576,6 +647,11 @@ export default function App() {
       <p className="section-label">工作区</p>
       <nav>{nav.map(([key, icon, label], index) => <button key={key} className={page === key ? 'active' : ''} onClick={() => { setPage(key); setSearch(''); }}><span className="nav-index">{String(index + 1).padStart(2, '0')}</span><i>{icon}</i><span>{label}</span></button>)}</nav>
       <div className="daily"><span>✦</span><strong>今日小结</strong><p>今天有 {todayTaskCount} 项运营任务，已记录 {discountProductCount} 个折扣商品；每日填表{dailyFormDone ? '已完成' : '待填写'}。</p><button onClick={() => setPage('tasks')}>查看待办 →</button></div>
+      <div className="backup-tools">
+        <div><span>⇄</span><p><strong>U盘备份</strong><small>整份资料随身带走</small></p></div>
+        <div className="backup-actions"><button type="button" onClick={exportBackup}>导出到U盘</button><button type="button" onClick={() => backupInputRef.current?.click()}>从U盘导入</button></div>
+        <input ref={backupInputRef} type="file" accept="application/json,.json" onChange={importBackup} hidden />
+      </div>
       <div className="profile"><b>荔</b><div><strong>郁荔</strong><small>{cloud}</small></div><button type="button" onClick={retryCloudSync} disabled={syncing}>{syncing ? '同步中' : '同步'}</button></div>
     </aside>
     <main>
