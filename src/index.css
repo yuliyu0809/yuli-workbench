@@ -125,6 +125,7 @@ header{
 }
 .primary:hover,.launch-panel .launch-add:hover{transform:translateY(-1px);box-shadow:0 15px 30px rgba(36,104,76,.24)}
 .metrics{gap:12px}
+.metrics.tier-metrics{grid-template-columns:repeat(7,minmax(0,1fr))}
 .metric,.reference-metrics button{
   background:linear-gradient(145deg,rgba(255,254,250,.98),rgba(250,253,248,.98));
   border-color:#dce8dc;border-radius:19px;box-shadow:0 10px 26px rgba(40,80,57,.055);
