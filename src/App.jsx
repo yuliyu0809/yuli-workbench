@@ -668,6 +668,19 @@ export default function App() {
     const next = { id: editing?.id || uid(), store: data.get('store'), productId: product.id, productName: product.productName, specId: spec.id, specName: spec.name, previousPrice: Number(data.get('previousPrice')), currentPrice: Number(data.get('currentPrice')), priceDate: data.get('priceDate'), note: data.get('note'), updatedAt: new Date().toISOString() };
     update('pricingHistory', editing ? workspace.pricingHistory.map((item) => item.id === editing.id ? next : item) : [next, ...workspace.pricingHistory]); closeModal(); notify('核价变化已保存');
   };
+  const addProductSpec = (productId, name, cost) => {
+    const product = workspace.products.find((item) => item.id === productId);
+    const specName = String(name || '').trim();
+    const specCost = Number(cost);
+    if (!product || !specName || !Number.isFinite(specCost) || specCost < 0) { notify('请填写 SKU 规格名称和正确的供货价'); return null; }
+    const existingSpec = normalizeProductSpecs(product).find((item) => item.name.trim().toLowerCase() === specName.toLowerCase());
+    if (existingSpec) { notify('这个 SKU 规格已经存在'); return existingSpec; }
+    const spec = { id: uid(), name: specName, cost: specCost };
+    const nextProduct = { ...product, specs: [...normalizeProductSpecs(product).map(({ id, name: currentName, cost: currentCost }) => ({ id, name: currentName, cost: currentCost })), spec], updatedAt: new Date().toISOString() };
+    update('products', workspace.products.map((item) => item.id === productId ? nextProduct : item));
+    notify('新 SKU 已加入商品档案');
+    return spec;
+  };
   const saveAdRecord = async (event) => {
     event.preventDefault(); const data = new FormData(event.currentTarget);
     const recordDate = String(data.get('recordDate')); const recordStore = String(data.get('store'));
@@ -746,7 +759,7 @@ export default function App() {
     {modal === 'launch' && <Modal title={editing ? '修改上新记录' : '新增上新记录'} onClose={closeModal}><form onSubmit={saveLaunch}><div className="form-grid"><Field label="店铺"><select name="store" defaultValue={editing?.store || (store === STORE_ALL ? 'AG' : store)}>{stores.map((name) => <option key={name}>{name}</option>)}</select></Field><Field label="上新日期"><input name="launchDate" type="date" defaultValue={editing?.launchDate || today()} required /></Field><Field label="上新条数"><input name="quantity" type="number" min="1" step="1" defaultValue={launchQuantity(editing)} required /></Field></div><Field label="备注"><textarea name="note" defaultValue={editing?.note} placeholder="可选填" /></Field><FormActions onClose={closeModal} /></form></Modal>}
     {modal === 'discount' && <DiscountForm editing={editing} products={workspace.products} currentStore={store} onSubmit={saveDiscount} onClose={closeModal} />}
     {modal === 'pricingHistory' && <PricingHistoryForm editing={editing} products={workspace.products} currentStore={store} onSubmit={savePricingHistory} onClose={closeModal} />}
-    {modal === 'adRecord' && <AdRecordForm editing={editing} products={workspace.products} adRecords={workspace.adRecords || []} currentStore={store} onSubmit={saveAdRecord} onClose={closeModal} />}
+    {modal === 'adRecord' && <AdRecordForm editing={editing} products={workspace.products} adRecords={workspace.adRecords || []} currentStore={store} onAddSpec={addProductSpec} onSubmit={saveAdRecord} onClose={closeModal} />}
     {toast && <div className="toast">{toast}</div>}
   </div>;
 }
@@ -949,7 +962,7 @@ function PricingHistoryForm({ editing, products, currentStore, onSubmit, onClose
   return <Modal title={editing ? '修改核价记录' : '记录核价变化'} onClose={onClose}>{products.length ? <form onSubmit={onSubmit}><div className="form-grid"><Field label="店铺"><select name="store" defaultValue={editing?.store || (currentStore === STORE_ALL ? 'AG' : currentStore)}>{stores.map((name) => <option key={name}>{name}</option>)}</select></Field><Field label="核价日期"><input name="priceDate" type="date" defaultValue={editing?.priceDate || today()} required /></Field></div><Field label="商品"><select name="productId" value={productId} onChange={(event) => setProductId(event.target.value)} required>{products.map((item) => <option key={item.id} value={item.id}>{productCategoryOf(item)} · {item.productName}</option>)}</select></Field><Field label="规格"><select name="specId" key={productId} defaultValue={selectedSpecExists ? editing.specId : specs[0]?.id} required>{specs.map((spec) => <option key={spec.id} value={spec.id}>{spec.name}</option>)}</select></Field><div className="form-grid"><Field label="以前的核价"><input name="previousPrice" type="number" min="0" step="0.01" defaultValue={editing?.previousPrice ?? ''} required /></Field><Field label="现在的核价"><input name="currentPrice" type="number" min="0" step="0.01" defaultValue={editing?.currentPrice ?? ''} required /></Field></div><Field label="备注"><textarea name="note" defaultValue={editing?.note} placeholder="例如：平台重新核价、供应价调整" /></Field><FormActions onClose={onClose} /></form> : <><Empty text="请先在商品档案中添加商品，再记录核价变化" /><div className="actions"><button type="button" onClick={onClose}>关闭</button></div></>}</Modal>;
 }
 
-function AdRecordForm({ editing, products, adRecords, currentStore, onSubmit, onClose }) {
+function AdRecordForm({ editing, products, adRecords, currentStore, onAddSpec, onSubmit, onClose }) {
   const initialProductId = editing?.productId || products[0]?.id || '';
   const [productId, setProductId] = useState(initialProductId);
   const knownSkc = (nextProductId) => adRecords.find((item) => item.productId === nextProductId && item.skc)?.skc || '';
@@ -957,10 +970,29 @@ function AdRecordForm({ editing, products, adRecords, currentStore, onSubmit, on
   const selectedProduct = products.find((item) => item.id === productId);
   const specs = normalizeProductSpecs(selectedProduct);
   const selectedSpecExists = specs.some((item) => item.id === editing?.specId);
+  const [specId, setSpecId] = useState(selectedSpecExists ? editing.specId : specs[0]?.id || '');
+  const [addingSpec, setAddingSpec] = useState(false);
+  const [newSpecName, setNewSpecName] = useState('');
+  const [newSpecCost, setNewSpecCost] = useState('');
+  const changeProduct = (nextProductId) => {
+    setProductId(nextProductId);
+    setSkc(knownSkc(nextProductId));
+    setSpecId(normalizeProductSpecs(products.find((item) => item.id === nextProductId))[0]?.id || '');
+    setAddingSpec(false);
+  };
+  const addSpec = () => {
+    const spec = onAddSpec(productId, newSpecName, newSpecCost);
+    if (!spec) return;
+    setSpecId(spec.id);
+    setNewSpecName('');
+    setNewSpecCost('');
+    setAddingSpec(false);
+  };
   return <Modal title={editing ? '修改 SKU 广告费' : '记录 SKU 广告费'} onClose={onClose}>{products.length ? <form onSubmit={onSubmit}>
     <div className="form-grid"><Field label="店铺"><select name="store" defaultValue={editing?.store || (currentStore === STORE_ALL ? 'AG' : currentStore)}>{stores.map((name) => <option key={name}>{name}</option>)}</select></Field><Field label="日期"><input name="recordDate" type="date" defaultValue={editing?.recordDate || today()} required /></Field></div>
-    <Field label="商品链接"><select name="productId" value={productId} onChange={(event) => { const nextProductId = event.target.value; setProductId(nextProductId); setSkc(knownSkc(nextProductId)); }} required>{products.map((item) => <option key={item.id} value={item.id}>{productCategoryOf(item)} · {item.productName}</option>)}</select></Field>
-    <div className="form-grid"><Field label="SKC（同一链接共用）"><input name="skc" value={skc} onChange={(event) => setSkc(event.target.value)} placeholder="填写一次，新增其他 SKU 时自动带入" /></Field><Field label="SKU / 规格"><select name="specId" key={productId} defaultValue={selectedSpecExists ? editing.specId : specs[0]?.id} required>{specs.map((spec) => <option key={spec.id} value={spec.id}>{spec.name} · 供货价 {money(spec.cost)}</option>)}</select></Field></div>
+    <Field label="商品链接"><select name="productId" value={productId} onChange={(event) => changeProduct(event.target.value)} required>{products.map((item) => <option key={item.id} value={item.id}>{productCategoryOf(item)} · {item.productName}</option>)}</select></Field>
+    <div className="form-grid"><Field label="SKC（同一链接共用）"><input name="skc" value={skc} onChange={(event) => setSkc(event.target.value)} placeholder="填写一次，新增其他 SKU 时自动带入" /></Field><Field label="SKU / 规格"><div className="sku-select-row"><select name="specId" value={specId} onChange={(event) => setSpecId(event.target.value)} required>{specs.map((spec) => <option key={spec.id} value={spec.id}>{spec.name} · 供货价 {money(spec.cost)}</option>)}</select><button type="button" onClick={() => setAddingSpec((value) => !value)}>{addingSpec ? '收起' : '＋ 新增 SKU'}</button></div></Field></div>
+    {addingSpec && <div className="new-sku-box"><div><label>新 SKU 规格名称</label><input value={newSpecName} onChange={(event) => setNewSpecName(event.target.value)} placeholder="例如：10米100灯" /></div><div><label>供货价</label><input type="number" min="0" step="0.01" value={newSpecCost} onChange={(event) => setNewSpecCost(event.target.value)} placeholder="¥0.00" /></div><button type="button" onClick={addSpec}>添加到规格列表</button></div>}
     <div className="form-grid"><Field label="该 SKU 广告费"><input name="adSpend" type="number" min="0" step="0.01" defaultValue={editing?.adSpend ?? ''} placeholder="必填" required /></Field><Field label="售后物流费"><input name="afterSalesLogistics" type="number" min="0" step="0.01" defaultValue={editing?.afterSalesLogistics ?? ''} placeholder="没有可填 0" required /></Field><Field label="该 SKU 广告销售额"><input name="adSales" type="number" min="0" step="0.01" defaultValue={editing?.adSales ?? ''} required /></Field><Field label="该 SKU 广告订单数"><input name="adOrders" type="number" min="0" step="1" defaultValue={editing?.adOrders ?? ''} required /></Field></div>
     <Field label="产品图片"><input name="image" type="file" accept="image/*" />{editing?.imageDataUrl && <span className="field-help">已保存图片；不重新选择会保留原图</span>}</Field>
     <Field label="备注"><textarea name="note" defaultValue={editing?.note} placeholder="例如：活动加投、预算调整" /></Field><div className="calc-note"><b>预计利润</b>＝广告销售额 − 广告费 − 售后物流费 −（SKU供货价 × 广告订单数）；<b>每单利润</b>＝预计利润 ÷ 广告订单数。</div><FormActions onClose={onClose} />
