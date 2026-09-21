@@ -459,6 +459,24 @@ tbody tr:hover,tbody tr:hover td{background:#f7fbf5}
   .daily-form-actions{grid-column:1/-1;justify-content:flex-end}
 }
 
+/* 核价与广告：店铺每日广告账本 + 可追溯核价历史。 */
+.record-view-head{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:16px}
+.record-view-head .discount-view-tabs{display:flex;padding:5px;border:1px solid #d3e1d3;background:#e8f0e4}
+.record-view-head .discount-view-tabs button{border:0;padding:10px 18px;color:#6d7d72;background:transparent;font-weight:700}
+.record-view-head .discount-view-tabs button.selected{color:#255f47;background:#fff;box-shadow:0 2px 6px rgba(44,83,58,.08)}
+.finance-metrics{grid-template-columns:repeat(5,minmax(0,1fr))}
+.pricing-metrics{grid-template-columns:repeat(4,minmax(0,1fr))}
+.ad-trend-panel{margin-bottom:18px}
+.chart-legend{display:flex;align-items:center;gap:16px;color:#687a6e;font-size:12px}
+.chart-legend span{display:flex;align-items:center;gap:6px}
+.chart-legend i{width:18px;height:3px;border-radius:999px}
+.ad-chart-wrap{padding:8px 18px 13px;overflow-x:auto}
+.ad-chart-wrap svg{display:block;width:100%;min-width:700px;height:auto}
+.ad-chart-wrap text{fill:#829087;font-size:11px;font-family:Inter,"Microsoft YaHei",sans-serif}
+.ad-chart-grid{stroke:#e1ebe1;stroke-width:1}
+.note-cell{max-width:220px;overflow:hidden;text-overflow:ellipsis;color:#75847a}
+@media(max-width:1250px){.finance-metrics{grid-template-columns:repeat(3,1fr)}.pricing-metrics{grid-template-columns:repeat(2,1fr)}}
+
 .listing-helper{margin-bottom:16px;overflow:hidden}
 .listing-helper-head{
   display:flex;

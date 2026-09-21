@@ -9,13 +9,14 @@ const tiers = [0.9, 0.85, 0.8, 0.75, 0.7, 0.65, 0.6];
 const buyerAppealUrl = 'https://seller.kuajingmaihuo.com/questionnaire?surveyId=185879097376';
 const dailyFormMiniProgram = '#小程序://腾讯文档/d1X1NPShvA6gzZE';
 const emptyListingHelper = { chineseTitle: '', englishTitle: '', lengthCm: '', lengthM: '' };
-const emptyWorkspace = { discounts: [], priceReferences: [], products: [], operations: [], tasks: [], launches: [], dailyFormCompletedDate: '', listingHelper: emptyListingHelper };
+const emptyWorkspace = { discounts: [], priceReferences: [], products: [], operations: [], tasks: [], launches: [], pricingHistory: [], adRecords: [], dailyFormCompletedDate: '', listingHelper: emptyListingHelper };
 const nav = [
   ['overview', '⌂', '运营总览'],
   ['discounts', '%', '商品折扣'],
   ['data', '⌁', '运营数据'],
   ['products', '□', '商品档案'],
   ['tasks', '✓', '运营任务'],
+  ['pricingAds', '↗', '核价与广告'],
 ];
 const titles = {
   overview: ['早上好，郁荔', '这是三个店铺今天的运营情况。'],
@@ -23,6 +24,7 @@ const titles = {
   data: ['运营数据', '记录并对比 AG、DS、HX 的每日核心指标。'],
   products: ['商品档案', '已按《利润核算参考表（20260820）》重新整理全部商品、规格与利润价格。'],
   tasks: ['运营任务', '把每天要做的事放在一个清晰的队列里。'],
+  pricingAds: ['核价与广告', '保留每次核价变化，并按店铺记录每日广告投入。'],
 };
 
 const uid = () => crypto.randomUUID?.() || `${Date.now()}-${Math.random()}`;
@@ -66,7 +68,7 @@ const netProfitAtPrice = (cost, price) => Number(price || 0) * (1 - profitRates.
 // The product catalog is bundled with every fresh browser. Only user-entered
 // records count when deciding whether an empty cloud workspace may be claimed,
 // otherwise a newly opened browser could replace real data with a blank copy.
-const hasWorkspaceRecords = (data) => ['discounts', 'priceReferences', 'operations', 'tasks', 'launches'].some((key) => Array.isArray(data?.[key]) && data[key].length > 0)
+const hasWorkspaceRecords = (data) => ['discounts', 'priceReferences', 'operations', 'tasks', 'launches', 'pricingHistory', 'adRecords'].some((key) => Array.isArray(data?.[key]) && data[key].length > 0)
   || Boolean(data?.dailyFormCompletedDate)
   || Object.values(data?.listingHelper || {}).some((value) => String(value || '').trim());
 const mergeRecordLists = (cloudRecords, localRecords) => {
@@ -85,6 +87,8 @@ const mergeWorkspaces = (cloudData, localData) => {
     operations: mergeRecordLists(cloud.operations, local.operations),
     tasks: mergeRecordLists(cloud.tasks, local.tasks),
     launches: mergeRecordLists(cloud.launches, local.launches),
+    pricingHistory: mergeRecordLists(cloud.pricingHistory, local.pricingHistory),
+    adRecords: mergeRecordLists(cloud.adRecords, local.adRecords),
   };
 };
 const mergeBackupWorkspaces = (currentData, backupData) => {
@@ -99,6 +103,8 @@ const mergeBackupWorkspaces = (currentData, backupData) => {
     operations: mergeRecordLists(current.operations, backup.operations),
     tasks: mergeRecordLists(current.tasks, backup.tasks),
     launches: mergeRecordLists(current.launches, backup.launches),
+    pricingHistory: mergeRecordLists(current.pricingHistory, backup.pricingHistory),
+    adRecords: mergeRecordLists(current.adRecords, backup.adRecords),
   };
 };
 const getRecommended = (cost, salePrice) => {
@@ -548,6 +554,7 @@ export default function App() {
     data: '每天按店铺记录一次核心数据，后续对比会更清晰。',
     products: `当前价格表版本 ${lightingCatalogVersion}，修改商品后会自动同步到云端。`,
     tasks: '把今天必须完成的事情放在“今天”，其余安排到“本周”。',
+    pricingAds: '每天按店铺记录广告费；核价调整会保留旧价，方便以后查变化。',
   }[page];
 
   const openNew = (kind) => { setEditing(null); setModal(kind); };
@@ -640,6 +647,22 @@ export default function App() {
     const next = { id: editing?.id || uid(), quantity: Math.max(1, Number(data.get('quantity')) || 1), store: data.get('store'), launchDate: data.get('launchDate'), note: data.get('note'), updatedAt: new Date().toISOString() };
     update('launches', editing ? workspace.launches.map((item) => item.id === editing.id ? next : item) : [next, ...workspace.launches]); closeModal(); notify('上新条数已保存');
   };
+  const savePricingHistory = (event) => {
+    event.preventDefault(); const data = new FormData(event.currentTarget);
+    const product = workspace.products.find((item) => item.id === data.get('productId'));
+    const spec = normalizeProductSpecs(product).find((item) => item.id === data.get('specId'));
+    if (!product || !spec) { notify('请选择商品和规格'); return; }
+    const next = { id: editing?.id || uid(), store: data.get('store'), productId: product.id, productName: product.productName, specId: spec.id, specName: spec.name, previousPrice: Number(data.get('previousPrice')), currentPrice: Number(data.get('currentPrice')), priceDate: data.get('priceDate'), note: data.get('note'), updatedAt: new Date().toISOString() };
+    update('pricingHistory', editing ? workspace.pricingHistory.map((item) => item.id === editing.id ? next : item) : [next, ...workspace.pricingHistory]); closeModal(); notify('核价变化已保存');
+  };
+  const saveAdRecord = (event) => {
+    event.preventDefault(); const data = new FormData(event.currentTarget);
+    const recordDate = String(data.get('recordDate')); const recordStore = String(data.get('store'));
+    const duplicate = (workspace.adRecords || []).find((item) => item.store === recordStore && item.recordDate === recordDate && item.id !== editing?.id);
+    const next = { id: editing?.id || duplicate?.id || uid(), store: recordStore, recordDate, adSpend: Number(data.get('adSpend')), adSales: Number(data.get('adSales')), adOrders: Number(data.get('adOrders')), note: data.get('note'), updatedAt: new Date().toISOString() };
+    const records = (workspace.adRecords || []).filter((item) => item.id !== next.id && item.id !== editing?.id);
+    update('adRecords', [next, ...records]); closeModal(); notify(duplicate ? '当天广告记录已更新' : '广告费已保存');
+  };
   const saveDiscount = async (event) => {
     event.preventDefault(); const data = new FormData(event.currentTarget);
     const specIds = data.getAll('specId'); const specNames = data.getAll('specName'); const specUnitCosts = data.getAll('specUnitCost'); const specPackQuantities = data.getAll('specPackQuantity'); const specCosts = data.getAll('specCost'); const specPrices = data.getAll('specSalePrice');
@@ -689,13 +712,14 @@ export default function App() {
     <main>
       <header><div className="store-tabs">{[STORE_ALL, ...stores].map((name) => <button key={name} className={store === name ? 'selected' : ''} onClick={() => setStore(name)}>{name !== STORE_ALL && <em className={`dot ${name.toLowerCase()}`} />}{name}</button>)}</div><div className="header-actions"><a className="quick-link" href={buyerAppealUrl} target="_blank" rel="noreferrer">↗ 买手申诉入口</a><span className="header-date">{new Intl.DateTimeFormat('zh-CN', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' }).format(new Date())}</span></div></header>
       <section key={page} className="content page-transition">
-        <div className="page-head"><div><small>{store === STORE_ALL ? '三店合计' : `${store} 店铺`}</small><h1>{pageTitle[0]}</h1><p>{pageTitle[1]}</p></div>{page !== 'overview' && <button className="primary" onClick={() => openNew(page === 'data' ? 'operation' : page === 'products' ? 'product' : page === 'tasks' ? 'task' : 'discount')}>＋ {page === 'data' ? '新增记录' : page === 'products' ? '新增商品' : page === 'tasks' ? '新增任务' : '新增折扣记录'}</button>}</div>
+        <div className="page-head"><div><small>{store === STORE_ALL ? '三店合计' : `${store} 店铺`}</small><h1>{pageTitle[0]}</h1><p>{pageTitle[1]}</p></div>{page !== 'overview' && page !== 'pricingAds' && <button className="primary" onClick={() => openNew(page === 'data' ? 'operation' : page === 'products' ? 'product' : page === 'tasks' ? 'task' : 'discount')}>＋ {page === 'data' ? '新增记录' : page === 'products' ? '新增商品' : page === 'tasks' ? '新增任务' : '新增折扣记录'}</button>}</div>
         <div className="workspace-note"><span>🌿</span><strong>温柔待办</strong><p>{pageReminder}</p></div>
         {page === 'overview' && <Overview totals={totals} workspace={workspace} store={store} pending={pending} setPage={setPage} dailyFormDone={dailyFormDone} onCopyDailyForm={copyDailyFormEntry} onToggleDailyForm={toggleDailyForm} listingHelper={{ ...emptyListingHelper, ...(workspace.listingHelper || {}) }} translationBusy={translationBusy} onTranslateListingTitle={translateListingTitle} onUpdateListingHelper={updateListingHelper} onCopyListingText={copyListingText} onClearListingHelper={clearListingHelper} onAdd={() => openNew('launch')} onEdit={(item) => openEdit('launch', item)} onDelete={(item) => remove('launches', item, `${item.store} ${item.launchDate} ${launchQuantity(item)}条`)} />}
         {page === 'discounts' && <Discounts records={visible(workspace.discounts)} search={search} setSearch={setSearch} onEdit={(item) => openEdit('discount', item)} onDelete={(item) => remove('discounts', item, item.productName)} />}
         {page === 'data' && <Operations records={visible(workspace.operations)} onEdit={(item) => openEdit('operation', item)} onDelete={(item) => remove('operations', item, `${item.store} ${item.recordDate}`)} />}
         {page === 'products' && <Products records={workspace.products} search={search} setSearch={setSearch} onEdit={(item) => openEdit('product', item)} onDelete={(item) => remove('products', item, item.productName)} />}
         {page === 'tasks' && <Tasks records={visible(workspace.tasks)} update={(records) => update('tasks', records)} onEdit={(item) => openEdit('task', item)} onDelete={(item) => remove('tasks', item, item.title)} />}
+        {page === 'pricingAds' && <PricingAds pricingRecords={visible(workspace.pricingHistory || [])} adRecords={visible(workspace.adRecords || [])} onAddPricing={() => openNew('pricingHistory')} onAddAd={() => openNew('adRecord')} onEditPricing={(item) => openEdit('pricingHistory', item)} onEditAd={(item) => openEdit('adRecord', item)} onDeletePricing={(item) => remove('pricingHistory', item, `${item.productName} ${item.specName}`)} onDeleteAd={(item) => remove('adRecords', item, `${item.store} ${item.recordDate}`)} />}
       </section>
     </main>
     {modal === 'product' && <ProductForm editing={editing} onSubmit={saveProduct} onClose={closeModal} />}
@@ -703,6 +727,8 @@ export default function App() {
     {modal === 'task' && <Modal title={editing ? '修改任务' : '新增任务'} onClose={closeModal}><form onSubmit={saveTask}><Field label="任务内容"><input name="title" defaultValue={editing?.title} required /></Field><div className="form-grid"><Field label="时间"><select name="period" defaultValue={editing?.period || 'today'}><option value="today">今天</option><option value="week">本周</option></select></Field><Field label="店铺"><select name="store" defaultValue={editing?.store || STORE_ALL}>{[STORE_ALL, ...stores].map((name) => <option key={name}>{name}</option>)}</select></Field><Field label="优先级"><select name="priority" defaultValue={editing?.priority || '普通'}><option>高</option><option>普通</option><option>低</option></select></Field></div><Field label="备注"><textarea name="note" defaultValue={editing?.note} /></Field><FormActions onClose={closeModal} /></form></Modal>}
     {modal === 'launch' && <Modal title={editing ? '修改上新记录' : '新增上新记录'} onClose={closeModal}><form onSubmit={saveLaunch}><div className="form-grid"><Field label="店铺"><select name="store" defaultValue={editing?.store || (store === STORE_ALL ? 'AG' : store)}>{stores.map((name) => <option key={name}>{name}</option>)}</select></Field><Field label="上新日期"><input name="launchDate" type="date" defaultValue={editing?.launchDate || today()} required /></Field><Field label="上新条数"><input name="quantity" type="number" min="1" step="1" defaultValue={launchQuantity(editing)} required /></Field></div><Field label="备注"><textarea name="note" defaultValue={editing?.note} placeholder="可选填" /></Field><FormActions onClose={closeModal} /></form></Modal>}
     {modal === 'discount' && <DiscountForm editing={editing} products={workspace.products} currentStore={store} onSubmit={saveDiscount} onClose={closeModal} />}
+    {modal === 'pricingHistory' && <PricingHistoryForm editing={editing} products={workspace.products} currentStore={store} onSubmit={savePricingHistory} onClose={closeModal} />}
+    {modal === 'adRecord' && <Modal title={editing ? '修改每日广告费' : '记录每日广告费'} onClose={closeModal}><form onSubmit={saveAdRecord}><div className="form-grid"><Field label="店铺"><select name="store" defaultValue={editing?.store || (store === STORE_ALL ? 'AG' : store)}>{stores.map((name) => <option key={name}>{name}</option>)}</select></Field><Field label="日期"><input name="recordDate" type="date" defaultValue={editing?.recordDate || today()} required /></Field><Field label="广告费"><input name="adSpend" type="number" min="0" step="0.01" defaultValue={editing?.adSpend ?? ''} placeholder="必填" required /></Field><Field label="广告销售额（选填）"><input name="adSales" type="number" min="0" step="0.01" defaultValue={editing?.adSales ?? ''} /></Field><Field label="广告订单数（选填）"><input name="adOrders" type="number" min="0" step="1" defaultValue={editing?.adOrders ?? ''} /></Field></div><Field label="备注"><textarea name="note" defaultValue={editing?.note} placeholder="例如：活动加投、预算调整" /></Field><div className="calc-note">同一店铺同一天只保留一条记录，再次保存会自动更新。</div><FormActions onClose={closeModal} /></form></Modal>}
     {toast && <div className="toast">{toast}</div>}
   </div>;
 }
@@ -803,6 +829,70 @@ function LaunchChart({ records, target }) {
 function Metric({ label, value }) { return <div className="metric"><i /><span>{label}</span><strong>{value}</strong></div>; }
 function TableShell({ title, subtitle, search, setSearch, children }) { return <div className="panel table-panel"><div className="panel-title"><div><h2>{title}</h2><p>{subtitle}</p></div>{setSearch && <input className="search" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="搜索商品名称" />}</div>{children}</div>; }
 function RowActions({ onEdit, onDelete }) { return <div className="row-actions"><button onClick={onEdit}>编辑</button><button className="danger" onClick={onDelete}>删除</button></div>; }
+
+function PricingAds({ pricingRecords, adRecords, onAddPricing, onAddAd, onEditPricing, onEditAd, onDeletePricing, onDeleteAd }) {
+  const [view, setView] = useState('ads');
+  const monthKey = today().slice(0, 7);
+  const monthAds = adRecords.filter((item) => item.recordDate?.startsWith(monthKey));
+  const monthPricing = pricingRecords.filter((item) => item.priceDate?.startsWith(monthKey));
+  const adSpend = monthAds.reduce((sum, item) => sum + Number(item.adSpend || 0), 0);
+  const adSales = monthAds.reduce((sum, item) => sum + Number(item.adSales || 0), 0);
+  const adOrders = monthAds.reduce((sum, item) => sum + Number(item.adOrders || 0), 0);
+  const increased = monthPricing.filter((item) => Number(item.currentPrice) > Number(item.previousPrice)).length;
+  const decreased = monthPricing.filter((item) => Number(item.currentPrice) < Number(item.previousPrice)).length;
+  const sortedAds = [...adRecords].sort((a, b) => String(b.recordDate).localeCompare(String(a.recordDate)) || String(a.store).localeCompare(String(b.store)));
+  const sortedPricing = [...pricingRecords].sort((a, b) => String(b.priceDate).localeCompare(String(a.priceDate)));
+  return <>
+    <div className="record-view-head">
+      <div className="discount-view-tabs"><button type="button" className={view === 'ads' ? 'selected' : ''} onClick={() => setView('ads')}>每日广告费</button><button type="button" className={view === 'pricing' ? 'selected' : ''} onClick={() => setView('pricing')}>核价变动</button></div>
+      <button className="primary" type="button" onClick={view === 'ads' ? onAddAd : onAddPricing}>＋ {view === 'ads' ? '记录广告费' : '记录核价变化'}</button>
+    </div>
+    {view === 'ads' ? <>
+      <div className="metrics finance-metrics"><Metric label="本月广告费" value={money(adSpend)} /><Metric label="广告销售额" value={money(adSales)} /><Metric label="ROAS" value={adSpend ? `${(adSales / adSpend).toFixed(2)}x` : '—'} /><Metric label="广告订单" value={adOrders} /><Metric label="单均广告成本" value={adOrders ? money(adSpend / adOrders) : '—'} /></div>
+      <AdTrendChart records={monthAds} />
+      <TableShell title="每日广告记录" subtitle="每个店铺每天一条；重复日期会更新原记录">
+        <table><thead><tr><th>日期</th><th>店铺</th><th>广告费</th><th>广告销售额</th><th>广告订单</th><th>ROAS</th><th>单均广告成本</th><th>备注</th><th>操作</th></tr></thead><tbody>
+          {sortedAds.map((item) => <tr key={item.id}><td>{item.recordDate}</td><td><Badge>{item.store}</Badge></td><td><strong>{money(item.adSpend)}</strong></td><td>{Number(item.adSales) ? money(item.adSales) : '—'}</td><td>{Number(item.adOrders) || '—'}</td><td>{Number(item.adSpend) && Number(item.adSales) ? `${(Number(item.adSales) / Number(item.adSpend)).toFixed(2)}x` : '—'}</td><td>{Number(item.adOrders) ? money(Number(item.adSpend) / Number(item.adOrders)) : '—'}</td><td className="note-cell">{item.note || '—'}</td><td><RowActions onEdit={() => onEditAd(item)} onDelete={() => onDeleteAd(item)} /></td></tr>)}
+          {!sortedAds.length && <tr><td colSpan="9"><Empty text="暂无广告记录，点击“记录广告费”开始录入" /></td></tr>}
+        </tbody></table>
+      </TableShell>
+    </> : <>
+      <div className="metrics pricing-metrics"><Metric label="本月核价记录" value={monthPricing.length} /><Metric label="价格上调" value={increased} /><Metric label="价格下调" value={decreased} /><Metric label="价格未变" value={monthPricing.length - increased - decreased} /></div>
+      <TableShell title="核价历史" subtitle="每次调整单独保存，旧核价不会被覆盖">
+        <table><thead><tr><th>日期</th><th>店铺</th><th>商品</th><th>规格</th><th>原核价</th><th>新核价</th><th>调整金额</th><th>涨跌比例</th><th>备注</th><th>操作</th></tr></thead><tbody>
+          {sortedPricing.map((item) => { const change = Number(item.currentPrice) - Number(item.previousPrice); const rate = Number(item.previousPrice) ? change / Number(item.previousPrice) : 0; return <tr key={item.id}><td>{item.priceDate}</td><td><Badge>{item.store}</Badge></td><td><strong>{item.productName}</strong></td><td>{item.specName}</td><td>{money(item.previousPrice)}</td><td><strong>{money(item.currentPrice)}</strong></td><td className={change > 0 ? 'positive' : change < 0 ? 'negative' : ''}>{signedMoney(change)}</td><td className={rate > 0 ? 'positive' : rate < 0 ? 'negative' : ''}>{rate ? `${rate > 0 ? '+' : ''}${(rate * 100).toFixed(1)}%` : '0%'}</td><td className="note-cell">{item.note || '—'}</td><td><RowActions onEdit={() => onEditPricing(item)} onDelete={() => onDeletePricing(item)} /></td></tr>; })}
+          {!sortedPricing.length && <tr><td colSpan="10"><Empty text="暂无核价变化，点击“记录核价变化”开始录入" /></td></tr>}
+        </tbody></table>
+      </TableShell>
+    </>}
+  </>;
+}
+
+function AdTrendChart({ records }) {
+  const dates = [...new Set(records.map((item) => item.recordDate).filter(Boolean))].sort();
+  const width = 960; const height = 220; const left = 62; const right = 24; const top = 24; const bottom = 40;
+  const maximum = Math.max(1, ...records.map((item) => Number(item.adSpend || 0)));
+  const x = (index) => dates.length <= 1 ? (left + width - right) / 2 : left + (index / (dates.length - 1)) * (width - left - right);
+  const y = (value) => top + (1 - (Number(value || 0) / maximum)) * (height - top - bottom);
+  const colors = { AG: '#4d966b', DS: '#5594b7', HX: '#bd7e35' };
+  const valuesByStore = (name) => dates.map((date) => records.find((item) => item.store === name && item.recordDate === date));
+  return <div className="panel ad-trend-panel"><div className="panel-title"><div><h2>本月广告费趋势</h2><p>按店铺查看每天的广告投入变化</p></div><div className="chart-legend">{stores.map((name) => <span key={name}><i style={{ background: colors[name] }} />{name}</span>)}</div></div>
+    {dates.length ? <div className="ad-chart-wrap"><svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label="本月各店铺每日广告费折线图">
+      {[0, .25, .5, .75, 1].map((ratio) => <g key={ratio}><line className="ad-chart-grid" x1={left} x2={width - right} y1={y(maximum * ratio)} y2={y(maximum * ratio)} /><text x={left - 10} y={y(maximum * ratio) + 4} textAnchor="end">{money(maximum * ratio)}</text></g>)}
+      {dates.map((date, index) => <text key={date} x={x(index)} y={height - 14} textAnchor="middle">{date.slice(5).replace('-', '/')}</text>)}
+      {stores.map((name) => { const points = valuesByStore(name); const path = points.map((item, index) => item ? `${index && points.slice(0, index).some(Boolean) ? 'L' : 'M'} ${x(index)} ${y(item.adSpend)}` : '').filter(Boolean).join(' '); return <g key={name}>{path && <path d={path} fill="none" stroke={colors[name]} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />}{points.map((item, index) => item && <circle key={`${name}-${dates[index]}`} cx={x(index)} cy={y(item.adSpend)} r="4" fill="#fff" stroke={colors[name]} strokeWidth="3"><title>{name} {dates[index]}：{money(item.adSpend)}</title></circle>)}</g>; })}
+    </svg></div> : <Empty text="本月暂无广告数据，录入后这里会自动生成趋势图" />}
+  </div>;
+}
+
+function PricingHistoryForm({ editing, products, currentStore, onSubmit, onClose }) {
+  const initialProductId = editing?.productId || products[0]?.id || '';
+  const [productId, setProductId] = useState(initialProductId);
+  const selectedProduct = products.find((item) => item.id === productId);
+  const specs = normalizeProductSpecs(selectedProduct);
+  const selectedSpecExists = specs.some((item) => item.id === editing?.specId);
+  return <Modal title={editing ? '修改核价记录' : '记录核价变化'} onClose={onClose}>{products.length ? <form onSubmit={onSubmit}><div className="form-grid"><Field label="店铺"><select name="store" defaultValue={editing?.store || (currentStore === STORE_ALL ? 'AG' : currentStore)}>{stores.map((name) => <option key={name}>{name}</option>)}</select></Field><Field label="核价日期"><input name="priceDate" type="date" defaultValue={editing?.priceDate || today()} required /></Field></div><Field label="商品"><select name="productId" value={productId} onChange={(event) => setProductId(event.target.value)} required>{products.map((item) => <option key={item.id} value={item.id}>{productCategoryOf(item)} · {item.productName}</option>)}</select></Field><Field label="规格"><select name="specId" key={productId} defaultValue={selectedSpecExists ? editing.specId : specs[0]?.id} required>{specs.map((spec) => <option key={spec.id} value={spec.id}>{spec.name}</option>)}</select></Field><div className="form-grid"><Field label="以前的核价"><input name="previousPrice" type="number" min="0" step="0.01" defaultValue={editing?.previousPrice ?? ''} required /></Field><Field label="现在的核价"><input name="currentPrice" type="number" min="0" step="0.01" defaultValue={editing?.currentPrice ?? ''} required /></Field></div><Field label="备注"><textarea name="note" defaultValue={editing?.note} placeholder="例如：平台重新核价、供应价调整" /></Field><FormActions onClose={onClose} /></form> : <><Empty text="请先在商品档案中添加商品，再记录核价变化" /><div className="actions"><button type="button" onClick={onClose}>关闭</button></div></>}</Modal>;
+}
 
 function Products({ records, search, setSearch, onEdit, onDelete }) {
   const [categoryFilter, setCategoryFilter] = useState('全部商品');
