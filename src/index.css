@@ -475,6 +475,7 @@ tbody tr:hover,tbody tr:hover td{background:#f7fbf5}
 .ad-chart-wrap text{fill:#829087;font-size:11px;font-family:Inter,"Microsoft YaHei",sans-serif}
 .ad-chart-grid{stroke:#e1ebe1;stroke-width:1}
 .note-cell{max-width:220px;overflow:hidden;text-overflow:ellipsis;color:#75847a}
+.ad-product-cell{min-width:220px;max-width:320px;white-space:normal;line-height:1.45}
 @media(max-width:1250px){.finance-metrics{grid-template-columns:repeat(3,1fr)}.pricing-metrics{grid-template-columns:repeat(2,1fr)}}
 
 .listing-helper{margin-bottom:16px;overflow:hidden}

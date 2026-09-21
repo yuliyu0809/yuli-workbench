@@ -554,7 +554,7 @@ export default function App() {
     data: '每天按店铺记录一次核心数据，后续对比会更清晰。',
     products: `当前价格表版本 ${lightingCatalogVersion}，修改商品后会自动同步到云端。`,
     tasks: '把今天必须完成的事情放在“今天”，其余安排到“本周”。',
-    pricingAds: '每天按店铺记录广告费；核价调整会保留旧价，方便以后查变化。',
+    pricingAds: '广告费按店铺、商品链接和 SKU 分开记录；核价调整会保留旧价。',
   }[page];
 
   const openNew = (kind) => { setEditing(null); setModal(kind); };
@@ -658,10 +658,13 @@ export default function App() {
   const saveAdRecord = (event) => {
     event.preventDefault(); const data = new FormData(event.currentTarget);
     const recordDate = String(data.get('recordDate')); const recordStore = String(data.get('store'));
-    const duplicate = (workspace.adRecords || []).find((item) => item.store === recordStore && item.recordDate === recordDate && item.id !== editing?.id);
-    const next = { id: editing?.id || duplicate?.id || uid(), store: recordStore, recordDate, adSpend: Number(data.get('adSpend')), adSales: Number(data.get('adSales')), adOrders: Number(data.get('adOrders')), note: data.get('note'), updatedAt: new Date().toISOString() };
+    const product = workspace.products.find((item) => item.id === data.get('productId'));
+    const spec = normalizeProductSpecs(product).find((item) => item.id === data.get('specId'));
+    if (!product || !spec) { notify('请选择商品链接和 SKU'); return; }
+    const duplicate = (workspace.adRecords || []).find((item) => item.store === recordStore && item.recordDate === recordDate && item.productId === product.id && item.specId === spec.id && item.id !== editing?.id);
+    const next = { id: editing?.id || duplicate?.id || uid(), store: recordStore, recordDate, productId: product.id, productName: product.productName, specId: spec.id, specName: spec.name, adSpend: Number(data.get('adSpend')), adSales: Number(data.get('adSales')), adOrders: Number(data.get('adOrders')), note: data.get('note'), updatedAt: new Date().toISOString() };
     const records = (workspace.adRecords || []).filter((item) => item.id !== next.id && item.id !== editing?.id);
-    update('adRecords', [next, ...records]); closeModal(); notify(duplicate ? '当天广告记录已更新' : '广告费已保存');
+    update('adRecords', [next, ...records]); closeModal(); notify(duplicate ? '该 SKU 当天的广告记录已更新' : 'SKU 广告费已保存');
   };
   const saveDiscount = async (event) => {
     event.preventDefault(); const data = new FormData(event.currentTarget);
@@ -728,7 +731,7 @@ export default function App() {
     {modal === 'launch' && <Modal title={editing ? '修改上新记录' : '新增上新记录'} onClose={closeModal}><form onSubmit={saveLaunch}><div className="form-grid"><Field label="店铺"><select name="store" defaultValue={editing?.store || (store === STORE_ALL ? 'AG' : store)}>{stores.map((name) => <option key={name}>{name}</option>)}</select></Field><Field label="上新日期"><input name="launchDate" type="date" defaultValue={editing?.launchDate || today()} required /></Field><Field label="上新条数"><input name="quantity" type="number" min="1" step="1" defaultValue={launchQuantity(editing)} required /></Field></div><Field label="备注"><textarea name="note" defaultValue={editing?.note} placeholder="可选填" /></Field><FormActions onClose={closeModal} /></form></Modal>}
     {modal === 'discount' && <DiscountForm editing={editing} products={workspace.products} currentStore={store} onSubmit={saveDiscount} onClose={closeModal} />}
     {modal === 'pricingHistory' && <PricingHistoryForm editing={editing} products={workspace.products} currentStore={store} onSubmit={savePricingHistory} onClose={closeModal} />}
-    {modal === 'adRecord' && <Modal title={editing ? '修改每日广告费' : '记录每日广告费'} onClose={closeModal}><form onSubmit={saveAdRecord}><div className="form-grid"><Field label="店铺"><select name="store" defaultValue={editing?.store || (store === STORE_ALL ? 'AG' : store)}>{stores.map((name) => <option key={name}>{name}</option>)}</select></Field><Field label="日期"><input name="recordDate" type="date" defaultValue={editing?.recordDate || today()} required /></Field><Field label="广告费"><input name="adSpend" type="number" min="0" step="0.01" defaultValue={editing?.adSpend ?? ''} placeholder="必填" required /></Field><Field label="广告销售额（选填）"><input name="adSales" type="number" min="0" step="0.01" defaultValue={editing?.adSales ?? ''} /></Field><Field label="广告订单数（选填）"><input name="adOrders" type="number" min="0" step="1" defaultValue={editing?.adOrders ?? ''} /></Field></div><Field label="备注"><textarea name="note" defaultValue={editing?.note} placeholder="例如：活动加投、预算调整" /></Field><div className="calc-note">同一店铺同一天只保留一条记录，再次保存会自动更新。</div><FormActions onClose={closeModal} /></form></Modal>}
+    {modal === 'adRecord' && <AdRecordForm editing={editing} products={workspace.products} currentStore={store} onSubmit={saveAdRecord} onClose={closeModal} />}
     {toast && <div className="toast">{toast}</div>}
   </div>;
 }
@@ -850,10 +853,10 @@ function PricingAds({ pricingRecords, adRecords, onAddPricing, onAddAd, onEditPr
     {view === 'ads' ? <>
       <div className="metrics finance-metrics"><Metric label="本月广告费" value={money(adSpend)} /><Metric label="广告销售额" value={money(adSales)} /><Metric label="ROAS" value={adSpend ? `${(adSales / adSpend).toFixed(2)}x` : '—'} /><Metric label="广告订单" value={adOrders} /><Metric label="单均广告成本" value={adOrders ? money(adSpend / adOrders) : '—'} /></div>
       <AdTrendChart records={monthAds} />
-      <TableShell title="每日广告记录" subtitle="每个店铺每天一条；重复日期会更新原记录">
-        <table><thead><tr><th>日期</th><th>店铺</th><th>广告费</th><th>广告销售额</th><th>广告订单</th><th>ROAS</th><th>单均广告成本</th><th>备注</th><th>操作</th></tr></thead><tbody>
-          {sortedAds.map((item) => <tr key={item.id}><td>{item.recordDate}</td><td><Badge>{item.store}</Badge></td><td><strong>{money(item.adSpend)}</strong></td><td>{Number(item.adSales) ? money(item.adSales) : '—'}</td><td>{Number(item.adOrders) || '—'}</td><td>{Number(item.adSpend) && Number(item.adSales) ? `${(Number(item.adSales) / Number(item.adSpend)).toFixed(2)}x` : '—'}</td><td>{Number(item.adOrders) ? money(Number(item.adSpend) / Number(item.adOrders)) : '—'}</td><td className="note-cell">{item.note || '—'}</td><td><RowActions onEdit={() => onEditAd(item)} onDelete={() => onDeleteAd(item)} /></td></tr>)}
-          {!sortedAds.length && <tr><td colSpan="9"><Empty text="暂无广告记录，点击“记录广告费”开始录入" /></td></tr>}
+      <TableShell title="SKU 每日广告记录" subtitle="按店铺、商品链接和 SKU 分开记录；相同组合的同一天数据会自动更新">
+        <table><thead><tr><th>日期</th><th>店铺</th><th>商品链接</th><th>SKU</th><th>广告费</th><th>广告销售额</th><th>广告订单</th><th>ROAS</th><th>单均广告成本</th><th>备注</th><th>操作</th></tr></thead><tbody>
+          {sortedAds.map((item) => <tr key={item.id}><td>{item.recordDate}</td><td><Badge>{item.store}</Badge></td><td className="ad-product-cell"><strong>{item.productName || '整店汇总'}</strong></td><td>{item.specName || '未区分 SKU'}</td><td><strong>{money(item.adSpend)}</strong></td><td>{Number(item.adSales) ? money(item.adSales) : '—'}</td><td>{Number(item.adOrders) || '—'}</td><td>{Number(item.adSpend) && Number(item.adSales) ? `${(Number(item.adSales) / Number(item.adSpend)).toFixed(2)}x` : '—'}</td><td>{Number(item.adOrders) ? money(Number(item.adSpend) / Number(item.adOrders)) : '—'}</td><td className="note-cell">{item.note || '—'}</td><td><RowActions onEdit={() => onEditAd(item)} onDelete={() => onDeleteAd(item)} /></td></tr>)}
+          {!sortedAds.length && <tr><td colSpan="11"><Empty text="暂无 SKU 广告记录，点击“记录广告费”开始录入" /></td></tr>}
         </tbody></table>
       </TableShell>
     </> : <>
@@ -871,11 +874,14 @@ function PricingAds({ pricingRecords, adRecords, onAddPricing, onAddAd, onEditPr
 function AdTrendChart({ records }) {
   const dates = [...new Set(records.map((item) => item.recordDate).filter(Boolean))].sort();
   const width = 960; const height = 220; const left = 62; const right = 24; const top = 24; const bottom = 40;
-  const maximum = Math.max(1, ...records.map((item) => Number(item.adSpend || 0)));
+  const maximum = Math.max(1, ...stores.flatMap((name) => dates.map((date) => records.filter((item) => item.store === name && item.recordDate === date).reduce((sum, item) => sum + Number(item.adSpend || 0), 0))));
   const x = (index) => dates.length <= 1 ? (left + width - right) / 2 : left + (index / (dates.length - 1)) * (width - left - right);
   const y = (value) => top + (1 - (Number(value || 0) / maximum)) * (height - top - bottom);
   const colors = { AG: '#4d966b', DS: '#5594b7', HX: '#bd7e35' };
-  const valuesByStore = (name) => dates.map((date) => records.find((item) => item.store === name && item.recordDate === date));
+  const valuesByStore = (name) => dates.map((date) => {
+    const dailyRecords = records.filter((item) => item.store === name && item.recordDate === date);
+    return dailyRecords.length ? { adSpend: dailyRecords.reduce((sum, item) => sum + Number(item.adSpend || 0), 0) } : null;
+  });
   return <div className="panel ad-trend-panel"><div className="panel-title"><div><h2>本月广告费趋势</h2><p>按店铺查看每天的广告投入变化</p></div><div className="chart-legend">{stores.map((name) => <span key={name}><i style={{ background: colors[name] }} />{name}</span>)}</div></div>
     {dates.length ? <div className="ad-chart-wrap"><svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label="本月各店铺每日广告费折线图">
       {[0, .25, .5, .75, 1].map((ratio) => <g key={ratio}><line className="ad-chart-grid" x1={left} x2={width - right} y1={y(maximum * ratio)} y2={y(maximum * ratio)} /><text x={left - 10} y={y(maximum * ratio) + 4} textAnchor="end">{money(maximum * ratio)}</text></g>)}
@@ -892,6 +898,21 @@ function PricingHistoryForm({ editing, products, currentStore, onSubmit, onClose
   const specs = normalizeProductSpecs(selectedProduct);
   const selectedSpecExists = specs.some((item) => item.id === editing?.specId);
   return <Modal title={editing ? '修改核价记录' : '记录核价变化'} onClose={onClose}>{products.length ? <form onSubmit={onSubmit}><div className="form-grid"><Field label="店铺"><select name="store" defaultValue={editing?.store || (currentStore === STORE_ALL ? 'AG' : currentStore)}>{stores.map((name) => <option key={name}>{name}</option>)}</select></Field><Field label="核价日期"><input name="priceDate" type="date" defaultValue={editing?.priceDate || today()} required /></Field></div><Field label="商品"><select name="productId" value={productId} onChange={(event) => setProductId(event.target.value)} required>{products.map((item) => <option key={item.id} value={item.id}>{productCategoryOf(item)} · {item.productName}</option>)}</select></Field><Field label="规格"><select name="specId" key={productId} defaultValue={selectedSpecExists ? editing.specId : specs[0]?.id} required>{specs.map((spec) => <option key={spec.id} value={spec.id}>{spec.name}</option>)}</select></Field><div className="form-grid"><Field label="以前的核价"><input name="previousPrice" type="number" min="0" step="0.01" defaultValue={editing?.previousPrice ?? ''} required /></Field><Field label="现在的核价"><input name="currentPrice" type="number" min="0" step="0.01" defaultValue={editing?.currentPrice ?? ''} required /></Field></div><Field label="备注"><textarea name="note" defaultValue={editing?.note} placeholder="例如：平台重新核价、供应价调整" /></Field><FormActions onClose={onClose} /></form> : <><Empty text="请先在商品档案中添加商品，再记录核价变化" /><div className="actions"><button type="button" onClick={onClose}>关闭</button></div></>}</Modal>;
+}
+
+function AdRecordForm({ editing, products, currentStore, onSubmit, onClose }) {
+  const initialProductId = editing?.productId || products[0]?.id || '';
+  const [productId, setProductId] = useState(initialProductId);
+  const selectedProduct = products.find((item) => item.id === productId);
+  const specs = normalizeProductSpecs(selectedProduct);
+  const selectedSpecExists = specs.some((item) => item.id === editing?.specId);
+  return <Modal title={editing ? '修改 SKU 广告费' : '记录 SKU 广告费'} onClose={onClose}>{products.length ? <form onSubmit={onSubmit}>
+    <div className="form-grid"><Field label="店铺"><select name="store" defaultValue={editing?.store || (currentStore === STORE_ALL ? 'AG' : currentStore)}>{stores.map((name) => <option key={name}>{name}</option>)}</select></Field><Field label="日期"><input name="recordDate" type="date" defaultValue={editing?.recordDate || today()} required /></Field></div>
+    <Field label="商品链接"><select name="productId" value={productId} onChange={(event) => setProductId(event.target.value)} required>{products.map((item) => <option key={item.id} value={item.id}>{productCategoryOf(item)} · {item.productName}</option>)}</select></Field>
+    <Field label="SKU / 规格"><select name="specId" key={productId} defaultValue={selectedSpecExists ? editing.specId : specs[0]?.id} required>{specs.map((spec) => <option key={spec.id} value={spec.id}>{spec.name}</option>)}</select></Field>
+    <div className="form-grid"><Field label="该 SKU 广告费"><input name="adSpend" type="number" min="0" step="0.01" defaultValue={editing?.adSpend ?? ''} placeholder="必填" required /></Field><Field label="该 SKU 广告销售额（选填）"><input name="adSales" type="number" min="0" step="0.01" defaultValue={editing?.adSales ?? ''} /></Field><Field label="该 SKU 广告订单数（选填）"><input name="adOrders" type="number" min="0" step="1" defaultValue={editing?.adOrders ?? ''} /></Field></div>
+    <Field label="备注"><textarea name="note" defaultValue={editing?.note} placeholder="例如：活动加投、预算调整" /></Field><div className="calc-note">同一店铺、同一商品链接、同一 SKU、同一天只保留一条记录；不同 SKU 可以分别录入。</div><FormActions onClose={onClose} />
+  </form> : <><Empty text="请先在商品档案中添加商品和规格，再记录 SKU 广告费" /><div className="actions"><button type="button" onClick={onClose}>关闭</button></div></>}</Modal>;
 }
 
 function Products({ records, search, setSearch, onEdit, onDelete }) {
