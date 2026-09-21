@@ -486,13 +486,13 @@ tbody tr:hover,tbody tr:hover td{background:#f7fbf5}
 .ad-sku-row td:first-child{border-left:4px solid transparent}
 .ad-sku-row td:nth-child(5) small{display:block;max-width:180px;margin-top:4px;overflow:hidden;color:#8b988f;text-overflow:ellipsis}
 .sku-branch{display:inline-block;padding-left:12px;color:#7b9082;font-size:12px}
-.sku-select-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px}
-.sku-select-row button,.new-sku-box>button{border:1px solid #bcd2be;border-radius:11px;color:#2d684b;background:#f7fbf5;padding:0 12px;font-weight:700;white-space:nowrap}
-.sku-select-row button:hover,.new-sku-box>button:hover{background:#edf6ea;border-color:#86ad8e}
-.new-sku-box{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(120px,.8fr) auto;align-items:end;gap:10px;margin:-3px 0 16px;padding:14px;background:#eef6ec;border:1px dashed #bdd4bf;border-radius:14px}
-.new-sku-box>div{display:grid;gap:7px;color:#66746b;font-size:12px}
-.new-sku-box input{width:100%;padding:11px 12px;border:1px solid #d2dfd1;border-radius:10px;background:#fff;outline:none}
-.new-sku-box>button{height:41px}
+.ad-sku-editor{display:grid;gap:12px;margin:2px 0 16px;padding:14px;background:#eef6ec;border:1px solid #d5e4d3;border-radius:16px}
+.ad-sku-editor-title,.ad-sku-entry-head{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.ad-sku-editor-title>div{display:grid;gap:3px}.ad-sku-editor-title small{color:#7c8c82}
+.ad-sku-editor-title button,.ad-sku-entry-head button{border:1px solid #bcd2be;border-radius:11px;color:#2d684b;background:#fff;padding:9px 12px;font-weight:700;white-space:nowrap}
+.ad-sku-editor-title button:hover,.ad-sku-entry-head button:hover{background:#f7fbf5;border-color:#86ad8e}.ad-sku-editor-title button:disabled{color:#9aa89d;background:#f4f6f3;cursor:not-allowed}
+.ad-sku-entry{display:grid;gap:10px;padding:13px;background:#fff;border:1px solid #d8e5d7;border-radius:13px}
+.ad-sku-entry-head{padding-bottom:2px}.ad-sku-entry-head button{padding:5px 9px;color:#b45f58;border-color:#ead2cf;font-size:12px}
 .field-help{display:block;margin-top:5px;color:#809087;font-size:11px}
 @media(max-width:1250px){.finance-metrics{grid-template-columns:repeat(3,1fr)}.pricing-metrics{grid-template-columns:repeat(2,1fr)}}
 
