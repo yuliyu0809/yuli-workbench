@@ -464,7 +464,7 @@ tbody tr:hover,tbody tr:hover td{background:#f7fbf5}
 .record-view-head .discount-view-tabs{display:flex;padding:5px;border:1px solid #d3e1d3;background:#e8f0e4}
 .record-view-head .discount-view-tabs button{border:0;padding:10px 18px;color:#6d7d72;background:transparent;font-weight:700}
 .record-view-head .discount-view-tabs button.selected{color:#255f47;background:#fff;box-shadow:0 2px 6px rgba(44,83,58,.08)}
-.finance-metrics{grid-template-columns:repeat(5,minmax(0,1fr))}
+.finance-metrics{grid-template-columns:repeat(6,minmax(0,1fr))}
 .pricing-metrics{grid-template-columns:repeat(4,minmax(0,1fr))}
 .ad-trend-panel{margin-bottom:18px}
 .chart-legend{display:flex;align-items:center;gap:16px;color:#687a6e;font-size:12px}
@@ -476,6 +476,7 @@ tbody tr:hover,tbody tr:hover td{background:#f7fbf5}
 .ad-chart-grid{stroke:#e1ebe1;stroke-width:1}
 .note-cell{max-width:220px;overflow:hidden;text-overflow:ellipsis;color:#75847a}
 .ad-product-cell{min-width:220px;max-width:320px;white-space:normal;line-height:1.45}
+.field-help{display:block;margin-top:5px;color:#809087;font-size:11px}
 @media(max-width:1250px){.finance-metrics{grid-template-columns:repeat(3,1fr)}.pricing-metrics{grid-template-columns:repeat(2,1fr)}}
 
 .listing-helper{margin-bottom:16px;overflow:hidden}
