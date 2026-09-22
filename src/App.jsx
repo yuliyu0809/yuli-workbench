@@ -20,7 +20,7 @@ const nav = [
 ];
 const titles = {
   overview: ['早上好，郁荔', '这是三个店铺今天的运营情况。'],
-  discounts: ['商品折扣', '按照利润核算参考表自动计算可承受的折扣档位。'],
+  discounts: ['商品折扣', '单独记录你实际可以报名的活动折扣。'],
   data: ['运营数据', '记录并对比 AG、DS、HX 的每日核心指标。'],
   products: ['商品档案', '已按《利润核算参考表（20260820）》重新整理全部商品、规格与利润价格。'],
   tasks: ['运营任务', '把每天要做的事放在一个清晰的队列里。'],
@@ -189,7 +189,7 @@ const summarizeDiscountSpecs = (specs) => {
   const recommendedDiscount = calculated.some((spec) => spec.recommendedDiscount === null) ? null : Math.max(...calculated.map((spec) => spec.recommendedDiscount));
   return { specs: calculated, limitingSpec, minimumRatio: limitingSpec?.minimumRatio || null, recommendedDiscount };
 };
-const recordRecommended = (record) => Array.isArray(record?.specs) && record.specs.length ? summarizeDiscountSpecs(normalizeDiscountSpecs(record)).recommendedDiscount : record?.recommendedDiscount ?? null;
+const recordRecommended = (record) => record?.manualReportableDiscount ?? (Array.isArray(record?.specs) && record.specs.length ? summarizeDiscountSpecs(normalizeDiscountSpecs(record)).recommendedDiscount : record?.recommendedDiscount ?? null);
 const valueRange = (values, formatter) => {
   const numbers = values.map(Number).filter(Number.isFinite);
   if (!numbers.length) return '—';
@@ -573,7 +573,7 @@ export default function App() {
   const pageTitle = titles[page];
   const pageReminder = {
     overview: `今日运营提醒：${todayTaskCount ? `有 ${todayTaskCount} 项任务待处理` : '今天暂无待办'}，已记录 ${discountProductCount} 个折扣商品。`,
-    discounts: '折扣档位按商品中限制最高的规格判断，点选档位即可快速筛选。',
+    discounts: '可报折扣由你自己填写；档案利润公式仅作参考，点选档位可以快速筛选。',
     data: '每天按店铺记录一次核心数据，后续对比会更清晰。',
     products: `当前价格表版本 ${lightingCatalogVersion}，修改商品后会自动同步到云端。`,
     tasks: '把今天必须完成的事情放在“今天”，其余安排到“本周”。',
@@ -719,14 +719,15 @@ export default function App() {
     }));
     const limitingSpec = summary.limitingSpec;
     let imageDataUrl = editing?.imageDataUrl || ''; const file = data.get('image'); if (file?.size) imageDataUrl = await imageToDataUrl(file);
-    const reportableDiscount = summary.recommendedDiscount;
+    const manualReportableDiscount = Number(data.get('manualReportableDiscount')) / 10;
+    const reportableDiscount = Number.isFinite(manualReportableDiscount) && manualReportableDiscount > 0 ? manualReportableDiscount : null;
     const profits = reportableDiscount ? summary.specs.map((spec) => netProfitAtPrice(spec.cost, spec.salePrice * reportableDiscount)) : [];
     const legacyFields = editing ? {
       ...(editing.selectedDiscount != null ? { selectedDiscount: editing.selectedDiscount } : {}),
       ...(editing.startDate ? { startDate: editing.startDate } : {}),
       ...(editing.endDate ? { endDate: editing.endDate } : {}),
     } : {};
-    const next = { id: editing?.id || uid(), store: data.get('store'), productCode: String(data.get('productCode')).trim(), productName: String(data.get('productName')).trim(), specs: summary.specs, limitingSpecName: limitingSpec?.name || '默认规格', cost: limitingSpec?.cost || 0, salePrice: limitingSpec?.salePrice || 0, minimumRatio: summary.minimumRatio, recommendedDiscount: reportableDiscount, discountedPrice: reportableDiscount ? limitingSpec?.salePrice * reportableDiscount : 0, profit: profits.length ? Math.min(...profits) : 0, note: data.get('note'), imageDataUrl, updatedAt: new Date().toISOString(), ...legacyFields };
+    const next = { id: editing?.id || uid(), store: data.get('store'), productCode: String(data.get('productCode')).trim(), productName: String(data.get('productName')).trim(), specs: summary.specs, limitingSpecName: limitingSpec?.name || '默认规格', cost: limitingSpec?.cost || 0, salePrice: limitingSpec?.salePrice || 0, minimumRatio: summary.minimumRatio, recommendedDiscount: summary.recommendedDiscount, manualReportableDiscount: reportableDiscount, discountedPrice: reportableDiscount ? limitingSpec?.salePrice * reportableDiscount : 0, profit: profits.length ? Math.min(...profits) : 0, note: data.get('note'), imageDataUrl, updatedAt: new Date().toISOString(), ...legacyFields };
     update('discounts', editing ? workspace.discounts.map((item) => item.id === editing.id ? next : item) : [next, ...workspace.discounts]); closeModal(); notify('折扣记录已保存');
   };
   const savePriceReference = (event) => {
@@ -1066,8 +1067,8 @@ function DiscountActivity({ records, search, setSearch, onEdit, onDelete }) {
         </button>;
       })}
     </div>
-    <TableShell title="商品折扣记录" subtitle={`按利润表最低售价 ÷ 当前售价计算最低可报档位（售后5% + 广告12.5% + 分段目标利润）${tierFilter ? ` · 当前查看可报 ${discountText(tierFilter)} 的商品` : ''}`} search={search} setSearch={setSearch}>
-      <table><thead><tr><th>商品</th><th>店铺</th><th>供货价</th><th>当前售价</th><th>最低售价</th><th>最低折扣</th><th>最低可报</th><th>活动价</th><th>预计利润</th><th>操作</th></tr></thead><tbody>
+    <TableShell title="商品折扣记录" subtitle={`“我的可报折扣”由你单独填写，不受商品档案推荐限制；活动价和利润按你填写的折扣计算${tierFilter ? ` · 当前查看可报 ${discountText(tierFilter)} 的商品` : ''}`} search={search} setSearch={setSearch}>
+      <table><thead><tr><th>商品</th><th>店铺</th><th>供货价</th><th>当前售价</th><th>最低售价</th><th>公式最低折扣</th><th>我的可报折扣</th><th>活动价</th><th>预计利润</th><th>操作</th></tr></thead><tbody>
         {filtered.map((item) => { const specs = normalizeDiscountSpecs(item); const summary = summarizeDiscountSpecs(specs); const reportableDiscount = summary.recommendedDiscount; const profits = reportableDiscount ? specs.map((spec) => netProfitAtPrice(spec.cost, spec.salePrice * reportableDiscount)) : []; return <tr key={item.id}><td><div className="product-cell"><span className="thumb">{item.imageDataUrl ? <img src={item.imageDataUrl} alt="" /> : '折'}</span><span><strong>{item.productName}</strong><small>{item.productCode}{specs.length > 1 ? ` · ${specs.length}个规格 · 限制规格：${summary.limitingSpec?.name}` : ` · ${specs[0]?.name}`}</small></span></div></td><td><Badge>{item.store}</Badge></td><td>{valueRange(specs.map((spec) => spec.cost), money)}</td><td>{valueRange(specs.map((spec) => spec.salePrice), money)}</td><td>{valueRange(specs.map((spec) => profitMetrics(spec.cost).minimumSalePrice), money)}</td><td>{discountText(summary.minimumRatio)}</td><td><Badge>{discountText(reportableDiscount)}</Badge></td><td>{reportableDiscount ? valueRange(specs.map((spec) => spec.salePrice * reportableDiscount), money) : '—'}</td><td className={profits.length && Math.min(...profits) < 0 ? 'negative' : 'positive'}>{profits.length ? `最低 ${money(Math.min(...profits))}` : '—'}</td><td><RowActions onEdit={() => onEdit(item)} onDelete={() => onDelete(item)} /></td></tr>; })}
         {!filtered.length && <tr><td colSpan="10"><Empty text={tierFilter ? `暂无可以报 ${discountText(tierFilter)} 的商品` : '暂无折扣记录，点击“新增折扣记录”开始录入'} /></td></tr>}
       </tbody></table>
@@ -1131,6 +1132,10 @@ function ProductForm({ editing, onSubmit, onClose }) {
 function DiscountForm({ editing, products, currentStore, onSubmit, onClose }) {
   const [productName, setProductName] = useState(editing?.productName || '');
   const [specRows, setSpecRows] = useState(() => normalizeDiscountSpecs(editing));
+  const [manualDiscount, setManualDiscount] = useState(() => {
+    const saved = editing ? recordRecommended(editing) : null;
+    return saved ? Number((saved * 10).toFixed(1)) : '';
+  });
   const completedSpecs = specRows.filter((spec) => spec.name && Number(spec.salePrice) > 0);
   const summary = completedSpecs.length ? summarizeDiscountSpecs(completedSpecs) : null;
   const updateSpec = (id, key, value) => setSpecRows((rows) => rows.map((row) => {
@@ -1143,7 +1148,7 @@ function DiscountForm({ editing, products, currentStore, onSubmit, onClose }) {
     setProductName(name); const found = products.find((item) => item.productName === name);
     if (found) setSpecRows(expandProductSpecsForPacks(found));
   };
-  return <Modal title={editing ? '修改折扣记录' : '新增折扣记录'} onClose={onClose}><form onSubmit={onSubmit}><div className="form-grid"><Field label="店铺"><select name="store" defaultValue={editing?.store || (currentStore === STORE_ALL ? 'AG' : currentStore)}>{stores.map((name) => <option key={name}>{name}</option>)}</select></Field><Field label="商品编号"><input name="productCode" defaultValue={editing?.productCode} /></Field></div><Field label="商品名称"><ProductNamePicker products={products} value={productName} onChange={selectProduct} /></Field><div className="spec-editor discount-spec-editor"><div className="spec-editor-head"><b>各规格供货价与当前售价</b><small>已按可做件装数展开；每个件装独立填售价，核不过的可以移除</small></div>{specRows.map((spec, index) => <div className="discount-spec-row" key={spec.id}><span>{index + 1}</span><input type="hidden" name="specId" value={spec.id} /><input type="hidden" name="specUnitCost" value={spec.unitCost ?? spec.cost} /><input type="hidden" name="specPackQuantity" value={spec.packQuantity || 1} /><input name="specName" value={spec.name} onChange={(event) => updateSpec(spec.id, 'name', event.target.value)} placeholder="规格" required /><input name="specCost" type="number" min="0" step="0.01" value={spec.cost} onChange={(event) => updateSpec(spec.id, 'cost', event.target.value)} placeholder="供货价" aria-label={`${spec.name || '规格'}供货价`} required /><input name="specSalePrice" type="number" min="0.01" step="0.01" value={spec.salePrice} onChange={(event) => updateSpec(spec.id, 'salePrice', event.target.value)} placeholder="当前售价" required /><b>{Number(spec.salePrice) > 0 ? discountText(getRecommended(spec.cost, spec.salePrice)) : '—'}</b><button type="button" className="remove-spec" disabled={specRows.length === 1} onClick={() => removeSpec(spec.id)}>移除</button></div>)}</div><div className="calc-note">各件装供货成本已自动合计　利润表最低售价：{summary?.limitingSpec ? money(profitMetrics(summary.limitingSpec.cost).minimumSalePrice) : '—'}　产品最低折扣：{summary ? discountText(summary.minimumRatio) : '—'}　产品最低可报：<b>{summary ? discountText(summary.recommendedDiscount) : '—'}</b>{summary?.limitingSpec && <span>　限制规格：{summary.limitingSpec.name}</span>}</div><Field label="商品图片"><input name="image" type="file" accept="image/*" /></Field><Field label="备注"><textarea name="note" defaultValue={editing?.note} /></Field><FormActions onClose={onClose} /></form></Modal>;
+  return <Modal title={editing ? '修改折扣记录' : '新增折扣记录'} onClose={onClose}><form onSubmit={onSubmit}><div className="form-grid"><Field label="店铺"><select name="store" defaultValue={editing?.store || (currentStore === STORE_ALL ? 'AG' : currentStore)}>{stores.map((name) => <option key={name}>{name}</option>)}</select></Field><Field label="商品编号"><input name="productCode" defaultValue={editing?.productCode} /></Field></div><Field label="商品名称"><ProductNamePicker products={products} value={productName} onChange={selectProduct} /></Field><div className="spec-editor discount-spec-editor"><div className="spec-editor-head"><b>各规格供货价与当前售价</b><small>已按可做件装数展开；每个件装独立填售价，核不过的可以移除</small></div>{specRows.map((spec, index) => <div className="discount-spec-row" key={spec.id}><span>{index + 1}</span><input type="hidden" name="specId" value={spec.id} /><input type="hidden" name="specUnitCost" value={spec.unitCost ?? spec.cost} /><input type="hidden" name="specPackQuantity" value={spec.packQuantity || 1} /><input name="specName" value={spec.name} onChange={(event) => updateSpec(spec.id, 'name', event.target.value)} placeholder="规格" required /><input name="specCost" type="number" min="0" step="0.01" value={spec.cost} onChange={(event) => updateSpec(spec.id, 'cost', event.target.value)} placeholder="供货价" aria-label={`${spec.name || '规格'}供货价`} required /><input name="specSalePrice" type="number" min="0.01" step="0.01" value={spec.salePrice} onChange={(event) => updateSpec(spec.id, 'salePrice', event.target.value)} placeholder="当前售价" required /><b>{Number(spec.salePrice) > 0 ? discountText(getRecommended(spec.cost, spec.salePrice)) : '—'}</b><button type="button" className="remove-spec" disabled={specRows.length === 1} onClick={() => removeSpec(spec.id)}>移除</button></div>)}</div><div className="calc-note">公式仅供参考　利润表最低售价：{summary?.limitingSpec ? money(profitMetrics(summary.limitingSpec.cost).minimumSalePrice) : '—'}　公式建议：<b>{summary ? discountText(summary.recommendedDiscount) : '—'}</b>{summary?.limitingSpec && <span>　限制规格：{summary.limitingSpec.name}</span>}</div><Field label="我的可报折扣（直接填写几折）"><input name="manualReportableDiscount" type="number" min="0.1" max="10" step="0.1" value={manualDiscount} onChange={(event) => setManualDiscount(event.target.value)} placeholder="例如：8.5" required /><span className="field-help">这里由你自己填写，分档、活动价和预计利润都以这个折扣为准。</span></Field><Field label="商品图片"><input name="image" type="file" accept="image/*" /></Field><Field label="备注"><textarea name="note" defaultValue={editing?.note} /></Field><FormActions onClose={onClose} /></form></Modal>;
 }
 
 function PriceReferenceForm({ editing, products, discounts, allDiscounts, onSubmit, onClose }) {
