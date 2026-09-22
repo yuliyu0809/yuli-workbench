@@ -192,6 +192,9 @@ const summarizeDiscountSpecs = (specs) => {
   return { specs: calculated, limitingSpec, minimumRatio: limitingSpec?.minimumRatio || null, recommendedDiscount };
 };
 const recordRecommended = (record) => Array.isArray(record?.specs) && record.specs.length ? summarizeDiscountSpecs(normalizeDiscountSpecs(record)).recommendedDiscount : record?.recommendedDiscount ?? null;
+const normalizeManualActivitySpecs = (record) => Array.isArray(record?.specs) && record.specs.length
+  ? record.specs.map((spec, index) => ({ ...spec, id: spec.id || `${record.id}-manual-${index}`, name: spec.name || '默认规格', reportableDiscount: Number(spec.reportableDiscount || 0) }))
+  : [{ id: record?.specId || `${record?.id || 'manual'}-legacy`, baseSpecId: record?.baseSpecId, packQuantity: record?.packQuantity || 1, name: record?.specName || '默认规格', reportableDiscount: Number(record?.reportableDiscount || 0) }];
 const valueRange = (values, formatter) => {
   const numbers = values.map(Number).filter(Number.isFinite);
   if (!numbers.length) return '—';
@@ -734,9 +737,15 @@ export default function App() {
   const saveManualActivity = (event) => {
     event.preventDefault(); const data = new FormData(event.currentTarget);
     const product = workspace.products.find((item) => item.id === data.get('productId'));
-    const spec = product ? expandProductSpecsForPacks(product).find((item) => item.id === data.get('specId')) : null;
-    if (!product || !spec) { notify('请选择商品档案和规格'); return; }
-    const next = { id: editing?.id || uid(), store: data.get('store'), productId: product.id, productCode: String(data.get('productCode')).trim(), productName: product.productName, specId: spec.id, baseSpecId: spec.baseSpecId || spec.id, packQuantity: Math.max(1, Number(spec.packQuantity) || 1), specName: spec.name, reportableDiscount: Number(data.get('reportableDiscount')) / 10, updatedAt: new Date().toISOString() };
+    const availableSpecs = product ? expandProductSpecsForPacks(product) : [];
+    const specIds = data.getAll('manualSpecId'); const discountValues = data.getAll('manualSpecDiscount');
+    const specs = specIds.map((specId, index) => {
+      const spec = availableSpecs.find((item) => item.id === specId); const reportableDiscount = Number(discountValues[index]) / 10;
+      return spec && reportableDiscount > 0 ? { id: spec.id, baseSpecId: spec.baseSpecId || spec.id, packQuantity: Math.max(1, Number(spec.packQuantity) || 1), name: spec.name, reportableDiscount } : null;
+    }).filter(Boolean);
+    if (!product || !specs.length) { notify('请至少选择一个规格并填写可报折扣'); return; }
+    const firstSpec = specs[0];
+    const next = { id: editing?.id || uid(), store: data.get('store'), productId: product.id, productCode: String(data.get('productCode')).trim(), productName: product.productName, specs, specId: firstSpec.id, baseSpecId: firstSpec.baseSpecId, packQuantity: firstSpec.packQuantity, specName: firstSpec.name, reportableDiscount: firstSpec.reportableDiscount, updatedAt: new Date().toISOString() };
     const records = workspace.manualActivities || [];
     update('manualActivities', editing ? records.map((item) => item.id === editing.id ? next : item) : [next, ...records]); closeModal(); notify('我的可报活动已保存');
   };
@@ -1065,10 +1074,10 @@ function Discounts({ records, manualRecords, search, setSearch, onAdd, onEdit, o
 }
 
 function ManualActivities({ records, search, setSearch, onEdit, onDelete }) {
-  const filtered = records.filter((item) => `${item.productName}${item.productCode}${item.specName}${item.store}`.toLowerCase().includes(search.toLowerCase()));
+  const filtered = records.filter((item) => `${item.productName}${item.productCode}${normalizeManualActivitySpecs(item).map((spec) => spec.name).join('')}${item.store}`.toLowerCase().includes(search.toLowerCase()));
   return <TableShell title="我的可报活动" subtitle="只记录你实际可以报名的折扣，不读取商品档案的推荐活动" search={search} setSearch={setSearch}>
     <table><thead><tr><th>店铺</th><th>商品名称</th><th>商品编号</th><th>规格</th><th>可报折扣</th><th>操作</th></tr></thead><tbody>
-      {filtered.map((item) => <tr key={item.id}><td><Badge>{item.store}</Badge></td><td><strong>{item.productName}</strong></td><td>{item.productCode || '—'}</td><td>{item.specName}</td><td><Badge>{discountText(item.reportableDiscount)}</Badge></td><td><RowActions onEdit={() => onEdit(item)} onDelete={() => onDelete(item)} /></td></tr>)}
+      {filtered.map((item) => { const specs = normalizeManualActivitySpecs(item); return <tr key={item.id}><td><Badge>{item.store}</Badge></td><td><strong>{item.productName}</strong></td><td>{item.productCode || '—'}</td><td><div className="spec-list">{specs.map((spec) => <span key={spec.id}>{spec.name}</span>)}</div></td><td><div className="spec-list">{specs.map((spec) => <Badge key={spec.id}>{discountText(spec.reportableDiscount)}</Badge>)}</div></td><td><RowActions onEdit={() => onEdit(item)} onDelete={() => onDelete(item)} /></td></tr>; })}
       {!filtered.length && <tr><td colSpan="6"><Empty text={records.length ? '没有符合搜索条件的可报活动' : '暂无记录，点击“记录可报活动”开始添加'} /></td></tr>}
     </tbody></table>
   </TableShell>;
@@ -1182,17 +1191,28 @@ function ManualActivityForm({ editing, products, currentStore, onSubmit, onClose
   const [productId, setProductId] = useState(matchedProduct?.id || products[0]?.id || '');
   const selectedProduct = products.find((item) => item.id === productId);
   const specs = expandProductSpecsForPacks(selectedProduct);
-  const editingSpec = selectedProduct ? findExpandedProductSpec(selectedProduct, editing) || specs.find((item) => item.name === editing?.specName) : null;
-  const [specId, setSpecId] = useState(editingSpec?.id || specs[0]?.id || '');
+  const [specRows, setSpecRows] = useState(() => {
+    const savedSpecs = normalizeManualActivitySpecs(editing);
+    const rows = savedSpecs.map((saved, index) => {
+      const matched = matchedProduct ? findExpandedProductSpec(matchedProduct, saved) || expandProductSpecsForPacks(matchedProduct).find((item) => item.name === saved.name) : null;
+      return matched ? { rowId: `${editing?.id || 'new'}-${index}`, specId: matched.id, reportableDiscount: saved.reportableDiscount ? Number((saved.reportableDiscount * 10).toFixed(1)) : '' } : null;
+    }).filter(Boolean);
+    return rows.length ? rows : [{ rowId: uid(), specId: expandProductSpecsForPacks(matchedProduct || products[0])[0]?.id || '', reportableDiscount: '' }];
+  });
   const changeProduct = (nextProductId) => {
     setProductId(nextProductId);
-    setSpecId(expandProductSpecsForPacks(products.find((item) => item.id === nextProductId))[0]?.id || '');
+    setSpecRows([{ rowId: uid(), specId: expandProductSpecsForPacks(products.find((item) => item.id === nextProductId))[0]?.id || '', reportableDiscount: '' }]);
+  };
+  const updateSpecRow = (rowId, key, value) => setSpecRows((rows) => rows.map((row) => row.rowId === rowId ? { ...row, [key]: value } : row));
+  const addSpecRow = () => {
+    const unused = specs.find((spec) => !specRows.some((row) => row.specId === spec.id));
+    if (unused) setSpecRows((rows) => [...rows, { rowId: uid(), specId: unused.id, reportableDiscount: '' }]);
   };
   return <Modal title={editing ? '修改我的可报活动' : '记录我的可报活动'} onClose={onClose}>{products.length ? <form onSubmit={onSubmit}>
     <div className="form-grid"><Field label="店铺"><select name="store" defaultValue={editing?.store || (currentStore === STORE_ALL ? 'AG' : currentStore)}>{stores.map((name) => <option key={name}>{name}</option>)}</select></Field><Field label="商品编号"><input name="productCode" defaultValue={editing?.productCode} placeholder="填写商品编号" required /></Field></div>
     <Field label="商品名称（对应商品档案）"><select name="productId" value={productId} onChange={(event) => changeProduct(event.target.value)} required>{products.map((item) => <option key={item.id} value={item.id}>{productCategoryOf(item)} · {item.productName}</option>)}</select></Field>
-    <div className="form-grid"><Field label="规格（对应商品档案）"><select name="specId" value={specId} onChange={(event) => setSpecId(event.target.value)} required>{specs.map((spec) => <option key={spec.id} value={spec.id}>{spec.name}</option>)}</select></Field><Field label="可报折扣（填写几折）"><input name="reportableDiscount" type="number" min="0.1" max="10" step="0.1" defaultValue={editing?.reportableDiscount ? Number((editing.reportableDiscount * 10).toFixed(1)) : ''} placeholder="例如：8.5" required /></Field></div>
-    <div className="calc-note">商品名称和规格来自商品档案；可报折扣仍由你独立填写，不读取档案的活动结果。</div><FormActions onClose={onClose} />
+    <div className="spec-editor manual-activity-spec-editor"><div className="spec-editor-head"><div><b>该编号下的规格</b><small>同一个商品编号可以同时记录多个规格</small></div><button type="button" onClick={addSpecRow} disabled={specRows.length >= specs.length}>＋ 添加规格</button></div>{specRows.map((row, index) => <div className="manual-activity-spec-row" key={row.rowId}><span>{index + 1}</span><select name="manualSpecId" value={row.specId} onChange={(event) => updateSpecRow(row.rowId, 'specId', event.target.value)} required>{specs.map((spec) => <option key={spec.id} value={spec.id} disabled={specRows.some((other) => other.rowId !== row.rowId && other.specId === spec.id)}>{spec.name}</option>)}</select><input name="manualSpecDiscount" type="number" min="0.1" max="10" step="0.1" value={row.reportableDiscount} onChange={(event) => updateSpecRow(row.rowId, 'reportableDiscount', event.target.value)} placeholder="可报几折，如 8.5" required /><button type="button" className="remove-spec" disabled={specRows.length === 1} onClick={() => setSpecRows((rows) => rows.filter((item) => item.rowId !== row.rowId))}>移除</button></div>)}</div>
+    <div className="calc-note">商品名称和规格来自商品档案；每个规格的可报折扣由你独立填写，不读取档案的活动结果。</div><FormActions onClose={onClose} />
   </form> : <><Empty text="请先在商品档案中添加商品和规格" /><div className="actions"><button type="button" onClick={onClose}>关闭</button></div></>}</Modal>;
 }
 
