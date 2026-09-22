@@ -9,7 +9,7 @@ const tiers = [0.9, 0.85, 0.8, 0.75, 0.7, 0.65, 0.6];
 const buyerAppealUrl = 'https://seller.kuajingmaihuo.com/questionnaire?surveyId=185879097376';
 const dailyFormMiniProgram = '#小程序://腾讯文档/d1X1NPShvA6gzZE';
 const emptyListingHelper = { chineseTitle: '', englishTitle: '', lengthCm: '', lengthM: '' };
-const emptyWorkspace = { discounts: [], priceReferences: [], products: [], operations: [], tasks: [], launches: [], pricingHistory: [], adRecords: [], dailyFormCompletedDate: '', listingHelper: emptyListingHelper };
+const emptyWorkspace = { discounts: [], manualActivities: [], priceReferences: [], products: [], operations: [], tasks: [], launches: [], pricingHistory: [], adRecords: [], dailyFormCompletedDate: '', listingHelper: emptyListingHelper };
 const nav = [
   ['overview', '⌂', '运营总览'],
   ['discounts', '%', '商品折扣'],
@@ -20,7 +20,7 @@ const nav = [
 ];
 const titles = {
   overview: ['早上好，郁荔', '这是三个店铺今天的运营情况。'],
-  discounts: ['商品折扣', '单独记录你实际可以报名的活动折扣。'],
+  discounts: ['商品折扣', '自动核算活动折扣，也可以单独记录你实际可报的活动。'],
   data: ['运营数据', '记录并对比 AG、DS、HX 的每日核心指标。'],
   products: ['商品档案', '已按《利润核算参考表（20260820）》重新整理全部商品、规格与利润价格。'],
   tasks: ['运营任务', '把每天要做的事放在一个清晰的队列里。'],
@@ -83,7 +83,7 @@ const adRecordMetrics = (record, products = []) => {
 // The product catalog is bundled with every fresh browser. Only user-entered
 // records count when deciding whether an empty cloud workspace may be claimed,
 // otherwise a newly opened browser could replace real data with a blank copy.
-const hasWorkspaceRecords = (data) => ['discounts', 'priceReferences', 'operations', 'tasks', 'launches', 'pricingHistory', 'adRecords'].some((key) => Array.isArray(data?.[key]) && data[key].length > 0)
+const hasWorkspaceRecords = (data) => ['discounts', 'manualActivities', 'priceReferences', 'operations', 'tasks', 'launches', 'pricingHistory', 'adRecords'].some((key) => Array.isArray(data?.[key]) && data[key].length > 0)
   || Boolean(data?.dailyFormCompletedDate)
   || Object.values(data?.listingHelper || {}).some((value) => String(value || '').trim());
 const mergeRecordLists = (cloudRecords, localRecords) => {
@@ -98,6 +98,7 @@ const mergeWorkspaces = (cloudData, localData) => {
     ...cloud,
     ...local,
     discounts: mergeRecordLists(cloud.discounts, local.discounts),
+    manualActivities: mergeRecordLists(cloud.manualActivities, local.manualActivities),
     priceReferences: mergeRecordLists(cloud.priceReferences, local.priceReferences),
     operations: mergeRecordLists(cloud.operations, local.operations),
     tasks: mergeRecordLists(cloud.tasks, local.tasks),
@@ -114,6 +115,7 @@ const mergeBackupWorkspaces = (currentData, backupData) => {
     ...backup,
     products: mergeRecordLists(current.products, backup.products),
     discounts: mergeRecordLists(current.discounts, backup.discounts),
+    manualActivities: mergeRecordLists(current.manualActivities, backup.manualActivities),
     priceReferences: mergeRecordLists(current.priceReferences, backup.priceReferences),
     operations: mergeRecordLists(current.operations, backup.operations),
     tasks: mergeRecordLists(current.tasks, backup.tasks),
@@ -189,7 +191,7 @@ const summarizeDiscountSpecs = (specs) => {
   const recommendedDiscount = calculated.some((spec) => spec.recommendedDiscount === null) ? null : Math.max(...calculated.map((spec) => spec.recommendedDiscount));
   return { specs: calculated, limitingSpec, minimumRatio: limitingSpec?.minimumRatio || null, recommendedDiscount };
 };
-const recordRecommended = (record) => record?.manualReportableDiscount ?? (Array.isArray(record?.specs) && record.specs.length ? summarizeDiscountSpecs(normalizeDiscountSpecs(record)).recommendedDiscount : record?.recommendedDiscount ?? null);
+const recordRecommended = (record) => Array.isArray(record?.specs) && record.specs.length ? summarizeDiscountSpecs(normalizeDiscountSpecs(record)).recommendedDiscount : record?.recommendedDiscount ?? null;
 const valueRange = (values, formatter) => {
   const numbers = values.map(Number).filter(Number.isFinite);
   if (!numbers.length) return '—';
@@ -573,7 +575,7 @@ export default function App() {
   const pageTitle = titles[page];
   const pageReminder = {
     overview: `今日运营提醒：${todayTaskCount ? `有 ${todayTaskCount} 项任务待处理` : '今天暂无待办'}，已记录 ${discountProductCount} 个折扣商品。`,
-    discounts: '可报折扣由你自己填写；档案利润公式仅作参考，点选档位可以快速筛选。',
+    discounts: '自动活动折扣与“我的可报活动”分开记录，互不影响。',
     data: '每天按店铺记录一次核心数据，后续对比会更清晰。',
     products: `当前价格表版本 ${lightingCatalogVersion}，修改商品后会自动同步到云端。`,
     tasks: '把今天必须完成的事情放在“今天”，其余安排到“本周”。',
@@ -719,16 +721,21 @@ export default function App() {
     }));
     const limitingSpec = summary.limitingSpec;
     let imageDataUrl = editing?.imageDataUrl || ''; const file = data.get('image'); if (file?.size) imageDataUrl = await imageToDataUrl(file);
-    const manualReportableDiscount = Number(data.get('manualReportableDiscount')) / 10;
-    const reportableDiscount = Number.isFinite(manualReportableDiscount) && manualReportableDiscount > 0 ? manualReportableDiscount : null;
+    const reportableDiscount = summary.recommendedDiscount;
     const profits = reportableDiscount ? summary.specs.map((spec) => netProfitAtPrice(spec.cost, spec.salePrice * reportableDiscount)) : [];
     const legacyFields = editing ? {
       ...(editing.selectedDiscount != null ? { selectedDiscount: editing.selectedDiscount } : {}),
       ...(editing.startDate ? { startDate: editing.startDate } : {}),
       ...(editing.endDate ? { endDate: editing.endDate } : {}),
     } : {};
-    const next = { id: editing?.id || uid(), store: data.get('store'), productCode: String(data.get('productCode')).trim(), productName: String(data.get('productName')).trim(), specs: summary.specs, limitingSpecName: limitingSpec?.name || '默认规格', cost: limitingSpec?.cost || 0, salePrice: limitingSpec?.salePrice || 0, minimumRatio: summary.minimumRatio, recommendedDiscount: summary.recommendedDiscount, manualReportableDiscount: reportableDiscount, discountedPrice: reportableDiscount ? limitingSpec?.salePrice * reportableDiscount : 0, profit: profits.length ? Math.min(...profits) : 0, note: data.get('note'), imageDataUrl, updatedAt: new Date().toISOString(), ...legacyFields };
+    const next = { id: editing?.id || uid(), store: data.get('store'), productCode: String(data.get('productCode')).trim(), productName: String(data.get('productName')).trim(), specs: summary.specs, limitingSpecName: limitingSpec?.name || '默认规格', cost: limitingSpec?.cost || 0, salePrice: limitingSpec?.salePrice || 0, minimumRatio: summary.minimumRatio, recommendedDiscount: reportableDiscount, discountedPrice: reportableDiscount ? limitingSpec?.salePrice * reportableDiscount : 0, profit: profits.length ? Math.min(...profits) : 0, note: data.get('note'), imageDataUrl, updatedAt: new Date().toISOString(), ...legacyFields };
     update('discounts', editing ? workspace.discounts.map((item) => item.id === editing.id ? next : item) : [next, ...workspace.discounts]); closeModal(); notify('折扣记录已保存');
+  };
+  const saveManualActivity = (event) => {
+    event.preventDefault(); const data = new FormData(event.currentTarget);
+    const next = { id: editing?.id || uid(), store: data.get('store'), productCode: String(data.get('productCode')).trim(), productName: String(data.get('productName')).trim(), specName: String(data.get('specName')).trim(), reportableDiscount: Number(data.get('reportableDiscount')) / 10, updatedAt: new Date().toISOString() };
+    const records = workspace.manualActivities || [];
+    update('manualActivities', editing ? records.map((item) => item.id === editing.id ? next : item) : [next, ...records]); closeModal(); notify('我的可报活动已保存');
   };
   const savePriceReference = (event) => {
     event.preventDefault(); const data = new FormData(event.currentTarget);
@@ -760,10 +767,10 @@ export default function App() {
     <main>
       <header><div className="store-tabs">{[STORE_ALL, ...stores].map((name) => <button key={name} className={store === name ? 'selected' : ''} onClick={() => setStore(name)}>{name !== STORE_ALL && <em className={`dot ${name.toLowerCase()}`} />}{name}</button>)}</div><div className="header-actions"><a className="quick-link" href={buyerAppealUrl} target="_blank" rel="noreferrer">↗ 买手申诉入口</a><span className="header-date">{new Intl.DateTimeFormat('zh-CN', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' }).format(new Date())}</span></div></header>
       <section key={page} className="content page-transition">
-        <div className="page-head"><div><small>{store === STORE_ALL ? '三店合计' : `${store} 店铺`}</small><h1>{pageTitle[0]}</h1><p>{pageTitle[1]}</p></div>{page !== 'overview' && page !== 'pricingAds' && <button className="primary" onClick={() => openNew(page === 'data' ? 'operation' : page === 'products' ? 'product' : page === 'tasks' ? 'task' : 'discount')}>＋ {page === 'data' ? '新增记录' : page === 'products' ? '新增商品' : page === 'tasks' ? '新增任务' : '新增折扣记录'}</button>}</div>
+        <div className="page-head"><div><small>{store === STORE_ALL ? '三店合计' : `${store} 店铺`}</small><h1>{pageTitle[0]}</h1><p>{pageTitle[1]}</p></div>{page !== 'overview' && page !== 'pricingAds' && page !== 'discounts' && <button className="primary" onClick={() => openNew(page === 'data' ? 'operation' : page === 'products' ? 'product' : 'task')}>＋ {page === 'data' ? '新增记录' : page === 'products' ? '新增商品' : '新增任务'}</button>}</div>
         <div className="workspace-note"><span>🌿</span><strong>温柔待办</strong><p>{pageReminder}</p></div>
         {page === 'overview' && <Overview totals={totals} workspace={workspace} store={store} pending={pending} setPage={setPage} dailyFormDone={dailyFormDone} onCopyDailyForm={copyDailyFormEntry} onToggleDailyForm={toggleDailyForm} listingHelper={{ ...emptyListingHelper, ...(workspace.listingHelper || {}) }} translationBusy={translationBusy} onTranslateListingTitle={translateListingTitle} onUpdateListingHelper={updateListingHelper} onCopyListingText={copyListingText} onClearListingHelper={clearListingHelper} onAdd={() => openNew('launch')} onEdit={(item) => openEdit('launch', item)} onDelete={(item) => remove('launches', item, `${item.store} ${item.launchDate} ${launchQuantity(item)}条`)} />}
-        {page === 'discounts' && <Discounts records={visible(workspace.discounts)} search={search} setSearch={setSearch} onEdit={(item) => openEdit('discount', item)} onDelete={(item) => remove('discounts', item, item.productName)} />}
+        {page === 'discounts' && <Discounts records={visible(workspace.discounts)} manualRecords={visible(workspace.manualActivities || [])} search={search} setSearch={setSearch} onAdd={() => openNew('discount')} onEdit={(item) => openEdit('discount', item)} onDelete={(item) => remove('discounts', item, item.productName)} onAddManual={() => openNew('manualActivity')} onEditManual={(item) => openEdit('manualActivity', item)} onDeleteManual={(item) => remove('manualActivities', item, `${item.productName} ${item.specName}`)} />}
         {page === 'data' && <Operations records={visible(workspace.operations)} onEdit={(item) => openEdit('operation', item)} onDelete={(item) => remove('operations', item, `${item.store} ${item.recordDate}`)} />}
         {page === 'products' && <Products records={workspace.products} search={search} setSearch={setSearch} onEdit={(item) => openEdit('product', item)} onDelete={(item) => remove('products', item, item.productName)} />}
         {page === 'tasks' && <Tasks records={visible(workspace.tasks)} update={(records) => update('tasks', records)} onEdit={(item) => openEdit('task', item)} onDelete={(item) => remove('tasks', item, item.title)} />}
@@ -775,6 +782,7 @@ export default function App() {
     {modal === 'task' && <Modal title={editing ? '修改任务' : '新增任务'} onClose={closeModal}><form onSubmit={saveTask}><Field label="任务内容"><input name="title" defaultValue={editing?.title} required /></Field><div className="form-grid"><Field label="时间"><select name="period" defaultValue={editing?.period || 'today'}><option value="today">今天</option><option value="week">本周</option></select></Field><Field label="店铺"><select name="store" defaultValue={editing?.store || STORE_ALL}>{[STORE_ALL, ...stores].map((name) => <option key={name}>{name}</option>)}</select></Field><Field label="优先级"><select name="priority" defaultValue={editing?.priority || '普通'}><option>高</option><option>普通</option><option>低</option></select></Field></div><Field label="备注"><textarea name="note" defaultValue={editing?.note} /></Field><FormActions onClose={closeModal} /></form></Modal>}
     {modal === 'launch' && <Modal title={editing ? '修改上新记录' : '新增上新记录'} onClose={closeModal}><form onSubmit={saveLaunch}><div className="form-grid"><Field label="店铺"><select name="store" defaultValue={editing?.store || (store === STORE_ALL ? 'AG' : store)}>{stores.map((name) => <option key={name}>{name}</option>)}</select></Field><Field label="上新日期"><input name="launchDate" type="date" defaultValue={editing?.launchDate || today()} required /></Field><Field label="上新条数"><input name="quantity" type="number" min="1" step="1" defaultValue={launchQuantity(editing)} required /></Field></div><Field label="备注"><textarea name="note" defaultValue={editing?.note} placeholder="可选填" /></Field><FormActions onClose={closeModal} /></form></Modal>}
     {modal === 'discount' && <DiscountForm editing={editing} products={workspace.products} currentStore={store} onSubmit={saveDiscount} onClose={closeModal} />}
+    {modal === 'manualActivity' && <ManualActivityForm editing={editing} currentStore={store} onSubmit={saveManualActivity} onClose={closeModal} />}
     {modal === 'pricingHistory' && <PricingHistoryForm editing={editing} products={workspace.products} currentStore={store} onSubmit={savePricingHistory} onClose={closeModal} />}
     {modal === 'adRecord' && <AdRecordForm editing={editing} products={workspace.products} adRecords={workspace.adRecords || []} currentStore={store} onSubmit={saveAdRecord} onClose={closeModal} />}
     {toast && <div className="toast">{toast}</div>}
@@ -1040,8 +1048,27 @@ function Tasks({ records, update, onEdit, onDelete }) {
   const section = (period, title) => { const rows = records.filter((item) => item.period === period); return <div className="panel task-panel"><div className="panel-title"><h2>{title}</h2><Badge>{rows.length}</Badge></div>{rows.map((item) => <div className={`task ${item.completed ? 'done' : ''}`} key={item.id}><input type="checkbox" checked={item.completed} onChange={() => update(records.map((row) => row.id === item.id ? { ...row, completed: !row.completed } : row))} /><div><strong>{item.title}</strong><small>{item.store} · {item.priority}优先级</small></div><RowActions onEdit={() => onEdit(item)} onDelete={() => onDelete(item)} /></div>)}{!rows.length && <Empty text="暂无任务" />}</div>; };
   return <div className="task-grid">{section('today', '今天')}{section('week', '本周')}</div>;
 }
-function Discounts({ records, search, setSearch, onEdit, onDelete }) {
-  return <DiscountActivity records={records} search={search} setSearch={setSearch} onEdit={onEdit} onDelete={onDelete} />;
+function Discounts({ records, manualRecords, search, setSearch, onAdd, onEdit, onDelete, onAddManual, onEditManual, onDeleteManual }) {
+  const [view, setView] = useState('automatic');
+  return <>
+    <div className="record-view-head">
+      <div className="discount-view-tabs"><button type="button" className={view === 'automatic' ? 'selected' : ''} onClick={() => { setView('automatic'); setSearch(''); }}>自动活动折扣</button><button type="button" className={view === 'manual' ? 'selected' : ''} onClick={() => { setView('manual'); setSearch(''); }}>我的可报活动</button></div>
+      <button type="button" className="primary" onClick={view === 'manual' ? onAddManual : onAdd}>{view === 'manual' ? '＋ 记录可报活动' : '＋ 新增折扣记录'}</button>
+    </div>
+    {view === 'automatic'
+      ? <DiscountActivity records={records} search={search} setSearch={setSearch} onEdit={onEdit} onDelete={onDelete} />
+      : <ManualActivities records={manualRecords} search={search} setSearch={setSearch} onEdit={onEditManual} onDelete={onDeleteManual} />}
+  </>;
+}
+
+function ManualActivities({ records, search, setSearch, onEdit, onDelete }) {
+  const filtered = records.filter((item) => `${item.productName}${item.productCode}${item.specName}${item.store}`.toLowerCase().includes(search.toLowerCase()));
+  return <TableShell title="我的可报活动" subtitle="只记录你实际可以报名的折扣，不读取商品档案的推荐活动" search={search} setSearch={setSearch}>
+    <table><thead><tr><th>店铺</th><th>商品名称</th><th>商品编号</th><th>规格</th><th>可报折扣</th><th>操作</th></tr></thead><tbody>
+      {filtered.map((item) => <tr key={item.id}><td><Badge>{item.store}</Badge></td><td><strong>{item.productName}</strong></td><td>{item.productCode || '—'}</td><td>{item.specName}</td><td><Badge>{discountText(item.reportableDiscount)}</Badge></td><td><RowActions onEdit={() => onEdit(item)} onDelete={() => onDelete(item)} /></td></tr>)}
+      {!filtered.length && <tr><td colSpan="6"><Empty text={records.length ? '没有符合搜索条件的可报活动' : '暂无记录，点击“记录可报活动”开始添加'} /></td></tr>}
+    </tbody></table>
+  </TableShell>;
 }
 
 function DiscountActivity({ records, search, setSearch, onEdit, onDelete }) {
@@ -1067,8 +1094,8 @@ function DiscountActivity({ records, search, setSearch, onEdit, onDelete }) {
         </button>;
       })}
     </div>
-    <TableShell title="商品折扣记录" subtitle={`“我的可报折扣”由你单独填写，不受商品档案推荐限制；活动价和利润按你填写的折扣计算${tierFilter ? ` · 当前查看可报 ${discountText(tierFilter)} 的商品` : ''}`} search={search} setSearch={setSearch}>
-      <table><thead><tr><th>商品</th><th>店铺</th><th>供货价</th><th>当前售价</th><th>最低售价</th><th>公式最低折扣</th><th>我的可报折扣</th><th>活动价</th><th>预计利润</th><th>操作</th></tr></thead><tbody>
+    <TableShell title="商品折扣记录" subtitle={`按利润表最低售价 ÷ 当前售价计算最低可报档位（售后5% + 广告12.5% + 分段目标利润）${tierFilter ? ` · 当前查看可报 ${discountText(tierFilter)} 的商品` : ''}`} search={search} setSearch={setSearch}>
+      <table><thead><tr><th>商品</th><th>店铺</th><th>供货价</th><th>当前售价</th><th>最低售价</th><th>最低折扣</th><th>最低可报</th><th>活动价</th><th>预计利润</th><th>操作</th></tr></thead><tbody>
         {filtered.map((item) => { const specs = normalizeDiscountSpecs(item); const summary = summarizeDiscountSpecs(specs); const reportableDiscount = summary.recommendedDiscount; const profits = reportableDiscount ? specs.map((spec) => netProfitAtPrice(spec.cost, spec.salePrice * reportableDiscount)) : []; return <tr key={item.id}><td><div className="product-cell"><span className="thumb">{item.imageDataUrl ? <img src={item.imageDataUrl} alt="" /> : '折'}</span><span><strong>{item.productName}</strong><small>{item.productCode}{specs.length > 1 ? ` · ${specs.length}个规格 · 限制规格：${summary.limitingSpec?.name}` : ` · ${specs[0]?.name}`}</small></span></div></td><td><Badge>{item.store}</Badge></td><td>{valueRange(specs.map((spec) => spec.cost), money)}</td><td>{valueRange(specs.map((spec) => spec.salePrice), money)}</td><td>{valueRange(specs.map((spec) => profitMetrics(spec.cost).minimumSalePrice), money)}</td><td>{discountText(summary.minimumRatio)}</td><td><Badge>{discountText(reportableDiscount)}</Badge></td><td>{reportableDiscount ? valueRange(specs.map((spec) => spec.salePrice * reportableDiscount), money) : '—'}</td><td className={profits.length && Math.min(...profits) < 0 ? 'negative' : 'positive'}>{profits.length ? `最低 ${money(Math.min(...profits))}` : '—'}</td><td><RowActions onEdit={() => onEdit(item)} onDelete={() => onDelete(item)} /></td></tr>; })}
         {!filtered.length && <tr><td colSpan="10"><Empty text={tierFilter ? `暂无可以报 ${discountText(tierFilter)} 的商品` : '暂无折扣记录，点击“新增折扣记录”开始录入'} /></td></tr>}
       </tbody></table>
@@ -1132,10 +1159,6 @@ function ProductForm({ editing, onSubmit, onClose }) {
 function DiscountForm({ editing, products, currentStore, onSubmit, onClose }) {
   const [productName, setProductName] = useState(editing?.productName || '');
   const [specRows, setSpecRows] = useState(() => normalizeDiscountSpecs(editing));
-  const [manualDiscount, setManualDiscount] = useState(() => {
-    const saved = editing ? recordRecommended(editing) : null;
-    return saved ? Number((saved * 10).toFixed(1)) : '';
-  });
   const completedSpecs = specRows.filter((spec) => spec.name && Number(spec.salePrice) > 0);
   const summary = completedSpecs.length ? summarizeDiscountSpecs(completedSpecs) : null;
   const updateSpec = (id, key, value) => setSpecRows((rows) => rows.map((row) => {
@@ -1148,7 +1171,16 @@ function DiscountForm({ editing, products, currentStore, onSubmit, onClose }) {
     setProductName(name); const found = products.find((item) => item.productName === name);
     if (found) setSpecRows(expandProductSpecsForPacks(found));
   };
-  return <Modal title={editing ? '修改折扣记录' : '新增折扣记录'} onClose={onClose}><form onSubmit={onSubmit}><div className="form-grid"><Field label="店铺"><select name="store" defaultValue={editing?.store || (currentStore === STORE_ALL ? 'AG' : currentStore)}>{stores.map((name) => <option key={name}>{name}</option>)}</select></Field><Field label="商品编号"><input name="productCode" defaultValue={editing?.productCode} /></Field></div><Field label="商品名称"><ProductNamePicker products={products} value={productName} onChange={selectProduct} /></Field><div className="spec-editor discount-spec-editor"><div className="spec-editor-head"><b>各规格供货价与当前售价</b><small>已按可做件装数展开；每个件装独立填售价，核不过的可以移除</small></div>{specRows.map((spec, index) => <div className="discount-spec-row" key={spec.id}><span>{index + 1}</span><input type="hidden" name="specId" value={spec.id} /><input type="hidden" name="specUnitCost" value={spec.unitCost ?? spec.cost} /><input type="hidden" name="specPackQuantity" value={spec.packQuantity || 1} /><input name="specName" value={spec.name} onChange={(event) => updateSpec(spec.id, 'name', event.target.value)} placeholder="规格" required /><input name="specCost" type="number" min="0" step="0.01" value={spec.cost} onChange={(event) => updateSpec(spec.id, 'cost', event.target.value)} placeholder="供货价" aria-label={`${spec.name || '规格'}供货价`} required /><input name="specSalePrice" type="number" min="0.01" step="0.01" value={spec.salePrice} onChange={(event) => updateSpec(spec.id, 'salePrice', event.target.value)} placeholder="当前售价" required /><b>{Number(spec.salePrice) > 0 ? discountText(getRecommended(spec.cost, spec.salePrice)) : '—'}</b><button type="button" className="remove-spec" disabled={specRows.length === 1} onClick={() => removeSpec(spec.id)}>移除</button></div>)}</div><div className="calc-note">公式仅供参考　利润表最低售价：{summary?.limitingSpec ? money(profitMetrics(summary.limitingSpec.cost).minimumSalePrice) : '—'}　公式建议：<b>{summary ? discountText(summary.recommendedDiscount) : '—'}</b>{summary?.limitingSpec && <span>　限制规格：{summary.limitingSpec.name}</span>}</div><Field label="我的可报折扣（直接填写几折）"><input name="manualReportableDiscount" type="number" min="0.1" max="10" step="0.1" value={manualDiscount} onChange={(event) => setManualDiscount(event.target.value)} placeholder="例如：8.5" required /><span className="field-help">这里由你自己填写，分档、活动价和预计利润都以这个折扣为准。</span></Field><Field label="商品图片"><input name="image" type="file" accept="image/*" /></Field><Field label="备注"><textarea name="note" defaultValue={editing?.note} /></Field><FormActions onClose={onClose} /></form></Modal>;
+  return <Modal title={editing ? '修改折扣记录' : '新增折扣记录'} onClose={onClose}><form onSubmit={onSubmit}><div className="form-grid"><Field label="店铺"><select name="store" defaultValue={editing?.store || (currentStore === STORE_ALL ? 'AG' : currentStore)}>{stores.map((name) => <option key={name}>{name}</option>)}</select></Field><Field label="商品编号"><input name="productCode" defaultValue={editing?.productCode} /></Field></div><Field label="商品名称"><ProductNamePicker products={products} value={productName} onChange={selectProduct} /></Field><div className="spec-editor discount-spec-editor"><div className="spec-editor-head"><b>各规格供货价与当前售价</b><small>已按可做件装数展开；每个件装独立填售价，核不过的可以移除</small></div>{specRows.map((spec, index) => <div className="discount-spec-row" key={spec.id}><span>{index + 1}</span><input type="hidden" name="specId" value={spec.id} /><input type="hidden" name="specUnitCost" value={spec.unitCost ?? spec.cost} /><input type="hidden" name="specPackQuantity" value={spec.packQuantity || 1} /><input name="specName" value={spec.name} onChange={(event) => updateSpec(spec.id, 'name', event.target.value)} placeholder="规格" required /><input name="specCost" type="number" min="0" step="0.01" value={spec.cost} onChange={(event) => updateSpec(spec.id, 'cost', event.target.value)} placeholder="供货价" aria-label={`${spec.name || '规格'}供货价`} required /><input name="specSalePrice" type="number" min="0.01" step="0.01" value={spec.salePrice} onChange={(event) => updateSpec(spec.id, 'salePrice', event.target.value)} placeholder="当前售价" required /><b>{Number(spec.salePrice) > 0 ? discountText(getRecommended(spec.cost, spec.salePrice)) : '—'}</b><button type="button" className="remove-spec" disabled={specRows.length === 1} onClick={() => removeSpec(spec.id)}>移除</button></div>)}</div><div className="calc-note">各件装供货成本已自动合计　利润表最低售价：{summary?.limitingSpec ? money(profitMetrics(summary.limitingSpec.cost).minimumSalePrice) : '—'}　产品最低折扣：{summary ? discountText(summary.minimumRatio) : '—'}　产品最低可报：<b>{summary ? discountText(summary.recommendedDiscount) : '—'}</b>{summary?.limitingSpec && <span>　限制规格：{summary.limitingSpec.name}</span>}</div><Field label="商品图片"><input name="image" type="file" accept="image/*" /></Field><Field label="备注"><textarea name="note" defaultValue={editing?.note} /></Field><FormActions onClose={onClose} /></form></Modal>;
+}
+
+function ManualActivityForm({ editing, currentStore, onSubmit, onClose }) {
+  return <Modal title={editing ? '修改我的可报活动' : '记录我的可报活动'} onClose={onClose}><form onSubmit={onSubmit}>
+    <div className="form-grid"><Field label="店铺"><select name="store" defaultValue={editing?.store || (currentStore === STORE_ALL ? 'AG' : currentStore)}>{stores.map((name) => <option key={name}>{name}</option>)}</select></Field><Field label="商品编号"><input name="productCode" defaultValue={editing?.productCode} placeholder="填写商品编号" /></Field></div>
+    <Field label="商品名称"><input name="productName" defaultValue={editing?.productName} placeholder="填写商品名称" required /></Field>
+    <div className="form-grid"><Field label="规格"><input name="specName" defaultValue={editing?.specName} placeholder="例如：20灯、2件装" required /></Field><Field label="可报折扣（填写几折）"><input name="reportableDiscount" type="number" min="0.1" max="10" step="0.1" defaultValue={editing?.reportableDiscount ? Number((editing.reportableDiscount * 10).toFixed(1)) : ''} placeholder="例如：8.5" required /></Field></div>
+    <div className="calc-note">这条记录完全独立，不读取商品档案的活动折扣，也不会改变自动活动折扣。</div><FormActions onClose={onClose} />
+  </form></Modal>;
 }
 
 function PriceReferenceForm({ editing, products, discounts, allDiscounts, onSubmit, onClose }) {
