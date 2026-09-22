@@ -733,7 +733,10 @@ export default function App() {
   };
   const saveManualActivity = (event) => {
     event.preventDefault(); const data = new FormData(event.currentTarget);
-    const next = { id: editing?.id || uid(), store: data.get('store'), productCode: String(data.get('productCode')).trim(), productName: String(data.get('productName')).trim(), specName: String(data.get('specName')).trim(), reportableDiscount: Number(data.get('reportableDiscount')) / 10, updatedAt: new Date().toISOString() };
+    const product = workspace.products.find((item) => item.id === data.get('productId'));
+    const spec = product ? expandProductSpecsForPacks(product).find((item) => item.id === data.get('specId')) : null;
+    if (!product || !spec) { notify('请选择商品档案和规格'); return; }
+    const next = { id: editing?.id || uid(), store: data.get('store'), productId: product.id, productCode: String(data.get('productCode')).trim(), productName: product.productName, specId: spec.id, baseSpecId: spec.baseSpecId || spec.id, packQuantity: Math.max(1, Number(spec.packQuantity) || 1), specName: spec.name, reportableDiscount: Number(data.get('reportableDiscount')) / 10, updatedAt: new Date().toISOString() };
     const records = workspace.manualActivities || [];
     update('manualActivities', editing ? records.map((item) => item.id === editing.id ? next : item) : [next, ...records]); closeModal(); notify('我的可报活动已保存');
   };
@@ -782,7 +785,7 @@ export default function App() {
     {modal === 'task' && <Modal title={editing ? '修改任务' : '新增任务'} onClose={closeModal}><form onSubmit={saveTask}><Field label="任务内容"><input name="title" defaultValue={editing?.title} required /></Field><div className="form-grid"><Field label="时间"><select name="period" defaultValue={editing?.period || 'today'}><option value="today">今天</option><option value="week">本周</option></select></Field><Field label="店铺"><select name="store" defaultValue={editing?.store || STORE_ALL}>{[STORE_ALL, ...stores].map((name) => <option key={name}>{name}</option>)}</select></Field><Field label="优先级"><select name="priority" defaultValue={editing?.priority || '普通'}><option>高</option><option>普通</option><option>低</option></select></Field></div><Field label="备注"><textarea name="note" defaultValue={editing?.note} /></Field><FormActions onClose={closeModal} /></form></Modal>}
     {modal === 'launch' && <Modal title={editing ? '修改上新记录' : '新增上新记录'} onClose={closeModal}><form onSubmit={saveLaunch}><div className="form-grid"><Field label="店铺"><select name="store" defaultValue={editing?.store || (store === STORE_ALL ? 'AG' : store)}>{stores.map((name) => <option key={name}>{name}</option>)}</select></Field><Field label="上新日期"><input name="launchDate" type="date" defaultValue={editing?.launchDate || today()} required /></Field><Field label="上新条数"><input name="quantity" type="number" min="1" step="1" defaultValue={launchQuantity(editing)} required /></Field></div><Field label="备注"><textarea name="note" defaultValue={editing?.note} placeholder="可选填" /></Field><FormActions onClose={closeModal} /></form></Modal>}
     {modal === 'discount' && <DiscountForm editing={editing} products={workspace.products} currentStore={store} onSubmit={saveDiscount} onClose={closeModal} />}
-    {modal === 'manualActivity' && <ManualActivityForm editing={editing} currentStore={store} onSubmit={saveManualActivity} onClose={closeModal} />}
+    {modal === 'manualActivity' && <ManualActivityForm editing={editing} products={workspace.products} currentStore={store} onSubmit={saveManualActivity} onClose={closeModal} />}
     {modal === 'pricingHistory' && <PricingHistoryForm editing={editing} products={workspace.products} currentStore={store} onSubmit={savePricingHistory} onClose={closeModal} />}
     {modal === 'adRecord' && <AdRecordForm editing={editing} products={workspace.products} adRecords={workspace.adRecords || []} currentStore={store} onSubmit={saveAdRecord} onClose={closeModal} />}
     {toast && <div className="toast">{toast}</div>}
@@ -1174,13 +1177,23 @@ function DiscountForm({ editing, products, currentStore, onSubmit, onClose }) {
   return <Modal title={editing ? '修改折扣记录' : '新增折扣记录'} onClose={onClose}><form onSubmit={onSubmit}><div className="form-grid"><Field label="店铺"><select name="store" defaultValue={editing?.store || (currentStore === STORE_ALL ? 'AG' : currentStore)}>{stores.map((name) => <option key={name}>{name}</option>)}</select></Field><Field label="商品编号"><input name="productCode" defaultValue={editing?.productCode} /></Field></div><Field label="商品名称"><ProductNamePicker products={products} value={productName} onChange={selectProduct} /></Field><div className="spec-editor discount-spec-editor"><div className="spec-editor-head"><b>各规格供货价与当前售价</b><small>已按可做件装数展开；每个件装独立填售价，核不过的可以移除</small></div>{specRows.map((spec, index) => <div className="discount-spec-row" key={spec.id}><span>{index + 1}</span><input type="hidden" name="specId" value={spec.id} /><input type="hidden" name="specUnitCost" value={spec.unitCost ?? spec.cost} /><input type="hidden" name="specPackQuantity" value={spec.packQuantity || 1} /><input name="specName" value={spec.name} onChange={(event) => updateSpec(spec.id, 'name', event.target.value)} placeholder="规格" required /><input name="specCost" type="number" min="0" step="0.01" value={spec.cost} onChange={(event) => updateSpec(spec.id, 'cost', event.target.value)} placeholder="供货价" aria-label={`${spec.name || '规格'}供货价`} required /><input name="specSalePrice" type="number" min="0.01" step="0.01" value={spec.salePrice} onChange={(event) => updateSpec(spec.id, 'salePrice', event.target.value)} placeholder="当前售价" required /><b>{Number(spec.salePrice) > 0 ? discountText(getRecommended(spec.cost, spec.salePrice)) : '—'}</b><button type="button" className="remove-spec" disabled={specRows.length === 1} onClick={() => removeSpec(spec.id)}>移除</button></div>)}</div><div className="calc-note">各件装供货成本已自动合计　利润表最低售价：{summary?.limitingSpec ? money(profitMetrics(summary.limitingSpec.cost).minimumSalePrice) : '—'}　产品最低折扣：{summary ? discountText(summary.minimumRatio) : '—'}　产品最低可报：<b>{summary ? discountText(summary.recommendedDiscount) : '—'}</b>{summary?.limitingSpec && <span>　限制规格：{summary.limitingSpec.name}</span>}</div><Field label="商品图片"><input name="image" type="file" accept="image/*" /></Field><Field label="备注"><textarea name="note" defaultValue={editing?.note} /></Field><FormActions onClose={onClose} /></form></Modal>;
 }
 
-function ManualActivityForm({ editing, currentStore, onSubmit, onClose }) {
-  return <Modal title={editing ? '修改我的可报活动' : '记录我的可报活动'} onClose={onClose}><form onSubmit={onSubmit}>
-    <div className="form-grid"><Field label="店铺"><select name="store" defaultValue={editing?.store || (currentStore === STORE_ALL ? 'AG' : currentStore)}>{stores.map((name) => <option key={name}>{name}</option>)}</select></Field><Field label="商品编号"><input name="productCode" defaultValue={editing?.productCode} placeholder="填写商品编号" /></Field></div>
-    <Field label="商品名称"><input name="productName" defaultValue={editing?.productName} placeholder="填写商品名称" required /></Field>
-    <div className="form-grid"><Field label="规格"><input name="specName" defaultValue={editing?.specName} placeholder="例如：20灯、2件装" required /></Field><Field label="可报折扣（填写几折）"><input name="reportableDiscount" type="number" min="0.1" max="10" step="0.1" defaultValue={editing?.reportableDiscount ? Number((editing.reportableDiscount * 10).toFixed(1)) : ''} placeholder="例如：8.5" required /></Field></div>
-    <div className="calc-note">这条记录完全独立，不读取商品档案的活动折扣，也不会改变自动活动折扣。</div><FormActions onClose={onClose} />
-  </form></Modal>;
+function ManualActivityForm({ editing, products, currentStore, onSubmit, onClose }) {
+  const matchedProduct = products.find((item) => item.id === editing?.productId) || products.find((item) => item.productName === editing?.productName);
+  const [productId, setProductId] = useState(matchedProduct?.id || products[0]?.id || '');
+  const selectedProduct = products.find((item) => item.id === productId);
+  const specs = expandProductSpecsForPacks(selectedProduct);
+  const editingSpec = selectedProduct ? findExpandedProductSpec(selectedProduct, editing) || specs.find((item) => item.name === editing?.specName) : null;
+  const [specId, setSpecId] = useState(editingSpec?.id || specs[0]?.id || '');
+  const changeProduct = (nextProductId) => {
+    setProductId(nextProductId);
+    setSpecId(expandProductSpecsForPacks(products.find((item) => item.id === nextProductId))[0]?.id || '');
+  };
+  return <Modal title={editing ? '修改我的可报活动' : '记录我的可报活动'} onClose={onClose}>{products.length ? <form onSubmit={onSubmit}>
+    <div className="form-grid"><Field label="店铺"><select name="store" defaultValue={editing?.store || (currentStore === STORE_ALL ? 'AG' : currentStore)}>{stores.map((name) => <option key={name}>{name}</option>)}</select></Field><Field label="商品编号"><input name="productCode" defaultValue={editing?.productCode} placeholder="填写商品编号" required /></Field></div>
+    <Field label="商品名称（对应商品档案）"><select name="productId" value={productId} onChange={(event) => changeProduct(event.target.value)} required>{products.map((item) => <option key={item.id} value={item.id}>{productCategoryOf(item)} · {item.productName}</option>)}</select></Field>
+    <div className="form-grid"><Field label="规格（对应商品档案）"><select name="specId" value={specId} onChange={(event) => setSpecId(event.target.value)} required>{specs.map((spec) => <option key={spec.id} value={spec.id}>{spec.name}</option>)}</select></Field><Field label="可报折扣（填写几折）"><input name="reportableDiscount" type="number" min="0.1" max="10" step="0.1" defaultValue={editing?.reportableDiscount ? Number((editing.reportableDiscount * 10).toFixed(1)) : ''} placeholder="例如：8.5" required /></Field></div>
+    <div className="calc-note">商品名称和规格来自商品档案；可报折扣仍由你独立填写，不读取档案的活动结果。</div><FormActions onClose={onClose} />
+  </form> : <><Empty text="请先在商品档案中添加商品和规格" /><div className="actions"><button type="button" onClick={onClose}>关闭</button></div></>}</Modal>;
 }
 
 function PriceReferenceForm({ editing, products, discounts, allDiscounts, onSubmit, onClose }) {
