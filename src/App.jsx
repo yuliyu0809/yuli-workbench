@@ -67,7 +67,7 @@ const profitMetrics = (cost) => {
 const netProfitAtPrice = (cost, price) => Number(price || 0) * (1 - profitRates.afterSales - profitRates.advertising) - Number(cost || 0);
 const adRecordMetrics = (record, products = []) => {
   const product = products.find((item) => item.id === record?.productId);
-  const catalogSpec = product ? normalizeProductSpecs(product).find((item) => item.id === record?.specId) : null;
+  const catalogSpec = product ? findExpandedProductSpec(product, record) : null;
   const rawSpecCost = record?.specCost ?? catalogSpec?.cost;
   const hasSpecCost = rawSpecCost !== '' && rawSpecCost != null && Number.isFinite(Number(rawSpecCost));
   const hasAfterSales = Object.prototype.hasOwnProperty.call(record || {}, 'afterSalesLogistics') && record.afterSalesLogistics !== '' && record.afterSalesLogistics != null;
@@ -163,6 +163,14 @@ const expandProductSpecsForPacks = (product) => {
       salePrice: '',
     };
   }));
+};
+const findExpandedProductSpec = (product, record) => {
+  const targetPackQuantity = Math.max(1, Number(record?.packQuantity) || 1);
+  const targetBaseSpecId = record?.baseSpecId || record?.sourceSpecId || record?.specId;
+  const expandedSpecs = expandProductSpecsForPacks(product);
+  return expandedSpecs.find((spec) => spec.id === record?.specId)
+    || expandedSpecs.find((spec) => spec.baseSpecId === targetBaseSpecId && spec.packQuantity === targetPackQuantity)
+    || null;
 };
 const normalizeDiscountSpecs = (record) => Array.isArray(record?.specs) && record.specs.length
   ? record.specs.map((spec) => {
@@ -677,7 +685,7 @@ export default function App() {
     const specIds = data.getAll('specId').map(String);
     if (!product || !specIds.length) { notify('请选择商品链接和规格 SKU'); return; }
     if (new Set(specIds).size !== specIds.length) { notify('同一规格 SKU 不能重复添加'); return; }
-    const specs = normalizeProductSpecs(product);
+    const specs = expandProductSpecsForPacks(product);
     const selectedSpecs = specIds.map((id) => specs.find((item) => item.id === id));
     if (selectedSpecs.some((spec) => !spec)) { notify('请检查每一行的规格 SKU'); return; }
     const currentRecords = workspace.adRecords || [];
@@ -687,10 +695,17 @@ export default function App() {
     const adSpends = data.getAll('adSpend'); const logistics = data.getAll('afterSalesLogistics'); const sales = data.getAll('adSales'); const orders = data.getAll('adOrders');
     const replacedIds = new Set();
     const nextRecords = selectedSpecs.map((spec, index) => {
-      const duplicate = currentRecords.find((item) => item.store === recordStore && item.recordDate === recordDate && item.productId === product.id && item.specId === spec.id && item.id !== editing?.id);
+      const baseSpecId = spec.baseSpecId || spec.id;
+      const packQuantity = Math.max(1, Number(spec.packQuantity) || 1);
+      const duplicate = currentRecords.find((item) => item.store === recordStore
+        && item.recordDate === recordDate
+        && item.productId === product.id
+        && (item.baseSpecId || item.sourceSpecId || item.specId) === baseSpecId
+        && Math.max(1, Number(item.packQuantity) || 1) === packQuantity
+        && item.id !== editing?.id);
       const id = index === 0 && editing?.id ? editing.id : duplicate?.id || uid();
       replacedIds.add(id); if (duplicate?.id) replacedIds.add(duplicate.id);
-      return { id, store: recordStore, recordDate, productId: product.id, productName: product.productName, specId: spec.id, specName: spec.name, specCost: Number(spec.cost || 0), skc, imageDataUrl, adSpend: Number(adSpends[index]), adSales: Number(sales[index]), adOrders: Number(orders[index]), afterSalesLogistics: Number(logistics[index]), note: data.get('note'), updatedAt: new Date().toISOString() };
+      return { id, store: recordStore, recordDate, productId: product.id, productName: product.productName, specId: spec.id, baseSpecId, specName: spec.name, unitCost: Number(spec.unitCost ?? spec.cost ?? 0), packQuantity, specCost: Number(spec.cost || 0), skc, imageDataUrl, adSpend: Number(adSpends[index]), adSales: Number(sales[index]), adOrders: Number(orders[index]), afterSalesLogistics: Number(logistics[index]), note: data.get('note'), updatedAt: new Date().toISOString() };
     });
     if (editing?.id) replacedIds.add(editing.id);
     update('adRecords', [...nextRecords, ...currentRecords.filter((item) => !replacedIds.has(item.id))]); closeModal(); notify(`${nextRecords.length} 个规格 SKU 广告费已保存`);
@@ -969,14 +984,14 @@ function AdRecordForm({ editing, products, adRecords, currentStore, onSubmit, on
   const knownSkc = (nextProductId) => adRecords.find((item) => item.productId === nextProductId && item.skc)?.skc || '';
   const [skc, setSkc] = useState(editing?.skc || knownSkc(initialProductId));
   const selectedProduct = products.find((item) => item.id === productId);
-  const specs = normalizeProductSpecs(selectedProduct);
-  const selectedSpecExists = specs.some((item) => item.id === editing?.specId);
+  const specs = expandProductSpecsForPacks(selectedProduct);
+  const editingSpec = selectedProduct ? findExpandedProductSpec(selectedProduct, editing) : null;
   const blankRow = (specId = '') => ({ key: uid(), specId, adSpend: '', afterSalesLogistics: '', adSales: '', adOrders: '' });
-  const [skuRows, setSkuRows] = useState([editing ? { key: uid(), specId: selectedSpecExists ? editing.specId : specs[0]?.id || '', adSpend: editing.adSpend ?? '', afterSalesLogistics: editing.afterSalesLogistics ?? '', adSales: editing.adSales ?? '', adOrders: editing.adOrders ?? '' } : blankRow(specs[0]?.id || '')]);
+  const [skuRows, setSkuRows] = useState([editing ? { key: uid(), specId: editingSpec?.id || specs[0]?.id || '', adSpend: editing.adSpend ?? '', afterSalesLogistics: editing.afterSalesLogistics ?? '', adSales: editing.adSales ?? '', adOrders: editing.adOrders ?? '' } : blankRow(specs[0]?.id || '')]);
   const changeProduct = (nextProductId) => {
     setProductId(nextProductId);
     setSkc(knownSkc(nextProductId));
-    const nextSpecs = normalizeProductSpecs(products.find((item) => item.id === nextProductId));
+    const nextSpecs = expandProductSpecsForPacks(products.find((item) => item.id === nextProductId));
     setSkuRows([blankRow(nextSpecs[0]?.id || '')]);
   };
   const changeSkuRow = (key, field, value) => setSkuRows((rows) => rows.map((row) => row.key === key ? { ...row, [field]: value } : row));
@@ -991,7 +1006,7 @@ function AdRecordForm({ editing, products, adRecords, currentStore, onSubmit, on
     <div className="form-grid"><Field label="店铺"><select name="store" defaultValue={editing?.store || (currentStore === STORE_ALL ? 'AG' : currentStore)}>{stores.map((name) => <option key={name}>{name}</option>)}</select></Field><Field label="日期"><input name="recordDate" type="date" defaultValue={editing?.recordDate || today()} required /></Field></div>
     <Field label="商品链接"><select name="productId" value={productId} onChange={(event) => changeProduct(event.target.value)} required>{products.map((item) => <option key={item.id} value={item.id}>{productCategoryOf(item)} · {item.productName}</option>)}</select></Field>
     <Field label="SKC（同一链接共用）"><input name="skc" value={skc} onChange={(event) => setSkc(event.target.value)} placeholder="同一链接下的所有规格 SKU 共用" /></Field>
-    <div className="ad-sku-editor"><div className="ad-sku-editor-title"><div><b>规格 SKU</b><small>同一个 SKC 可以同时录入多个规格</small></div><button type="button" onClick={addSkuRow} disabled={allSpecsAdded}>{allSpecsAdded ? '已添加全部规格' : '＋ 添加规格 SKU'}</button></div>{skuRows.map((row, index) => <div className="ad-sku-entry" key={row.key}><div className="ad-sku-entry-head"><b>SKU {index + 1}</b>{skuRows.length > 1 && <button type="button" onClick={() => removeSkuRow(row.key)}>移除</button>}</div><div className="form-grid"><Field label="规格"><select name="specId" value={row.specId} onChange={(event) => changeSkuRow(row.key, 'specId', event.target.value)} required>{specs.map((spec) => <option key={spec.id} value={spec.id}>{spec.name} · 供货价 {money(spec.cost)}</option>)}</select></Field><Field label="广告费"><input name="adSpend" type="number" min="0" step="0.01" value={row.adSpend} onChange={(event) => changeSkuRow(row.key, 'adSpend', event.target.value)} required /></Field><Field label="单个售后物流费"><input name="afterSalesLogistics" type="number" min="0" step="0.01" value={row.afterSalesLogistics} onChange={(event) => changeSkuRow(row.key, 'afterSalesLogistics', event.target.value)} placeholder="每单物流费，没有填 0" required /></Field><Field label="广告销售额"><input name="adSales" type="number" min="0" step="0.01" value={row.adSales} onChange={(event) => changeSkuRow(row.key, 'adSales', event.target.value)} required /></Field><Field label="广告订单数"><input name="adOrders" type="number" min="0" step="1" value={row.adOrders} onChange={(event) => changeSkuRow(row.key, 'adOrders', event.target.value)} required /></Field></div></div>)}</div>
+    <div className="ad-sku-editor"><div className="ad-sku-editor-title"><div><b>规格 SKU</b><small>同一个 SKC 可以同时录入多个规格；可做件装会自动展开</small></div><button type="button" onClick={addSkuRow} disabled={allSpecsAdded}>{allSpecsAdded ? '已添加全部规格' : '＋ 添加规格 SKU'}</button></div>{skuRows.map((row, index) => <div className="ad-sku-entry" key={row.key}><div className="ad-sku-entry-head"><b>SKU {index + 1}</b>{skuRows.length > 1 && <button type="button" onClick={() => removeSkuRow(row.key)}>移除</button>}</div><div className="form-grid"><Field label="规格"><select name="specId" value={row.specId} onChange={(event) => changeSkuRow(row.key, 'specId', event.target.value)} required>{specs.map((spec) => <option key={spec.id} value={spec.id}>{spec.name} · 供货价 {money(spec.cost)}</option>)}</select></Field><Field label="广告费"><input name="adSpend" type="number" min="0" step="0.01" value={row.adSpend} onChange={(event) => changeSkuRow(row.key, 'adSpend', event.target.value)} required /></Field><Field label="单个售后物流费"><input name="afterSalesLogistics" type="number" min="0" step="0.01" value={row.afterSalesLogistics} onChange={(event) => changeSkuRow(row.key, 'afterSalesLogistics', event.target.value)} placeholder="每单物流费，没有填 0" required /></Field><Field label="广告销售额"><input name="adSales" type="number" min="0" step="0.01" value={row.adSales} onChange={(event) => changeSkuRow(row.key, 'adSales', event.target.value)} required /></Field><Field label="广告订单数"><input name="adOrders" type="number" min="0" step="1" value={row.adOrders} onChange={(event) => changeSkuRow(row.key, 'adOrders', event.target.value)} required /></Field></div></div>)}</div>
     <Field label="产品图片"><input name="image" type="file" accept="image/*" />{editing?.imageDataUrl && <span className="field-help">已保存图片；不重新选择会保留原图</span>}</Field>
     <Field label="备注"><textarea name="note" defaultValue={editing?.note} placeholder="例如：活动加投、预算调整" /></Field><div className="calc-note"><b>售后物流总额</b>＝单个售后物流费 × 广告订单数；<b>预计利润</b>＝广告销售额 − 广告费 − 售后物流总额 −（SKU供货价 × 广告订单数）。</div><FormActions onClose={onClose} />
   </form> : <><Empty text="请先在商品档案中添加商品和规格，再记录 SKU 广告费" /><div className="actions"><button type="button" onClick={onClose}>关闭</button></div></>}</Modal>;
