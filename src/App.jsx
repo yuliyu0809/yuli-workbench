@@ -305,6 +305,7 @@ export default function App() {
   const [workspace, setWorkspace] = useState(readLocal);
   const [modal, setModal] = useState(null);
   const [editing, setEditing] = useState(null);
+  const [adEntryDate, setAdEntryDate] = useState(today());
   const [search, setSearch] = useState('');
   const [toast, setToast] = useState('');
   const [translationBusy, setTranslationBusy] = useState(false);
@@ -784,7 +785,7 @@ export default function App() {
         {page === 'data' && <Operations records={visible(workspace.operations)} onEdit={(item) => openEdit('operation', item)} onDelete={(item) => remove('operations', item, `${item.store} ${item.recordDate}`)} />}
         {page === 'products' && <Products records={workspace.products} search={search} setSearch={setSearch} onEdit={(item) => openEdit('product', item)} onDelete={(item) => remove('products', item, item.productName)} />}
         {page === 'tasks' && <Tasks records={visible(workspace.tasks)} update={(records) => update('tasks', records)} onEdit={(item) => openEdit('task', item)} onDelete={(item) => remove('tasks', item, item.title)} />}
-        {page === 'pricingAds' && <PricingAds products={workspace.products} pricingRecords={visible(workspace.pricingHistory || [])} adRecords={visible(workspace.adRecords || [])} onAddPricing={() => openNew('pricingHistory')} onAddAd={() => openNew('adRecord')} onEditPricing={(item) => openEdit('pricingHistory', item)} onEditAd={(item) => openEdit('adRecord', item)} onDeletePricing={(item) => remove('pricingHistory', item, `${item.productName} ${item.specName}`)} onDeleteAd={(item) => remove('adRecords', item, `${item.store} ${item.recordDate}`)} />}
+        {page === 'pricingAds' && <PricingAds products={workspace.products} pricingRecords={visible(workspace.pricingHistory || [])} adRecords={visible(workspace.adRecords || [])} onAddPricing={() => openNew('pricingHistory')} onAddAd={(date) => { setAdEntryDate(date || today()); openNew('adRecord'); }} onEditPricing={(item) => openEdit('pricingHistory', item)} onEditAd={(item) => openEdit('adRecord', item)} onDeletePricing={(item) => remove('pricingHistory', item, `${item.productName} ${item.specName}`)} onDeleteAd={(item) => remove('adRecords', item, `${item.store} ${item.recordDate}`)} />}
       </section>
     </main>
     {modal === 'product' && <ProductForm editing={editing} onSubmit={saveProduct} onClose={closeModal} />}
@@ -794,7 +795,7 @@ export default function App() {
     {modal === 'discount' && <DiscountForm editing={editing} products={workspace.products} currentStore={store} onSubmit={saveDiscount} onClose={closeModal} />}
     {modal === 'manualActivity' && <ManualActivityForm editing={editing} products={workspace.products} currentStore={store} onSubmit={saveManualActivity} onClose={closeModal} />}
     {modal === 'pricingHistory' && <PricingHistoryForm editing={editing} products={workspace.products} currentStore={store} onSubmit={savePricingHistory} onClose={closeModal} />}
-    {modal === 'adRecord' && <AdRecordForm editing={editing} products={workspace.products} adRecords={workspace.adRecords || []} currentStore={store} onSubmit={saveAdRecord} onClose={closeModal} />}
+    {modal === 'adRecord' && <AdRecordForm editing={editing} initialDate={adEntryDate} products={workspace.products} adRecords={workspace.adRecords || []} currentStore={store} onSubmit={saveAdRecord} onClose={closeModal} />}
     {toast && <div className="toast">{toast}</div>}
   </div>;
 }
@@ -898,6 +899,8 @@ function RowActions({ onEdit, onDelete }) { return <div className="row-actions">
 
 function PricingAds({ products, pricingRecords, adRecords, onAddPricing, onAddAd, onEditPricing, onEditAd, onDeletePricing, onDeleteAd }) {
   const [view, setView] = useState('ads');
+  const [calendarMonth, setCalendarMonth] = useState(today().slice(0, 7));
+  const [selectedAdDate, setSelectedAdDate] = useState('');
   const monthKey = today().slice(0, 7);
   const monthAds = adRecords.filter((item) => item.recordDate?.startsWith(monthKey));
   const monthPricing = pricingRecords.filter((item) => item.priceDate?.startsWith(monthKey));
@@ -910,17 +913,20 @@ function PricingAds({ products, pricingRecords, adRecords, onAddPricing, onAddAd
   const increased = monthPricing.filter((item) => Number(item.currentPrice) > Number(item.previousPrice)).length;
   const decreased = monthPricing.filter((item) => Number(item.currentPrice) < Number(item.previousPrice)).length;
   const sortedAds = [...adRecords].sort((a, b) => String(b.recordDate).localeCompare(String(a.recordDate)) || String(a.store).localeCompare(String(b.store)));
+  const displayedAds = selectedAdDate ? sortedAds.filter((item) => item.recordDate === selectedAdDate) : sortedAds;
   const sortedPricing = [...pricingRecords].sort((a, b) => String(b.priceDate).localeCompare(String(a.priceDate)));
   return <>
     <div className="record-view-head">
       <div className="discount-view-tabs"><button type="button" className={view === 'ads' ? 'selected' : ''} onClick={() => setView('ads')}>每日广告费</button><button type="button" className={view === 'pricing' ? 'selected' : ''} onClick={() => setView('pricing')}>核价变动</button></div>
-      <button className="primary" type="button" onClick={view === 'ads' ? onAddAd : onAddPricing}>＋ {view === 'ads' ? '记录广告费' : '记录核价变化'}</button>
+      <button className="primary" type="button" onClick={() => view === 'ads' ? onAddAd() : onAddPricing()}>＋ {view === 'ads' ? '记录广告费' : '记录核价变化'}</button>
     </div>
     {view === 'ads' ? <>
       <div className="metrics finance-metrics"><Metric label="本月广告费" value={money(adSpend)} /><Metric label="广告销售额" value={money(adSales)} /><Metric label="预计利润" value={estimatedProfit == null ? '待补充' : money(estimatedProfit)} /><Metric label="ROAS" value={adSpend ? `${(adSales / adSpend).toFixed(2)}x` : '—'} /><Metric label="广告订单" value={adOrders} /><Metric label="单均广告成本" value={adOrders ? money(adSpend / adOrders) : '—'} /></div>
+      <AdCalendar month={calendarMonth} records={adRecords} selectedDate={selectedAdDate} onChangeMonth={(month) => { setCalendarMonth(month); setSelectedAdDate(''); }} onSelectDate={(date) => { setSelectedAdDate(date); onAddAd(date); }} />
       <AdTrendChart records={monthAds} />
-      <TableShell title="SKC 与 SKU 每日广告记录" subtitle="一个 SKC 对应一个商品链接，下方可展开查看并分别核算多个 SKU">
-        <AdGroupTable records={sortedAds} products={products} onEdit={onEditAd} onDelete={onDeleteAd} />
+      <TableShell title="SKC 与 SKU 每日广告记录" subtitle={selectedAdDate ? `当前查看 ${selectedAdDate} 的广告明细` : '一个 SKC 对应一个商品链接，下方可展开查看并分别核算多个 SKU'}>
+        {selectedAdDate && <div className="ad-day-filter"><span>已选择 {selectedAdDate}</span><button type="button" onClick={() => setSelectedAdDate('')}>查看全部日期</button></div>}
+        <AdGroupTable records={displayedAds} products={products} onEdit={onEditAd} onDelete={onDeleteAd} />
       </TableShell>
     </> : <>
       <div className="metrics pricing-metrics"><Metric label="本月核价记录" value={monthPricing.length} /><Metric label="价格上调" value={increased} /><Metric label="价格下调" value={decreased} /><Metric label="价格未变" value={monthPricing.length - increased - decreased} /></div>
@@ -932,6 +938,40 @@ function PricingAds({ products, pricingRecords, adRecords, onAddPricing, onAddAd
       </TableShell>
     </>}
   </>;
+}
+
+function AdCalendar({ month, records, selectedDate, onChangeMonth, onSelectDate }) {
+  const [year, monthNumber] = month.split('-').map(Number);
+  const firstWeekday = (new Date(year, monthNumber - 1, 1).getDay() + 6) % 7;
+  const daysInMonth = new Date(year, monthNumber, 0).getDate();
+  const totals = records.reduce((map, item) => {
+    if (!item.recordDate?.startsWith(month)) return map;
+    const current = map.get(item.recordDate) || { spend: 0, count: 0, stores: new Set() };
+    current.spend += Number(item.adSpend || 0);
+    current.count += 1;
+    current.stores.add(item.store);
+    map.set(item.recordDate, current);
+    return map;
+  }, new Map());
+  const moveMonth = (amount) => {
+    const next = new Date(year, monthNumber - 1 + amount, 1);
+    onChangeMonth(`${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, '0')}`);
+  };
+  return <div className="panel ad-calendar-panel">
+    <div className="panel-title ad-calendar-title"><div><h2>每日广告日历</h2><p>点击日期，直接录入当天各链接、各 SKU 的广告数据</p></div><div className="ad-calendar-nav"><button type="button" onClick={() => moveMonth(-1)} aria-label="上个月">‹</button><strong>{year}年{monthNumber}月</strong><button type="button" onClick={() => moveMonth(1)} aria-label="下个月">›</button><button type="button" onClick={() => onChangeMonth(today().slice(0, 7))}>本月</button></div></div>
+    <div className="ad-calendar-grid" aria-label={`${year}年${monthNumber}月广告日历`}>
+      {['一', '二', '三', '四', '五', '六', '日'].map((day) => <span className="ad-calendar-weekday" key={day}>周{day}</span>)}
+      {Array.from({ length: firstWeekday }, (_, index) => <span className="ad-calendar-blank" key={`blank-${index}`} />)}
+      {Array.from({ length: daysInMonth }, (_, index) => {
+        const date = `${month}-${String(index + 1).padStart(2, '0')}`;
+        const summary = totals.get(date);
+        return <button type="button" className={`ad-calendar-day${date === today() ? ' is-today' : ''}${date === selectedDate ? ' is-selected' : ''}`} key={date} onClick={() => onSelectDate(date)} aria-label={`${date}，${summary ? `${summary.count} 条广告记录，合计 ${money(summary.spend)}` : '暂无广告记录'}，点击录入`}>
+          <span className="ad-calendar-number">{index + 1}</span>
+          {summary ? <><strong>{money(summary.spend)}</strong><small>{summary.count} 条 SKU</small><span className="ad-calendar-store-dots">{stores.filter((store) => summary.stores.has(store)).map((store) => <i key={store} className={`dot ${store.toLowerCase()}`} />)}</span></> : <small className="ad-calendar-empty">＋ 录入</small>}
+        </button>;
+      })}
+    </div>
+  </div>;
 }
 
 function AdGroupTable({ records, products, onEdit, onDelete }) {
@@ -997,7 +1037,7 @@ function PricingHistoryForm({ editing, products, currentStore, onSubmit, onClose
   return <Modal title={editing ? '修改核价记录' : '记录核价变化'} onClose={onClose}>{products.length ? <form onSubmit={onSubmit}><div className="form-grid"><Field label="店铺"><select name="store" defaultValue={editing?.store || (currentStore === STORE_ALL ? 'AG' : currentStore)}>{stores.map((name) => <option key={name}>{name}</option>)}</select></Field><Field label="核价日期"><input name="priceDate" type="date" defaultValue={editing?.priceDate || today()} required /></Field></div><Field label="商品"><select name="productId" value={productId} onChange={(event) => setProductId(event.target.value)} required>{products.map((item) => <option key={item.id} value={item.id}>{productCategoryOf(item)} · {item.productName}</option>)}</select></Field><Field label="规格"><select name="specId" key={productId} defaultValue={selectedSpecExists ? editing.specId : specs[0]?.id} required>{specs.map((spec) => <option key={spec.id} value={spec.id}>{spec.name}</option>)}</select></Field><div className="form-grid"><Field label="以前的核价"><input name="previousPrice" type="number" min="0" step="0.01" defaultValue={editing?.previousPrice ?? ''} required /></Field><Field label="现在的核价"><input name="currentPrice" type="number" min="0" step="0.01" defaultValue={editing?.currentPrice ?? ''} required /></Field></div><Field label="备注"><textarea name="note" defaultValue={editing?.note} placeholder="例如：平台重新核价、供应价调整" /></Field><FormActions onClose={onClose} /></form> : <><Empty text="请先在商品档案中添加商品，再记录核价变化" /><div className="actions"><button type="button" onClick={onClose}>关闭</button></div></>}</Modal>;
 }
 
-function AdRecordForm({ editing, products, adRecords, currentStore, onSubmit, onClose }) {
+function AdRecordForm({ editing, initialDate, products, adRecords, currentStore, onSubmit, onClose }) {
   const initialProductId = editing?.productId || products[0]?.id || '';
   const [productId, setProductId] = useState(initialProductId);
   const knownSkc = (nextProductId) => adRecords.find((item) => item.productId === nextProductId && item.skc)?.skc || '';
@@ -1022,7 +1062,7 @@ function AdRecordForm({ editing, products, adRecords, currentStore, onSubmit, on
   const removeSkuRow = (key) => setSkuRows((rows) => rows.length > 1 ? rows.filter((row) => row.key !== key) : rows);
   const allSpecsAdded = skuRows.length >= specs.length;
   return <Modal title={editing ? '修改 SKU 广告费' : '记录 SKU 广告费'} onClose={onClose}>{products.length ? <form onSubmit={onSubmit}>
-    <div className="form-grid"><Field label="店铺"><select name="store" defaultValue={editing?.store || (currentStore === STORE_ALL ? 'AG' : currentStore)}>{stores.map((name) => <option key={name}>{name}</option>)}</select></Field><Field label="日期"><input name="recordDate" type="date" defaultValue={editing?.recordDate || today()} required /></Field></div>
+    <div className="form-grid"><Field label="店铺"><select name="store" defaultValue={editing?.store || (currentStore === STORE_ALL ? 'AG' : currentStore)}>{stores.map((name) => <option key={name}>{name}</option>)}</select></Field><Field label="日期"><input name="recordDate" type="date" defaultValue={editing?.recordDate || initialDate || today()} required /></Field></div>
     <Field label="商品链接"><select name="productId" value={productId} onChange={(event) => changeProduct(event.target.value)} required>{products.map((item) => <option key={item.id} value={item.id}>{productCategoryOf(item)} · {item.productName}</option>)}</select></Field>
     <Field label="SKC（同一链接共用）"><input name="skc" value={skc} onChange={(event) => setSkc(event.target.value)} placeholder="同一链接下的所有规格 SKU 共用" /></Field>
     <div className="ad-sku-editor"><div className="ad-sku-editor-title"><div><b>规格 SKU</b><small>同一个 SKC 可以同时录入多个规格；可做件装会自动展开</small></div><button type="button" onClick={addSkuRow} disabled={allSpecsAdded}>{allSpecsAdded ? '已添加全部规格' : '＋ 添加规格 SKU'}</button></div>{skuRows.map((row, index) => <div className="ad-sku-entry" key={row.key}><div className="ad-sku-entry-head"><b>SKU {index + 1}</b>{skuRows.length > 1 && <button type="button" onClick={() => removeSkuRow(row.key)}>移除</button>}</div><div className="form-grid"><Field label="规格"><select name="specId" value={row.specId} onChange={(event) => changeSkuRow(row.key, 'specId', event.target.value)} required>{specs.map((spec) => <option key={spec.id} value={spec.id}>{spec.name} · 供货价 {money(spec.cost)}</option>)}</select></Field><Field label="广告费"><input name="adSpend" type="number" min="0" step="0.01" value={row.adSpend} onChange={(event) => changeSkuRow(row.key, 'adSpend', event.target.value)} required /></Field><Field label="单个售后物流费"><input name="afterSalesLogistics" type="number" min="0" step="0.01" value={row.afterSalesLogistics} onChange={(event) => changeSkuRow(row.key, 'afterSalesLogistics', event.target.value)} placeholder="每单物流费，没有填 0" required /></Field><Field label="广告销售额"><input name="adSales" type="number" min="0" step="0.01" value={row.adSales} onChange={(event) => changeSkuRow(row.key, 'adSales', event.target.value)} required /></Field><Field label="广告订单数"><input name="adOrders" type="number" min="0" step="1" value={row.adOrders} onChange={(event) => changeSkuRow(row.key, 'adOrders', event.target.value)} required /></Field></div></div>)}</div>
