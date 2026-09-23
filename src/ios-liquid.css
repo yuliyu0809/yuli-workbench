@@ -49,3 +49,4 @@ tbody tr:hover,tbody tr:hover td{background:rgba(236,246,252,.64)}
 .ad-group-row td{background:rgba(222,238,248,.7);border-color:rgba(164,196,214,.65);color:#405e6b}.ad-sku-row td{background:rgba(251,253,255,.7)}
 .backup-tools{background:rgba(245,251,255,.62);border-color:rgba(255,255,255,.78);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px)}
 .modal{background:rgba(246,251,255,.86);border-color:rgba(255,255,255,.92)}
+.manual-activity-image-preview{display:block;width:88px;height:88px;object-fit:cover;margin:0 0 16px;border:1px solid rgba(180,204,220,.7);border-radius:18px;box-shadow:0 8px 20px rgba(35,71,104,.1)}
