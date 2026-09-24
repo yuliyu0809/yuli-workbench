@@ -747,17 +747,19 @@ export default function App() {
     event.preventDefault(); const data = new FormData(event.currentTarget);
     const skc = String(data.get('productCode') || '').trim();
     const linkedProduct = findLinkBySkc(workspace.discounts, skc);
-    const productName = String(data.get('productName') || '').trim();
+    if (!linkedProduct && !editing) { notify('未找到这个 SKC，请先在商品链接中添加'); return; }
+    const productName = linkedProduct?.productName || String(data.get('productName') || '').trim();
     if (linkedProduct && linkedProduct.store !== data.get('store')) { notify('此 SKC 已对应其他店铺，请使用自动带出的店铺'); return; }
-    if (linkedProduct && linkedProduct.productName !== productName) { notify('此 SKC 已对应其他商品，请使用自动带出的名称'); return; }
     const product = workspace.products.find((item) => item.productName === productName);
-    if (!product) { notify('请从商品档案中选择商品名称'); return; }
+    if (!linkedProduct && !product) { notify('请从商品档案中选择商品名称'); return; }
     const reportableDiscount = Number(data.get('reportableDiscount')) / 10;
     if (!Number.isFinite(reportableDiscount) || reportableDiscount <= 0 || reportableDiscount > 1) { notify('请选择可报折扣'); return; }
-    let imageDataUrl = editing?.imageDataUrl || linkedProduct?.imageDataUrl || '';
+    const sameSkc = normalizeSkc(editing?.productCode) === normalizeSkc(skc);
+    let imageSource = sameSkc ? editing?.imageSource || '' : '';
+    let imageDataUrl = imageSource === 'manual' ? editing?.imageDataUrl || '' : linkedProduct?.imageDataUrl || (sameSkc ? editing?.imageDataUrl : '') || '';
     const file = data.get('image');
-    if (file?.size) imageDataUrl = await imageToDataUrl(file);
-    const next = { id: editing?.id || uid(), store: data.get('store'), productId: product.id, productCode: skc, productName: product.productName, reportableDiscount, imageDataUrl, updatedAt: new Date().toISOString() };
+    if (file?.size) { imageDataUrl = await imageToDataUrl(file); imageSource = 'manual'; }
+    const next = { id: editing?.id || uid(), store: data.get('store'), productId: product?.id || linkedProduct?.productId || '', productCode: skc, productName, reportableDiscount, imageDataUrl, imageSource, updatedAt: new Date().toISOString() };
     const records = workspace.manualActivities || [];
     update('manualActivities', editing ? records.map((item) => item.id === editing.id ? next : item) : [next, ...records]); closeModal(); notify('我的可报活动已保存');
   };
@@ -1145,15 +1147,15 @@ function Discounts({ records, manualRecords, search, setSearch, onAdd, onEdit, o
     </div>
     {view === 'automatic'
       ? <DiscountActivity records={records} search={search} setSearch={setSearch} onEdit={onEdit} onDelete={onDelete} />
-      : <ManualActivities records={manualRecords} search={search} setSearch={setSearch} onEdit={onEditManual} onDelete={onDeleteManual} />}
+      : <ManualActivities records={manualRecords} links={records} search={search} setSearch={setSearch} onEdit={onEditManual} onDelete={onDeleteManual} />}
   </>;
 }
 
-function ManualActivities({ records, search, setSearch, onEdit, onDelete }) {
+function ManualActivities({ records, links, search, setSearch, onEdit, onDelete }) {
   const filtered = records.filter((item) => `${item.productName}${item.productCode}${item.store}`.toLowerCase().includes(search.toLowerCase()));
   return <TableShell title="我的可报活动" subtitle="只记录你实际可以报名的折扣，不读取商品档案的推荐活动" search={search} setSearch={setSearch}>
     <table><thead><tr><th>店铺</th><th>商品</th><th>SKC</th><th>可报折扣</th><th>操作</th></tr></thead><tbody>
-      {filtered.map((item) => <tr key={item.id}><td><Badge>{item.store}</Badge></td><td><div className="product-cell"><span className="thumb">{item.imageDataUrl ? <img src={item.imageDataUrl} alt="" /> : '折'}</span><strong>{item.productName}</strong></div></td><td>{item.productCode || '—'}</td><td><Badge>{discountText(manualActivityDiscount(item))}</Badge></td><td><RowActions onEdit={() => onEdit(item)} onDelete={() => onDelete(item)} /></td></tr>)}
+      {filtered.map((item) => { const link = findLinkBySkc(links, item.productCode); const image = item.imageSource === 'manual' ? item.imageDataUrl : link?.imageDataUrl || item.imageDataUrl; return <tr key={item.id}><td><Badge>{item.store}</Badge></td><td><div className="product-cell"><span className="thumb">{image ? <img src={image} alt="" /> : '折'}</span><strong>{link?.productName || item.productName}</strong></div></td><td>{item.productCode || '—'}</td><td><Badge>{discountText(manualActivityDiscount(item))}</Badge></td><td><RowActions onEdit={() => onEdit(item)} onDelete={() => onDelete(item)} /></td></tr>; })}
       {!filtered.length && <tr><td colSpan="5"><Empty text={records.length ? '没有符合搜索条件的可报活动' : '暂无记录，点击“记录可报活动”开始添加'} /></td></tr>}
     </tbody></table>
   </TableShell>;
@@ -1270,21 +1272,23 @@ function ManualActivityForm({ editing, products, links, currentStore, onSubmit, 
   const [skc, setSkc] = useState(editing?.productCode || '');
   const [selectedStore, setSelectedStore] = useState(editing?.store || (currentStore === STORE_ALL ? 'AG' : currentStore));
   const linkedProduct = findLinkBySkc(links, skc);
+  const sameSkc = normalizeSkc(editing?.productCode) === normalizeSkc(skc);
+  const previewImage = sameSkc && editing?.imageSource === 'manual' ? editing.imageDataUrl : linkedProduct?.imageDataUrl || (sameSkc ? editing?.imageDataUrl : '') || '';
   const changeSkc = (value) => {
     setSkc(value);
     const found = findLinkBySkc(links, value);
     if (found) { setProductName(found.productName); setSelectedStore(found.store); }
+    else if (!editing) setProductName('');
   };
   const savedDiscount = manualActivityDiscount(editing);
   const selectedDiscount = savedDiscount ? Number((savedDiscount * 10).toFixed(1)) : '';
-  return <Modal title={editing ? '修改我的可报活动' : '记录我的可报活动'} onClose={onClose}>{products.length ? <form onSubmit={onSubmit}>
+  return <Modal title={editing ? '修改我的可报活动' : '记录我的可报活动'} onClose={onClose}><form onSubmit={onSubmit}>
     <div className="form-grid"><Field label="店铺"><select name="store" value={selectedStore} onChange={(event) => setSelectedStore(event.target.value)}>{stores.map((name) => <option key={name}>{name}</option>)}</select></Field><Field label="SKC"><input name="productCode" value={skc} onChange={(event) => changeSkc(event.target.value)} placeholder="输入 SKC 自动查找商品" required /></Field></div>
-    {linkedProduct && <p className="skc-match">已找到 {linkedProduct.store} 店商品链接：{linkedProduct.productName}</p>}
-    <Field label="商品名称（搜索商品档案）"><ProductNamePicker products={products} value={productName} onChange={setProductName} requireCatalogMatch /></Field>
-    <div className="form-grid"><Field label="可报折扣"><select name="reportableDiscount" defaultValue={selectedDiscount || ''} required><option value="">请选择折扣</option>{selectedDiscount && !manualDiscountOptions.includes(selectedDiscount) && <option value={selectedDiscount}>{selectedDiscount}折（原记录）</option>}{manualDiscountOptions.map((discount) => <option key={discount} value={discount}>{discount}折</option>)}</select></Field><Field label="商品图片"><input name="image" type="file" accept="image/*" />{editing?.imageDataUrl && <span className="field-help">已保存图片；不重新选择会保留原图</span>}</Field></div>
-    {editing?.imageDataUrl && <img className="manual-activity-image-preview" src={editing.imageDataUrl} alt="当前商品图片" />}
-    <div className="calc-note">商品名称来自商品档案；可报折扣由你选择，不读取档案的活动结果。</div><FormActions onClose={onClose} />
-  </form> : <><Empty text="请先在商品档案中添加商品" /><div className="actions"><button type="button" onClick={onClose}>关闭</button></div></>}</Modal>;
+    {skc && !linkedProduct && !editing && <p className="skc-warning" role="alert">未找到这个 SKC，请先在“商品链接 → 我的产品”中添加。</p>}
+    {linkedProduct ? <div className="manual-linked-product"><div className="manual-linked-image">{previewImage ? <img src={previewImage} alt={linkedProduct.productName} /> : <span>暂无图片</span>}</div><div><small>已匹配 {linkedProduct.store} 店商品链接</small><strong>{linkedProduct.productName}</strong></div></div> : editing && <Field label="商品名称（旧记录）"><ProductNamePicker products={products} value={productName} onChange={setProductName} requireCatalogMatch /></Field>}
+    <div className="form-grid"><Field label="可报折扣"><select name="reportableDiscount" defaultValue={selectedDiscount || ''} required><option value="">请选择折扣</option>{selectedDiscount && !manualDiscountOptions.includes(selectedDiscount) && <option value={selectedDiscount}>{selectedDiscount}折（原记录）</option>}{manualDiscountOptions.map((discount) => <option key={discount} value={discount}>{discount}折</option>)}</select></Field><Field label="替换图片（可选）"><input name="image" type="file" accept="image/*" /><span className="field-help">默认使用商品链接里的图片</span></Field></div>
+    <div className="calc-note">名称和图片按 SKC 从商品链接带出；可报折扣由你单独选择。</div><FormActions onClose={onClose} />
+  </form></Modal>;
 }
 
 function PriceReferenceForm({ editing, products, discounts, allDiscounts, onSubmit, onClose }) {
