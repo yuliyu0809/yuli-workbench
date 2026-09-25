@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { cloudWorkspace } from './lib/cloudWorkspaceClient.js';
+import { prepareWorkspaceForCloud, retainLocalOriginalImages } from './lib/cloudWorkspacePayload.js';
+import { readIndexedWorkspace, writeIndexedWorkspace } from './lib/localWorkspaceStore.js';
 import { lightingCatalogVersion, lightingProductCatalog } from './data/lightingProductCatalog.js';
 
 const STORE_ALL = '全部店铺';
@@ -314,47 +316,90 @@ export default function App() {
   const [translationBusy, setTranslationBusy] = useState(false);
   const [cloud, setCloud] = useState('正在连接云端…');
   const [syncing, setSyncing] = useState(false);
+  const [localReady, setLocalReady] = useState(false);
+  const [localSaveError, setLocalSaveError] = useState('');
   const hydrated = useRef(false);
   const skipNextPush = useRef(false);
   const workspaceRef = useRef(workspace);
   const loadFailedRef = useRef(false);
   const pushFailedRef = useRef(false);
-  const localDirtyRef = useRef(localStorage.getItem('yuli.public.workspace.dirty.v1') === '1');
+  const localDirtyRef = useRef((() => { try { return localStorage.getItem('yuli.public.workspace.dirty.v1') === '1'; } catch { return false; } })());
+  const localWriteQueue = useRef(Promise.resolve());
+  const editRevision = useRef(0);
   const backgroundSyncRef = useRef(false);
   const lastCloudUpdatedAtRef = useRef('');
   const backupInputRef = useRef(null);
 
+  const queueLocalSnapshot = (data, dirty = localDirtyRef.current) => {
+    const write = localWriteQueue.current.catch(() => {}).then(() => writeIndexedWorkspace({ workspace: data, dirty }));
+    localWriteQueue.current = write;
+    write.then(() => setLocalSaveError('')).catch(() => {
+      try {
+        localStorage.setItem('yuli.public.workspace.v1', JSON.stringify(data));
+        setLocalSaveError('本机数据库不可用，资料暂存于浏览器旧存储；请保留 U 盘备份');
+      } catch {
+        setLocalSaveError('本机保存失败，请立即导出 U 盘备份；不要关闭页面');
+      }
+    });
+    return write;
+  };
+  const markCloudSynced = (revision = editRevision.current) => {
+    if (revision !== editRevision.current) return;
+    localDirtyRef.current = false;
+    try { localStorage.removeItem('yuli.public.workspace.dirty.v1'); } catch { /* IndexedDB keeps the sync state. */ }
+    queueLocalSnapshot(workspaceRef.current, false);
+  };
   const update = (key, records) => setWorkspace((current) => {
     const next = { ...current, [key]: records };
     workspaceRef.current = next;
     localDirtyRef.current = true;
-    localStorage.setItem('yuli.public.workspace.dirty.v1', '1');
+    editRevision.current += 1;
+    try { localStorage.setItem('yuli.public.workspace.dirty.v1', '1'); } catch { /* The full workspace is stored in IndexedDB. */ }
     return next;
   });
   const notify = (text) => { setToast(text); window.setTimeout(() => setToast(''), 2200); };
   const saveToCloud = async (nextWorkspace, attempts = 5) => {
+    const revision = editRevision.current;
     let candidate = nextWorkspace;
-    let result = await retryCloudRequest(() => cloudWorkspace.write(candidate, lastCloudUpdatedAtRef.current), attempts);
+    let upload = await prepareWorkspaceForCloud(candidate);
+    let result = await retryCloudRequest(() => cloudWorkspace.write(upload, lastCloudUpdatedAtRef.current), attempts);
     if (result.error?.status === 409 && result.data?.data) {
       candidate = mergeWorkspaces(result.data.data, candidate);
       lastCloudUpdatedAtRef.current = result.data.updated_at || '';
-      result = await retryCloudRequest(() => cloudWorkspace.write(candidate, lastCloudUpdatedAtRef.current), attempts);
-      if (!result.error) {
+      upload = await prepareWorkspaceForCloud(candidate);
+      result = await retryCloudRequest(() => cloudWorkspace.write(upload, lastCloudUpdatedAtRef.current), attempts);
+      if (!result.error && revision === editRevision.current) {
         skipNextPush.current = true;
         workspaceRef.current = candidate;
         setWorkspace(candidate);
       }
     }
     if (!result.error) lastCloudUpdatedAtRef.current = result.data?.updated_at || lastCloudUpdatedAtRef.current;
-    return { ...result, workspace: candidate };
+    return { ...result, workspace: candidate, revision };
   };
 
   useEffect(() => {
-    workspaceRef.current = workspace;
-    localStorage.setItem('yuli.public.workspace.v1', JSON.stringify(workspace));
-  }, [workspace]);
+    let alive = true;
+    readIndexedWorkspace().then((snapshot) => {
+      if (!alive || !snapshot?.workspace) return;
+      const restored = applyLightingCatalog(snapshot.workspace).workspace;
+      localDirtyRef.current = Boolean(snapshot.dirty) || localDirtyRef.current;
+      workspaceRef.current = restored;
+      setWorkspace(restored);
+    }).catch(() => {
+      if (alive) setLocalSaveError('本机数据库不可用，请保留 U 盘备份');
+    }).finally(() => { if (alive) setLocalReady(true); });
+    return () => { alive = false; };
+  }, []);
 
   useEffect(() => {
+    if (!localReady) return;
+    workspaceRef.current = workspace;
+    queueLocalSnapshot(workspace);
+  }, [workspace, localReady]);
+
+  useEffect(() => {
+    if (!localReady) return undefined;
     let alive = true;
     async function load() {
       if (!cloudWorkspace.isConfigured) { setCloud('仅保存到本机'); hydrated.current = true; return; }
@@ -366,57 +411,50 @@ export default function App() {
       if (localDirtyRef.current && hasWorkspaceRecords(workspace)) {
         const pendingWorkspace = data?.data && hasWorkspaceRecords(data.data) ? mergeWorkspaces(data.data, workspace) : workspace;
         if (pendingWorkspace !== workspace) {
-          skipNextPush.current = true;
           workspaceRef.current = pendingWorkspace;
           setWorkspace(pendingWorkspace);
         }
-        const { error: uploadError } = await saveToCloud(pendingWorkspace, 5);
+        const { error: uploadError, revision } = await saveToCloud(pendingWorkspace, 5);
         pushFailedRef.current = Boolean(uploadError);
-        if (!uploadError) {
-          localDirtyRef.current = false;
-          localStorage.removeItem('yuli.public.workspace.dirty.v1');
-        }
+        if (!uploadError) markCloudSynced(revision);
         setCloud(uploadError ? '本机数据已保留 · 云端同步失败' : '本机数据已同步到云端');
       } else if (data?.data && hasWorkspaceRecords(data.data)) {
-        const migrated = applyLightingCatalog(data.data);
-        skipNextPush.current = true;
+        const cloudWithOriginals = await retainLocalOriginalImages(data.data, workspaceRef.current);
+        if (!alive) return;
+        if (localDirtyRef.current) { hydrated.current = true; return; }
+        const migrated = applyLightingCatalog(cloudWithOriginals);
         workspaceRef.current = migrated.workspace;
         setWorkspace(migrated.workspace);
         if (migrated.changed) {
-          const { error: catalogError } = await saveToCloud(migrated.workspace);
+          const { error: catalogError, revision } = await saveToCloud(migrated.workspace);
           pushFailedRef.current = Boolean(catalogError);
+          if (!catalogError) markCloudSynced(revision);
           setCloud(catalogError ? '商品档案已更新到本机 · 云端同步失败' : '商品档案已更新并同步');
         } else {
           setCloud('云端已连接');
         }
       } else if (hasWorkspaceRecords(workspace)) {
-        const { error: uploadError } = await saveToCloud(workspace);
+        const { error: uploadError, revision } = await saveToCloud(workspace);
         pushFailedRef.current = Boolean(uploadError);
+        if (!uploadError) markCloudSynced(revision);
         setCloud(uploadError ? '本机数据已保留 · 云端同步失败' : '本机数据已同步到云端');
       } else {
         setCloud('云端已连接');
-      }
-      if (!pushFailedRef.current) {
-        localDirtyRef.current = false;
-        localStorage.removeItem('yuli.public.workspace.dirty.v1');
       }
       hydrated.current = true;
     }
     load();
     return () => { alive = false; };
-  }, []);
+  }, [localReady]);
 
   useEffect(() => {
     if (!hydrated.current || !cloudWorkspace.isConfigured) return;
     if (skipNextPush.current) { skipNextPush.current = false; return; }
     const timer = window.setTimeout(async () => {
       setCloud('正在同步…');
-      const { error } = await saveToCloud(workspace, 5);
+      const { error, revision } = await saveToCloud(workspace, 5);
       pushFailedRef.current = Boolean(error);
-      if (!error) {
-        localDirtyRef.current = false;
-        localStorage.removeItem('yuli.public.workspace.dirty.v1');
-      }
+      if (!error) markCloudSynced(revision);
       setCloud(error ? '已保存到本机 · 云端同步失败' : '已同步到云端');
     }, 700);
     return () => clearTimeout(timer);
@@ -433,7 +471,9 @@ export default function App() {
         pushFailedRef.current = false;
         lastCloudUpdatedAtRef.current = data?.updated_at || '';
         if (data?.data && hasWorkspaceRecords(data.data)) {
-          const migrated = applyLightingCatalog(data.data);
+          const cloudWithOriginals = await retainLocalOriginalImages(data.data, workspaceRef.current);
+          if (localDirtyRef.current) { setSyncing(false); return; }
+          const migrated = applyLightingCatalog(cloudWithOriginals);
           skipNextPush.current = true;
           workspaceRef.current = migrated.workspace;
           setWorkspace(migrated.workspace);
@@ -445,12 +485,11 @@ export default function App() {
         notify('云端仍未连接，资料已保留在本机');
       }
     } else {
-      const { error } = await saveToCloud(workspaceRef.current, 5);
+      const { error, revision } = await saveToCloud(workspaceRef.current, 5);
       pushFailedRef.current = Boolean(error);
       if (!error) {
         loadFailedRef.current = false;
-        localDirtyRef.current = false;
-        localStorage.removeItem('yuli.public.workspace.dirty.v1');
+        markCloudSynced(revision);
         setCloud('已同步到云端');
         notify('资料已同步，其他浏览器刷新后可见');
       } else {
@@ -503,10 +542,17 @@ export default function App() {
       if (!rawWorkspace || typeof rawWorkspace !== 'object' || Array.isArray(rawWorkspace)) throw new Error('invalid backup');
       const migrated = applyLightingCatalog(rawWorkspace).workspace;
       const merged = mergeBackupWorkspaces(workspaceRef.current, migrated);
+      try {
+        await localWriteQueue.current.catch(() => {});
+        await writeIndexedWorkspace({ workspace: merged, dirty: true });
+      } catch {
+        notify('备份已读取，但本机保存失败；原备份未改变，请勿关闭页面');
+        return;
+      }
       workspaceRef.current = merged;
       localDirtyRef.current = true;
-      localStorage.setItem('yuli.public.workspace.dirty.v1', '1');
-      localStorage.setItem('yuli.public.workspace.v1', JSON.stringify(merged));
+      editRevision.current += 1;
+      try { localStorage.setItem('yuli.public.workspace.dirty.v1', '1'); } catch { /* IndexedDB keeps the sync state. */ }
       setWorkspace(merged);
       setCloud('U盘资料已导入 · 正在同步…');
       notify('U盘资料已导入并与本机资料合并');
@@ -526,12 +572,11 @@ export default function App() {
       backgroundSyncRef.current = true;
       try {
         if (localDirtyRef.current || pushFailedRef.current) {
-          const { error } = await saveToCloud(workspaceRef.current, 3);
+          const { error, revision } = await saveToCloud(workspaceRef.current, 3);
           pushFailedRef.current = Boolean(error);
           if (!error) {
             loadFailedRef.current = false;
-            localDirtyRef.current = false;
-            localStorage.removeItem('yuli.public.workspace.dirty.v1');
+            markCloudSynced(revision);
             setCloud('已自动同步到云端');
           } else {
             setCloud('已保存到本机 · 等待自动同步');
@@ -543,7 +588,9 @@ export default function App() {
         if (error) { loadFailedRef.current = true; setCloud('云端暂时断开 · 正在自动重试'); return; }
         loadFailedRef.current = false;
         if (data?.data && data.updated_at && data.updated_at > lastCloudUpdatedAtRef.current) {
-          const migrated = applyLightingCatalog(data.data);
+          const cloudWithOriginals = await retainLocalOriginalImages(data.data, workspaceRef.current);
+          if (!alive || localDirtyRef.current) return;
+          const migrated = applyLightingCatalog(cloudWithOriginals);
           skipNextPush.current = true;
           workspaceRef.current = migrated.workspace;
           setWorkspace(migrated.workspace);
@@ -569,7 +616,7 @@ export default function App() {
       window.removeEventListener('focus', onFocus);
       document.removeEventListener('visibilitychange', onVisible);
     };
-  }, []);
+  }, [localReady]);
 
   const visible = (records) => store === STORE_ALL ? records : records.filter((item) => item.store === store || item.store === STORE_ALL);
   const pending = visible(workspace.tasks).filter((item) => !item.completed);
@@ -777,6 +824,8 @@ export default function App() {
     update('priceReferences', existing ? records.map((item) => item.id === existing.id ? next : item) : [next, ...records]); closeModal(); notify('同事售价已保存');
   };
 
+  if (!localReady) return <div className="workspace-loading">正在读取本机资料…</div>;
+
   return <div className="shell">
     <aside>
       <div className="brand"><b>Y</b><div><strong>郁荔运营台</strong><small>GREEN WORKSPACE</small></div></div>
@@ -791,6 +840,7 @@ export default function App() {
       <div className="profile"><b>荔</b><div><strong>郁荔</strong><small>{cloud}</small></div><button type="button" onClick={retryCloudSync} disabled={syncing}>{syncing ? '同步中' : '同步'}</button></div>
     </aside>
     <main>
+      {localSaveError && <div className="storage-warning" role="alert">{localSaveError}</div>}
       <header><div className="store-tabs">{[STORE_ALL, ...stores].map((name) => <button key={name} className={store === name ? 'selected' : ''} onClick={() => setStore(name)}>{name !== STORE_ALL && <em className={`dot ${name.toLowerCase()}`} />}{name}</button>)}</div><div className="header-actions"><a className="quick-link" href={buyerAppealUrl} target="_blank" rel="noreferrer">↗ 买手申诉入口</a><span className="header-date">{new Intl.DateTimeFormat('zh-CN', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' }).format(new Date())}</span></div></header>
       <section key={page} className="content page-transition">
         <div className="page-head"><div><small>{store === STORE_ALL ? '三店合计' : `${store} 店铺`}</small><h1>{pageTitle[0]}</h1><p>{pageTitle[1]}</p></div>{page !== 'overview' && page !== 'pricingAds' && page !== 'discounts' && <button className="primary" onClick={() => openNew(page === 'products' ? 'product' : 'task')}>＋ {page === 'products' ? '新增商品' : '新增任务'}</button>}</div>
