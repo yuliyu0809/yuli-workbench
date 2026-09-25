@@ -9,6 +9,7 @@ const stores = ['AG', 'DS', 'HX'];
 const sourceProductCategories = [...new Set(lightingProductCatalog.map((item) => item.sourceCategory).filter(Boolean))];
 const tiers = [0.9, 0.85, 0.8, 0.75, 0.7, 0.65, 0.6];
 const manualDiscountOptions = Array.from({ length: 19 }, (_, index) => Number((10 - index * 0.5).toFixed(1)));
+const initialQuoteDiscounts = [7, 7.5, 8, 8.5, 9];
 const buyerAppealUrl = 'https://seller.kuajingmaihuo.com/questionnaire?surveyId=185879097376';
 const dailyFormMiniProgram = '#小程序://腾讯文档/d1X1NPShvA6gzZE';
 const emptyListingHelper = { chineseTitle: '', englishTitle: '', lengthCm: '', lengthM: '' };
@@ -22,7 +23,7 @@ const nav = [
 ];
 const titles = {
   overview: ['早上好，郁荔', '查看三个店铺的商品链接、待办与上新进度。'],
-  discounts: ['商品链接', '按 SKC 记录每条商品链接的售价与可报折扣，也可以单独记录实际可报活动。'],
+  discounts: ['商品链接', '每个 SKC 汇总商品规格、自动核算和你自己记录的可报活动。'],
   products: ['商品档案', '已按《利润核算参考表（20260820）》重新整理全部商品、规格与利润价格。'],
   tasks: ['运营任务', '把每天要做的事放在一个清晰的队列里。'],
   pricingAds: ['核价与广告', '保留每次核价变化，并按店铺记录每日广告投入。'],
@@ -299,8 +300,8 @@ async function imageToDataUrl(file) {
 }
 
 function Field({ label, children }) { return <label className="field"><span>{label}</span>{children}</label>; }
-function Modal({ title, children, onClose }) {
-  return <div className="modal-backdrop" onMouseDown={(event) => event.target === event.currentTarget && onClose()}><div className="modal"><button className="modal-close" onClick={onClose}>×</button><h2>{title}</h2>{children}</div></div>;
+function Modal({ title, children, onClose, className = '' }) {
+  return <div className="modal-backdrop" onMouseDown={(event) => event.target === event.currentTarget && onClose()}><div className={`modal ${className}`}><button className="modal-close" onClick={onClose}>×</button><h2>{title}</h2>{children}</div></div>;
 }
 function Empty({ text }) { return <div className="empty">{text}</div>; }
 
@@ -310,6 +311,7 @@ export default function App() {
   const [workspace, setWorkspace] = useState(readLocal);
   const [modal, setModal] = useState(null);
   const [editing, setEditing] = useState(null);
+  const [manualSourceLink, setManualSourceLink] = useState(null);
   const [adEntryDate, setAdEntryDate] = useState(today());
   const [search, setSearch] = useState('');
   const [toast, setToast] = useState('');
@@ -626,15 +628,16 @@ export default function App() {
   const pageTitle = titles[page];
   const pageReminder = {
     overview: `今日运营提醒：${todayTaskCount ? `有 ${todayTaskCount} 项任务待处理` : '今天暂无待办'}，已记录 ${discountProductCount} 条商品链接。`,
-    discounts: '每条商品链接使用一个 SKC；商品记录与“我的可报活动”分开保存。',
+    discounts: '每条商品链接使用一个 SKC；自动核算和手动可报价都能在同一条商品下查看。',
     products: `当前价格表版本 ${lightingCatalogVersion}，修改商品后会自动同步到云端。`,
     tasks: '把今天必须完成的事情放在“今天”，其余安排到“本周”。',
     pricingAds: '广告费按店铺、商品链接和 SKU 分开记录；核价调整会保留旧价。',
   }[page];
 
-  const openNew = (kind) => { setEditing(null); setModal(kind); };
-  const openEdit = (kind, item) => { setEditing(item); setModal(kind); };
-  const closeModal = () => { setModal(null); setEditing(null); };
+  const openNew = (kind) => { setManualSourceLink(null); setEditing(null); setModal(kind); };
+  const openEdit = (kind, item) => { setManualSourceLink(null); setEditing(item); setModal(kind); };
+  const openManualForLink = (link) => { setManualSourceLink(link); setEditing(null); setModal('manualActivity'); };
+  const closeModal = () => { setModal(null); setEditing(null); setManualSourceLink(null); };
   const remove = (key, item, label) => {
     if (!confirm(`确定删除“${label}”吗？`)) return;
     update(key, workspace[key].filter((row) => row.id !== item.id));
@@ -787,8 +790,19 @@ export default function App() {
       ...(editing.startDate ? { startDate: editing.startDate } : {}),
       ...(editing.endDate ? { endDate: editing.endDate } : {}),
     } : {};
-    const next = { id: editing?.id || uid(), store: data.get('store'), productCode: skc, productId: catalogProduct?.id || '', productName, specs: summary.specs, limitingSpecName: limitingSpec?.name || '默认规格', cost: limitingSpec?.cost || 0, salePrice: limitingSpec?.salePrice || 0, minimumRatio: summary.minimumRatio, recommendedDiscount: reportableDiscount, discountedPrice: reportableDiscount ? limitingSpec?.salePrice * reportableDiscount : 0, profit: profits.length ? Math.min(...profits) : 0, note: data.get('note'), imageDataUrl, updatedAt: new Date().toISOString(), ...legacyFields };
+    const next = { id: editing?.id || uid(), store: data.get('store'), productCode: skc, productId: catalogProduct?.id || '', productName, specs: summary.specs, limitingSpecName: limitingSpec?.name || '默认规格', cost: limitingSpec?.cost || 0, salePrice: limitingSpec?.salePrice || 0, minimumRatio: summary.minimumRatio, recommendedDiscount: reportableDiscount, discountedPrice: reportableDiscount ? limitingSpec?.salePrice * reportableDiscount : 0, profit: profits.length ? Math.min(...profits) : 0, note: data.get('note'), imageDataUrl, manualPriceMatrix: editing?.manualPriceMatrix || [], manualPriceUpdatedAt: editing?.manualPriceUpdatedAt || '', updatedAt: new Date().toISOString(), ...legacyFields };
     update('discounts', editing ? workspace.discounts.map((item) => item.id === editing.id ? next : item) : [next, ...workspace.discounts]); closeModal(); notify('商品链接已保存');
+  };
+  const saveManualPriceMatrix = (rows) => {
+    if (!editing?.id) return;
+    const nextRows = rows.map((row) => ({
+      discount: Number(row.discount),
+      prices: row.prices.filter((price) => price.amount !== '').map((price) => ({ ...price, amount: Number(price.amount) })),
+    }));
+    update('discounts', workspace.discounts.map((item) => item.id === editing.id
+      ? { ...item, manualPriceMatrix: nextRows, manualPriceUpdatedAt: new Date().toISOString() }
+      : item));
+    closeModal(); notify('手动可报价已保存');
   };
   const saveManualActivity = async (event) => {
     event.preventDefault(); const data = new FormData(event.currentTarget);
@@ -846,7 +860,7 @@ export default function App() {
         <div className="page-head"><div><small>{store === STORE_ALL ? '三店合计' : `${store} 店铺`}</small><h1>{pageTitle[0]}</h1><p>{pageTitle[1]}</p></div>{page !== 'overview' && page !== 'pricingAds' && page !== 'discounts' && <button className="primary" onClick={() => openNew(page === 'products' ? 'product' : 'task')}>＋ {page === 'products' ? '新增商品' : '新增任务'}</button>}</div>
         <div className="workspace-note"><span>🌿</span><strong>温柔待办</strong><p>{pageReminder}</p></div>
         {page === 'overview' && <Overview workspace={workspace} store={store} pending={pending} setPage={setPage} dailyFormDone={dailyFormDone} onCopyDailyForm={copyDailyFormEntry} onToggleDailyForm={toggleDailyForm} listingHelper={{ ...emptyListingHelper, ...(workspace.listingHelper || {}) }} translationBusy={translationBusy} onTranslateListingTitle={translateListingTitle} onUpdateListingHelper={updateListingHelper} onCopyListingText={copyListingText} onClearListingHelper={clearListingHelper} onAdd={() => openNew('launch')} onEdit={(item) => openEdit('launch', item)} onDelete={(item) => remove('launches', item, `${item.store} ${item.launchDate} ${launchQuantity(item)}条`)} />}
-        {page === 'discounts' && <Discounts records={visible(workspace.discounts)} manualRecords={visible(workspace.manualActivities || [])} search={search} setSearch={setSearch} onAdd={() => openNew('discount')} onEdit={(item) => openEdit('discount', item)} onDelete={(item) => remove('discounts', item, item.productName)} onAddManual={() => openNew('manualActivity')} onEditManual={(item) => openEdit('manualActivity', item)} onDeleteManual={(item) => remove('manualActivities', item, item.productName)} />}
+        {page === 'discounts' && <Discounts records={visible(workspace.discounts)} manualRecords={visible(workspace.manualActivities || [])} search={search} setSearch={setSearch} onAdd={() => openNew('discount')} onEdit={(item) => openEdit('discount', item)} onQuote={(item) => openEdit('quoteMatrix', item)} onDelete={(item) => remove('discounts', item, item.productName)} onAddManualForLink={openManualForLink} onEditManual={(item) => openEdit('manualActivity', item)} onDeleteManual={(item) => remove('manualActivities', item, item.productName)} />}
         {page === 'products' && <Products records={workspace.products} search={search} setSearch={setSearch} onEdit={(item) => openEdit('product', item)} onDelete={(item) => remove('products', item, item.productName)} />}
         {page === 'tasks' && <Tasks records={visible(workspace.tasks)} update={(records) => update('tasks', records)} onEdit={(item) => openEdit('task', item)} onDelete={(item) => remove('tasks', item, item.title)} />}
         {page === 'pricingAds' && <PricingAds products={workspace.products} pricingRecords={visible(workspace.pricingHistory || [])} adRecords={visible(workspace.adRecords || [])} onAddPricing={() => openNew('pricingHistory')} onAddAd={(date) => { setAdEntryDate(date || today()); openNew('adRecord'); }} onEditPricing={(item) => openEdit('pricingHistory', item)} onEditAd={(item) => openEdit('adRecord', item)} onDeletePricing={(item) => remove('pricingHistory', item, `${item.productName} ${item.specName}`)} onDeleteAd={(item) => remove('adRecords', item, `${item.store} ${item.recordDate}`)} />}
@@ -856,7 +870,8 @@ export default function App() {
     {modal === 'task' && <Modal title={editing ? '修改任务' : '新增任务'} onClose={closeModal}><form onSubmit={saveTask}><Field label="任务内容"><input name="title" defaultValue={editing?.title} required /></Field><div className="form-grid"><Field label="时间"><select name="period" defaultValue={editing?.period || 'today'}><option value="today">今天</option><option value="week">本周</option></select></Field><Field label="店铺"><select name="store" defaultValue={editing?.store || STORE_ALL}>{[STORE_ALL, ...stores].map((name) => <option key={name}>{name}</option>)}</select></Field><Field label="优先级"><select name="priority" defaultValue={editing?.priority || '普通'}><option>高</option><option>普通</option><option>低</option></select></Field></div><Field label="备注"><textarea name="note" defaultValue={editing?.note} /></Field><FormActions onClose={closeModal} /></form></Modal>}
     {modal === 'launch' && <Modal title={editing ? '修改上新记录' : '新增上新记录'} onClose={closeModal}><form onSubmit={saveLaunch}><div className="form-grid"><Field label="店铺"><select name="store" defaultValue={editing?.store || (store === STORE_ALL ? 'AG' : store)}>{stores.map((name) => <option key={name}>{name}</option>)}</select></Field><Field label="上新日期"><input name="launchDate" type="date" defaultValue={editing?.launchDate || today()} required /></Field><Field label="上新条数"><input name="quantity" type="number" min="1" step="1" defaultValue={launchQuantity(editing)} required /></Field></div><Field label="备注"><textarea name="note" defaultValue={editing?.note} placeholder="可选填" /></Field><FormActions onClose={closeModal} /></form></Modal>}
     {modal === 'discount' && <DiscountForm editing={editing} products={workspace.products} links={workspace.discounts} currentStore={store} onSubmit={saveDiscount} onClose={closeModal} />}
-    {modal === 'manualActivity' && <ManualActivityForm editing={editing} products={workspace.products} links={workspace.discounts} currentStore={store} onSubmit={saveManualActivity} onClose={closeModal} />}
+    {modal === 'quoteMatrix' && <ManualPriceMatrixForm link={editing} onSave={saveManualPriceMatrix} onClose={closeModal} />}
+    {modal === 'manualActivity' && <ManualActivityForm editing={editing} sourceLink={manualSourceLink} products={workspace.products} links={workspace.discounts} currentStore={store} onSubmit={saveManualActivity} onClose={closeModal} />}
     {modal === 'pricingHistory' && <PricingHistoryForm editing={editing} products={workspace.products} links={workspace.discounts} currentStore={store} onSubmit={savePricingHistory} onClose={closeModal} />}
     {modal === 'adRecord' && <AdRecordForm editing={editing} initialDate={adEntryDate} products={workspace.products} links={workspace.discounts} adRecords={workspace.adRecords || []} currentStore={store} onSubmit={saveAdRecord} onClose={closeModal} />}
     {toast && <div className="toast">{toast}</div>}
@@ -1188,22 +1203,18 @@ function Tasks({ records, update, onEdit, onDelete }) {
   const section = (period, title) => { const rows = records.filter((item) => item.period === period); return <div className="panel task-panel"><div className="panel-title"><h2>{title}</h2><Badge>{rows.length}</Badge></div>{rows.map((item) => <div className={`task ${item.completed ? 'done' : ''}`} key={item.id}><input type="checkbox" checked={item.completed} onChange={() => update(records.map((row) => row.id === item.id ? { ...row, completed: !row.completed } : row))} /><div><strong>{item.title}</strong><small>{item.store} · {item.priority}优先级</small></div><RowActions onEdit={() => onEdit(item)} onDelete={() => onDelete(item)} /></div>)}{!rows.length && <Empty text="暂无任务" />}</div>; };
   return <div className="task-grid">{section('today', '今天')}{section('week', '本周')}</div>;
 }
-function Discounts({ records, manualRecords, search, setSearch, onAdd, onEdit, onDelete, onAddManual, onEditManual, onDeleteManual }) {
-  const [view, setView] = useState('automatic');
+function Discounts({ records, manualRecords, search, setSearch, onAdd, onEdit, onQuote, onDelete, onAddManualForLink, onEditManual, onDeleteManual }) {
+  const unmatchedManual = manualRecords.filter((item) => !findLinkBySkc(records, item.productCode));
   return <>
-    <div className="record-view-head">
-      <div className="discount-view-tabs"><button type="button" className={view === 'automatic' ? 'selected' : ''} onClick={() => { setView('automatic'); setSearch(''); }}>我的产品</button><button type="button" className={view === 'manual' ? 'selected' : ''} onClick={() => { setView('manual'); setSearch(''); }}>我的可报活动</button></div>
-      <button type="button" className="primary" onClick={view === 'manual' ? onAddManual : onAdd}>{view === 'manual' ? '＋ 记录可报活动' : '＋ 新增商品链接'}</button>
-    </div>
-    {view === 'automatic'
-      ? <DiscountActivity records={records} search={search} setSearch={setSearch} onEdit={onEdit} onDelete={onDelete} />
-      : <ManualActivities records={manualRecords} links={records} search={search} setSearch={setSearch} onEdit={onEditManual} onDelete={onDeleteManual} />}
+    <div className="record-view-head"><p className="merged-record-hint">一个 SKC 对应一条商品，手动可报活动直接记在商品下。</p><button type="button" className="primary" onClick={onAdd}>＋ 新增商品链接</button></div>
+    <DiscountActivity records={records} manualRecords={manualRecords} search={search} setSearch={setSearch} onEdit={onEdit} onQuote={onQuote} onDelete={onDelete} onAddManualForLink={onAddManualForLink} onEditManual={onEditManual} onDeleteManual={onDeleteManual} />
+    {unmatchedManual.length > 0 && <ManualActivities records={unmatchedManual} links={records} search={search} setSearch={setSearch} onEdit={onEditManual} onDelete={onDeleteManual} unmatched />}
   </>;
 }
 
-function ManualActivities({ records, links, search, setSearch, onEdit, onDelete }) {
+function ManualActivities({ records, links, search, setSearch, onEdit, onDelete, unmatched = false }) {
   const filtered = records.filter((item) => `${item.productName}${item.productCode}${item.store}`.toLowerCase().includes(search.toLowerCase()));
-  return <TableShell title="我的可报活动" subtitle="只记录你实际可以报名的折扣，不读取商品档案的推荐活动" search={search} setSearch={setSearch}>
+  return <TableShell title={unmatched ? '待关联的旧活动记录' : '我的可报活动'} subtitle={unmatched ? '这些记录暂时找不到同 SKC 的商品链接，仍可编辑或删除' : '只记录你实际可以报名的折扣，不读取商品档案的推荐活动'} search={search} setSearch={setSearch}>
     <table><thead><tr><th>店铺</th><th>商品</th><th>SKC</th><th>可报折扣</th><th>操作</th></tr></thead><tbody>
       {filtered.map((item) => { const link = findLinkBySkc(links, item.productCode); const image = item.imageSource === 'manual' ? item.imageDataUrl : link?.imageDataUrl || item.imageDataUrl; return <tr key={item.id}><td><Badge>{item.store}</Badge></td><td><div className="product-cell"><span className="thumb">{image ? <img src={image} alt="" /> : '折'}</span><strong>{link?.productName || item.productName}</strong></div></td><td>{item.productCode || '—'}</td><td><Badge>{discountText(manualActivityDiscount(item))}</Badge></td><td><RowActions onEdit={() => onEdit(item)} onDelete={() => onDelete(item)} /></td></tr>; })}
       {!filtered.length && <tr><td colSpan="5"><Empty text={records.length ? '没有符合搜索条件的可报活动' : '暂无记录，点击“记录可报活动”开始添加'} /></td></tr>}
@@ -1211,7 +1222,11 @@ function ManualActivities({ records, links, search, setSearch, onEdit, onDelete 
   </TableShell>;
 }
 
-function DiscountActivity({ records, search, setSearch, onEdit, onDelete }) {
+function ManualActivityChips({ activities, link, onAdd, onEdit, onDelete }) {
+  return <div className="merged-activity-list">{activities.map((activity) => <span className="merged-activity" key={activity.id}><button type="button" onClick={() => onEdit(activity)} title="修改这条可报活动">{discountText(manualActivityDiscount(activity))}</button><button type="button" className="merged-activity-remove" onClick={() => onDelete(activity)} title="删除这条可报活动" aria-label={`删除 ${discountText(manualActivityDiscount(activity))} 活动`}>×</button></span>)}<button type="button" className="merged-activity-add" onClick={() => onAdd(link)}>{activities.length ? '＋ 添加折扣' : '＋ 记录可报折扣'}</button></div>;
+}
+
+function DiscountActivity({ records, manualRecords, search, setSearch, onEdit, onQuote, onDelete, onAddManualForLink, onEditManual, onDeleteManual }) {
   const [tierFilter, setTierFilter] = useState(null);
   const filtered = records.filter((item) => {
     const specNames = normalizeDiscountSpecs(item).map((spec) => spec.name).join('');
@@ -1234,9 +1249,27 @@ function DiscountActivity({ records, search, setSearch, onEdit, onDelete }) {
         </button>;
       })}
     </div>
-    <TableShell title="商品链接记录" subtitle={`每个 SKC 对应一条链接；按利润表最低售价 ÷ 当前售价计算最低可报档位${tierFilter ? ` · 当前查看可报 ${discountText(tierFilter)} 的商品` : ''}`} search={search} setSearch={setSearch}>
-      <table><thead><tr><th>商品</th><th>店铺</th><th>供货价</th><th>当前售价</th><th>最低售价</th><th>最低折扣</th><th>最低可报</th><th>活动价</th><th>预计利润</th><th>操作</th></tr></thead><tbody>
-        {filtered.map((item) => { const specs = normalizeDiscountSpecs(item); const summary = summarizeDiscountSpecs(specs); const reportableDiscount = summary.recommendedDiscount; const profits = reportableDiscount ? specs.map((spec) => netProfitAtPrice(spec.cost, spec.salePrice * reportableDiscount)) : []; return <tr key={item.id}><td><div className="product-cell"><span className="thumb">{item.imageDataUrl ? <img src={item.imageDataUrl} alt="" /> : '链'}</span><span><strong>{item.productName}</strong><small>SKC {item.productCode || '待填写'}{specs.length > 1 ? ` · ${specs.length}个规格 · 限制规格：${summary.limitingSpec?.name}` : ` · ${specs[0]?.name}`}</small></span></div></td><td><Badge>{item.store}</Badge></td><td>{valueRange(specs.map((spec) => spec.cost), money)}</td><td>{valueRange(specs.map((spec) => spec.salePrice), money)}</td><td>{valueRange(specs.map((spec) => profitMetrics(spec.cost).minimumSalePrice), money)}</td><td>{discountText(summary.minimumRatio)}</td><td><Badge>{discountText(reportableDiscount)}</Badge></td><td>{reportableDiscount ? valueRange(specs.map((spec) => spec.salePrice * reportableDiscount), money) : '—'}</td><td className={profits.length && Math.min(...profits) < 0 ? 'negative' : 'positive'}>{profits.length ? `最低 ${money(Math.min(...profits))}` : '—'}</td><td><RowActions onEdit={() => onEdit(item)} onDelete={() => onDelete(item)} /></td></tr>; })}
+    <TableShell title="商品链接记录" subtitle={`每个 SKC 对应一条商品；“最低可报”是自动核算，“我的可报活动”是你单独记录的折扣${tierFilter ? ` · 当前查看可报 ${discountText(tierFilter)} 的商品` : ''}`} search={search} setSearch={setSearch}>
+      <table><thead><tr><th>商品（含我的可报活动）</th><th>店铺</th><th>供货价</th><th>当前售价</th><th>最低售价</th><th>最低折扣</th><th>最低可报</th><th>活动价</th><th>预计利润</th><th>操作</th></tr></thead><tbody>
+        {filtered.map((item) => {
+          const specs = normalizeDiscountSpecs(item);
+          const summary = summarizeDiscountSpecs(specs);
+          const reportableDiscount = summary.recommendedDiscount;
+          const profits = reportableDiscount ? specs.map((spec) => netProfitAtPrice(spec.cost, spec.salePrice * reportableDiscount)) : [];
+          const activities = manualRecords.filter((record) => normalizeSkc(record.productCode) === normalizeSkc(item.productCode));
+          return <tr key={item.id}>
+            <td><div className="product-cell"><span className="thumb">{item.imageDataUrl ? <img src={item.imageDataUrl} alt="" /> : '链'}</span><div className="product-cell-main"><strong>{item.productName}</strong><small>SKC {item.productCode || '待填写'}{specs.length > 1 ? ` · ${specs.length}个规格 · 限制规格：${summary.limitingSpec?.name}` : ` · ${specs[0]?.name}`}</small><ManualActivityChips activities={activities} link={item} onAdd={onAddManualForLink} onEdit={onEditManual} onDelete={onDeleteManual} /></div></div></td>
+            <td><Badge>{item.store}</Badge></td>
+            <td>{valueRange(specs.map((spec) => spec.cost), money)}</td>
+            <td>{valueRange(specs.map((spec) => spec.salePrice), money)}</td>
+            <td>{valueRange(specs.map((spec) => profitMetrics(spec.cost).minimumSalePrice), money)}</td>
+            <td>{discountText(summary.minimumRatio)}</td>
+            <td><Badge>{discountText(reportableDiscount)}</Badge></td>
+            <td>{reportableDiscount ? valueRange(specs.map((spec) => spec.salePrice * reportableDiscount), money) : '—'}</td>
+            <td className={profits.length && Math.min(...profits) < 0 ? 'negative' : 'positive'}>{profits.length ? `最低 ${money(Math.min(...profits))}` : '—'}</td>
+            <td><div className="quote-row-actions"><button type="button" className="quote-open-button" onClick={() => onQuote(item)}>可报价表</button><RowActions onEdit={() => onEdit(item)} onDelete={() => onDelete(item)} /></div></td>
+          </tr>;
+        })}
         {!filtered.length && <tr><td colSpan="10"><Empty text={tierFilter ? `暂无可以报 ${discountText(tierFilter)} 的商品` : '暂无商品链接，点击“新增商品链接”开始录入'} /></td></tr>}
       </tbody></table>
     </TableShell>
@@ -1316,11 +1349,48 @@ function DiscountForm({ editing, products, links, currentStore, onSubmit, onClos
   return <Modal title={editing ? '修改商品链接' : '新增商品链接'} onClose={onClose}><form onSubmit={onSubmit}><div className="form-grid"><Field label="店铺"><select name="store" defaultValue={editing?.store || (currentStore === STORE_ALL ? 'AG' : currentStore)}>{stores.map((name) => <option key={name}>{name}</option>)}</select></Field><Field label="SKC（每条链接唯一）"><input name="productCode" value={skc} onChange={(event) => setSkc(event.target.value)} placeholder="输入商品链接的 SKC" required /></Field></div>{duplicateLink && <p className="skc-warning" role="alert">SKC {skc.trim()} 已用于 {duplicateLink.store} 店的“{duplicateLink.productName}”，请检查，不能重复保存。</p>}<Field label="商品名称"><ProductNamePicker products={products} value={productName} onChange={selectProduct} /></Field><div className="spec-editor discount-spec-editor"><div className="spec-editor-head"><b>各规格供货价与当前售价</b><small>已按可做件装数展开；每个件装独立填售价，核不过的可以移除</small></div>{specRows.map((spec, index) => <div className="discount-spec-row" key={spec.id}><span>{index + 1}</span><input type="hidden" name="specId" value={spec.id} /><input type="hidden" name="specUnitCost" value={spec.unitCost ?? spec.cost} /><input type="hidden" name="specPackQuantity" value={spec.packQuantity || 1} /><input name="specName" value={spec.name} onChange={(event) => updateSpec(spec.id, 'name', event.target.value)} placeholder="规格" required /><input name="specCost" type="number" min="0" step="0.01" value={spec.cost} onChange={(event) => updateSpec(spec.id, 'cost', event.target.value)} placeholder="供货价" aria-label={`${spec.name || '规格'}供货价`} required /><input name="specSalePrice" type="number" min="0.01" step="0.01" value={spec.salePrice} onChange={(event) => updateSpec(spec.id, 'salePrice', event.target.value)} placeholder="当前售价" required /><b>{Number(spec.salePrice) > 0 ? discountText(getRecommended(spec.cost, spec.salePrice)) : '—'}</b><button type="button" className="remove-spec" disabled={specRows.length === 1} onClick={() => removeSpec(spec.id)}>移除</button></div>)}</div><div className="calc-note">各件装供货成本已自动合计　利润表最低售价：{summary?.limitingSpec ? money(profitMetrics(summary.limitingSpec.cost).minimumSalePrice) : '—'}　产品最低折扣：{summary ? discountText(summary.minimumRatio) : '—'}　产品最低可报：<b>{summary ? discountText(summary.recommendedDiscount) : '—'}</b>{summary?.limitingSpec && <span>　限制规格：{summary.limitingSpec.name}</span>}</div><Field label="商品图片"><input name="image" type="file" accept="image/*" /></Field><Field label="备注"><textarea name="note" defaultValue={editing?.note} /></Field><FormActions onClose={onClose} /></form></Modal>;
 }
 
-function ManualActivityForm({ editing, products, links, currentStore, onSubmit, onClose }) {
+function ManualPriceMatrixForm({ link, onSave, onClose }) {
+  const specs = normalizeDiscountSpecs(link);
+  const [rows, setRows] = useState(() => {
+    const saved = link.manualPriceUpdatedAt ? (link.manualPriceMatrix || []) : initialQuoteDiscounts.map((discount) => ({ discount, prices: [] }));
+    return saved.map((row) => ({
+      discount: Number(row.discount),
+      prices: specs.map((spec) => {
+        const prior = (row.prices || []).find((price) => price.specId === spec.id)
+          || (row.prices || []).find((price) => price.specName === spec.name);
+        return { specId: spec.id, specName: spec.name, amount: prior?.amount > 0 ? String(prior.amount) : '' };
+      }),
+    })).sort((left, right) => left.discount - right.discount);
+  });
+  const availableDiscounts = manualDiscountOptions.filter((discount) => !rows.some((row) => row.discount === discount));
+  const [newDiscount, setNewDiscount] = useState('');
+  const changePrice = (discount, specId, amount) => setRows((current) => current.map((row) => row.discount === discount
+    ? { ...row, prices: row.prices.map((price) => price.specId === specId ? { ...price, amount } : price) }
+    : row));
+  const addDiscount = () => {
+    const discount = Number(newDiscount || availableDiscounts[0]);
+    if (!discount || rows.some((row) => row.discount === discount)) return;
+    setRows((current) => [...current, { discount, prices: specs.map((spec) => ({ specId: spec.id, specName: spec.name, amount: '' })) }].sort((left, right) => left.discount - right.discount));
+    setNewDiscount('');
+  };
+  const submit = (event) => {
+    event.preventDefault();
+    if (rows.some((row) => row.prices.some((price) => price.amount !== '' && (!Number.isFinite(Number(price.amount)) || Number(price.amount) <= 0)))) return;
+    onSave(rows);
+  };
+  return <Modal title="手动可报价表" onClose={onClose} className="quote-modal"><form className="quote-matrix-form" onSubmit={submit}>
+    <div className="quote-product-heading"><span className="quote-product-image">{link.imageDataUrl ? <img src={link.imageDataUrl} alt="" /> : '链'}</span><div><small>{link.store} 店 · SKC {link.productCode || '待填写'}</small><strong>{link.productName}</strong><p>每个折扣和规格的价格由你手动填写，不影响自动活动折扣。</p></div></div>
+    <div className="quote-matrix-scroll"><table className="quote-matrix-table"><thead><tr><th>折扣</th>{specs.map((spec) => <th key={spec.id}>{spec.name}</th>)}<th>操作</th></tr></thead><tbody>{rows.map((row) => <tr key={row.discount}><th>{row.discount}折</th>{row.prices.map((price) => <td key={price.specId}><input type="number" min="0.01" step="0.01" inputMode="decimal" value={price.amount} onChange={(event) => changePrice(row.discount, price.specId, event.target.value)} placeholder="—" aria-label={`${row.discount}折 ${price.specName} 的可报价`} /></td>)}<td><button type="button" className="quote-remove" onClick={() => setRows((current) => current.filter((item) => item.discount !== row.discount))}>移除</button></td></tr>)}</tbody></table>{!rows.length && <p className="quote-empty">暂无折扣行，可以在下方添加。</p>}</div>
+    <div className="quote-add"><select value={newDiscount} onChange={(event) => setNewDiscount(event.target.value)} disabled={!availableDiscounts.length} aria-label="选择要添加的折扣"><option value="">选择折扣</option>{availableDiscounts.map((discount) => <option key={discount} value={discount}>{discount}折</option>)}</select><button type="button" onClick={addDiscount} disabled={!availableDiscounts.length}>＋ 添加折扣行</button></div>
+    <FormActions onClose={onClose} />
+  </form></Modal>;
+}
+
+function ManualActivityForm({ editing, sourceLink, products, links, currentStore, onSubmit, onClose }) {
   const matchedProduct = products.find((item) => item.id === editing?.productId) || products.find((item) => item.productName === editing?.productName);
-  const [productName, setProductName] = useState(matchedProduct?.productName || '');
-  const [skc, setSkc] = useState(editing?.productCode || '');
-  const [selectedStore, setSelectedStore] = useState(editing?.store || (currentStore === STORE_ALL ? 'AG' : currentStore));
+  const [productName, setProductName] = useState(matchedProduct?.productName || sourceLink?.productName || '');
+  const [skc, setSkc] = useState(editing?.productCode || sourceLink?.productCode || '');
+  const [selectedStore, setSelectedStore] = useState(editing?.store || sourceLink?.store || (currentStore === STORE_ALL ? 'AG' : currentStore));
   const linkedProduct = findLinkBySkc(links, skc);
   const sameSkc = normalizeSkc(editing?.productCode) === normalizeSkc(skc);
   const previewImage = sameSkc && editing?.imageSource === 'manual' ? editing.imageDataUrl : linkedProduct?.imageDataUrl || (sameSkc ? editing?.imageDataUrl : '') || '';
