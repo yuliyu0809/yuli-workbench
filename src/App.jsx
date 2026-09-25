@@ -804,7 +804,7 @@ export default function App() {
       : item));
     closeModal(); notify('手动可报价已保存');
   };
-  const saveManualActivity = async (event) => {
+  const saveManualActivity = (event) => {
     event.preventDefault(); const data = new FormData(event.currentTarget);
     const skc = String(data.get('productCode') || '').trim();
     const linkedProduct = findLinkBySkc(workspace.discounts, skc);
@@ -815,11 +815,10 @@ export default function App() {
     if (!linkedProduct && !product) { notify('请从商品档案中选择商品名称'); return; }
     const reportableDiscount = Number(data.get('reportableDiscount')) / 10;
     if (!Number.isFinite(reportableDiscount) || reportableDiscount <= 0 || reportableDiscount > 1) { notify('请选择可报折扣'); return; }
-    const sameSkc = normalizeSkc(editing?.productCode) === normalizeSkc(skc);
-    let imageSource = sameSkc ? editing?.imageSource || '' : '';
-    let imageDataUrl = imageSource === 'manual' ? editing?.imageDataUrl || '' : linkedProduct?.imageDataUrl || (sameSkc ? editing?.imageDataUrl : '') || '';
-    const file = data.get('image');
-    if (file?.size) { imageDataUrl = await imageToDataUrl(file); imageSource = 'manual'; }
+    // Existing image data remains in old records as a fallback, but a linked
+    // activity always displays the picture from its SKC product link.
+    const imageDataUrl = editing?.imageDataUrl || '';
+    const imageSource = linkedProduct ? 'linked' : editing?.imageSource || '';
     const next = { id: editing?.id || uid(), store: data.get('store'), productId: product?.id || linkedProduct?.productId || '', productCode: skc, productName, reportableDiscount, imageDataUrl, imageSource, updatedAt: new Date().toISOString() };
     const records = workspace.manualActivities || [];
     update('manualActivities', editing ? records.map((item) => item.id === editing.id ? next : item) : [next, ...records]); closeModal(); notify('我的可报活动已保存');
@@ -1393,7 +1392,7 @@ function ManualActivityForm({ editing, sourceLink, products, links, currentStore
   const [selectedStore, setSelectedStore] = useState(editing?.store || sourceLink?.store || (currentStore === STORE_ALL ? 'AG' : currentStore));
   const linkedProduct = findLinkBySkc(links, skc);
   const sameSkc = normalizeSkc(editing?.productCode) === normalizeSkc(skc);
-  const previewImage = sameSkc && editing?.imageSource === 'manual' ? editing.imageDataUrl : linkedProduct?.imageDataUrl || (sameSkc ? editing?.imageDataUrl : '') || '';
+  const previewImage = linkedProduct?.imageDataUrl || (sameSkc ? editing?.imageDataUrl : '') || '';
   const changeSkc = (value) => {
     setSkc(value);
     const found = findLinkBySkc(links, value);
@@ -1404,9 +1403,9 @@ function ManualActivityForm({ editing, sourceLink, products, links, currentStore
   const selectedDiscount = savedDiscount ? Number((savedDiscount * 10).toFixed(1)) : '';
   return <Modal title={editing ? '修改我的可报活动' : '记录我的可报活动'} onClose={onClose}><form onSubmit={onSubmit}>
     <div className="form-grid"><Field label="店铺"><select name="store" value={selectedStore} onChange={(event) => setSelectedStore(event.target.value)}>{stores.map((name) => <option key={name}>{name}</option>)}</select></Field><Field label="SKC"><input name="productCode" value={skc} onChange={(event) => changeSkc(event.target.value)} placeholder="输入 SKC 自动查找商品" required /></Field></div>
-    {skc && !linkedProduct && !editing && <p className="skc-warning" role="alert">未找到这个 SKC，请先在“商品链接 → 我的产品”中添加。</p>}
+    {skc && !linkedProduct && !editing && <p className="skc-warning" role="alert">未找到这个 SKC，请先在“商品链接”中添加。</p>}
     {linkedProduct ? <div className="manual-linked-product"><div className="manual-linked-image">{previewImage ? <img src={previewImage} alt={linkedProduct.productName} /> : <span>暂无图片</span>}</div><div><small>已匹配 {linkedProduct.store} 店商品链接</small><strong>{linkedProduct.productName}</strong></div></div> : editing && <Field label="商品名称（旧记录）"><ProductNamePicker products={products} value={productName} onChange={setProductName} requireCatalogMatch /></Field>}
-    <div className="form-grid"><Field label="可报折扣"><select name="reportableDiscount" defaultValue={selectedDiscount || ''} required><option value="">请选择折扣</option>{selectedDiscount && !manualDiscountOptions.includes(selectedDiscount) && <option value={selectedDiscount}>{selectedDiscount}折（原记录）</option>}{manualDiscountOptions.map((discount) => <option key={discount} value={discount}>{discount}折</option>)}</select></Field><Field label="替换图片（可选）"><input name="image" type="file" accept="image/*" /><span className="field-help">默认使用商品链接里的图片</span></Field></div>
+    <Field label="可报折扣"><select name="reportableDiscount" defaultValue={selectedDiscount || ''} required><option value="">请选择折扣</option>{selectedDiscount && !manualDiscountOptions.includes(selectedDiscount) && <option value={selectedDiscount}>{selectedDiscount}折（原记录）</option>}{manualDiscountOptions.map((discount) => <option key={discount} value={discount}>{discount}折</option>)}</select></Field>
     <div className="calc-note">名称和图片按 SKC 从商品链接带出；可报折扣由你单独选择。</div><FormActions onClose={onClose} />
   </form></Modal>;
 }
