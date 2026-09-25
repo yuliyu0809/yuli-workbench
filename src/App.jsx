@@ -1221,8 +1221,8 @@ function ManualActivities({ records, links, search, setSearch, onEdit, onDelete,
   </TableShell>;
 }
 
-function ManualActivityChips({ activities, link, onAdd, onEdit, onDelete }) {
-  return <div className="merged-activity-list">{activities.map((activity) => <span className="merged-activity" key={activity.id}><button type="button" onClick={() => onEdit(activity)} title="修改这条可报活动">{discountText(manualActivityDiscount(activity))}</button><button type="button" className="merged-activity-remove" onClick={() => onDelete(activity)} title="删除这条可报活动" aria-label={`删除 ${discountText(manualActivityDiscount(activity))} 活动`}>×</button></span>)}<button type="button" className="merged-activity-add" onClick={() => onAdd(link)}>{activities.length ? '＋ 添加折扣' : '＋ 记录可报折扣'}</button></div>;
+function ManualActivityChips({ activities, link, onAdd, onQuote, onEdit, onDelete }) {
+  return <div className="merged-activity-list"><button type="button" className="quote-open-button" onClick={() => onQuote(link)}>可报价记录表</button>{activities.map((activity) => <span className="merged-activity" key={activity.id}><button type="button" onClick={() => onEdit(activity)} title="修改这条可报活动">{discountText(manualActivityDiscount(activity))}</button><button type="button" className="merged-activity-remove" onClick={() => onDelete(activity)} title="删除这条可报活动" aria-label={`删除 ${discountText(manualActivityDiscount(activity))} 活动`}>×</button></span>)}<button type="button" className="merged-activity-add" onClick={() => onAdd(link)}>{activities.length ? '＋ 添加折扣' : '＋ 记录可报折扣'}</button></div>;
 }
 
 function DiscountActivity({ records, manualRecords, search, setSearch, onEdit, onQuote, onDelete, onAddManualForLink, onEditManual, onDeleteManual }) {
@@ -1257,7 +1257,7 @@ function DiscountActivity({ records, manualRecords, search, setSearch, onEdit, o
           const profits = reportableDiscount ? specs.map((spec) => netProfitAtPrice(spec.cost, spec.salePrice * reportableDiscount)) : [];
           const activities = manualRecords.filter((record) => normalizeSkc(record.productCode) === normalizeSkc(item.productCode));
           return <tr key={item.id}>
-            <td><div className="product-cell"><span className="thumb">{item.imageDataUrl ? <img src={item.imageDataUrl} alt="" /> : '链'}</span><div className="product-cell-main"><strong>{item.productName}</strong><small>SKC {item.productCode || '待填写'}{specs.length > 1 ? ` · ${specs.length}个规格 · 限制规格：${summary.limitingSpec?.name}` : ` · ${specs[0]?.name}`}</small><ManualActivityChips activities={activities} link={item} onAdd={onAddManualForLink} onEdit={onEditManual} onDelete={onDeleteManual} /></div></div></td>
+            <td><div className="product-cell"><span className="thumb">{item.imageDataUrl ? <img src={item.imageDataUrl} alt="" /> : '链'}</span><div className="product-cell-main"><strong>{item.productName}</strong><small>SKC {item.productCode || '待填写'}{specs.length > 1 ? ` · ${specs.length}个规格 · 限制规格：${summary.limitingSpec?.name}` : ` · ${specs[0]?.name}`}</small><ManualActivityChips activities={activities} link={item} onAdd={onAddManualForLink} onQuote={onQuote} onEdit={onEditManual} onDelete={onDeleteManual} /></div></div></td>
             <td><Badge>{item.store}</Badge></td>
             <td>{valueRange(specs.map((spec) => spec.cost), money)}</td>
             <td>{valueRange(specs.map((spec) => spec.salePrice), money)}</td>
@@ -1266,7 +1266,7 @@ function DiscountActivity({ records, manualRecords, search, setSearch, onEdit, o
             <td><Badge>{discountText(reportableDiscount)}</Badge></td>
             <td>{reportableDiscount ? valueRange(specs.map((spec) => spec.salePrice * reportableDiscount), money) : '—'}</td>
             <td className={profits.length && Math.min(...profits) < 0 ? 'negative' : 'positive'}>{profits.length ? `最低 ${money(Math.min(...profits))}` : '—'}</td>
-            <td><div className="quote-row-actions"><button type="button" className="quote-open-button" onClick={() => onQuote(item)}>可报价表</button><RowActions onEdit={() => onEdit(item)} onDelete={() => onDelete(item)} /></div></td>
+            <td><RowActions onEdit={() => onEdit(item)} onDelete={() => onDelete(item)} /></td>
           </tr>;
         })}
         {!filtered.length && <tr><td colSpan="10"><Empty text={tierFilter ? `暂无可以报 ${discountText(tierFilter)} 的商品` : '暂无商品链接，点击“新增商品链接”开始录入'} /></td></tr>}
@@ -1377,7 +1377,7 @@ function ManualPriceMatrixForm({ link, onSave, onClose }) {
     if (rows.some((row) => row.prices.some((price) => price.amount !== '' && (!Number.isFinite(Number(price.amount)) || Number(price.amount) <= 0)))) return;
     onSave(rows);
   };
-  return <Modal title="手动可报价表" onClose={onClose} className="quote-modal"><form className="quote-matrix-form" onSubmit={submit}>
+  return <Modal title="可报价记录表" onClose={onClose} className="quote-modal"><form className="quote-matrix-form" onSubmit={submit}>
     <div className="quote-product-heading"><span className="quote-product-image">{link.imageDataUrl ? <img src={link.imageDataUrl} alt="" /> : '链'}</span><div><small>{link.store} 店 · SKC {link.productCode || '待填写'}</small><strong>{link.productName}</strong><p>每个折扣和规格的价格由你手动填写，不影响自动活动折扣。</p></div></div>
     <div className="quote-matrix-scroll"><table className="quote-matrix-table"><thead><tr><th>折扣</th>{specs.map((spec) => <th key={spec.id}>{spec.name}</th>)}<th>操作</th></tr></thead><tbody>{rows.map((row) => <tr key={row.discount}><th>{row.discount}折</th>{row.prices.map((price) => <td key={price.specId}><input type="number" min="0.01" step="0.01" inputMode="decimal" value={price.amount} onChange={(event) => changePrice(row.discount, price.specId, event.target.value)} placeholder="—" aria-label={`${row.discount}折 ${price.specName} 的可报价`} /></td>)}<td><button type="button" className="quote-remove" onClick={() => setRows((current) => current.filter((item) => item.discount !== row.discount))}>移除</button></td></tr>)}</tbody></table>{!rows.length && <p className="quote-empty">暂无折扣行，可以在下方添加。</p>}</div>
     <div className="quote-add"><select value={newDiscount} onChange={(event) => setNewDiscount(event.target.value)} disabled={!availableDiscounts.length} aria-label="选择要添加的折扣"><option value="">选择折扣</option>{availableDiscounts.map((discount) => <option key={discount} value={discount}>{discount}折</option>)}</select><button type="button" onClick={addDiscount} disabled={!availableDiscounts.length}>＋ 添加折扣行</button></div>
