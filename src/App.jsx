@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { cloudWorkspace } from './lib/cloudWorkspaceClient.js';
 import { prepareWorkspaceForCloud, retainLocalOriginalImages } from './lib/cloudWorkspacePayload.js';
 import { readIndexedWorkspace, writeIndexedWorkspace } from './lib/localWorkspaceStore.js';
-import { mergeProductLinks, normalizeProductLinks } from './lib/productLinkMerge.js';
+import { normalizeProductLinks } from './lib/productLinkMerge.js';
 import { lightingCatalogVersion, lightingProductCatalog } from './data/lightingProductCatalog.js';
 
 const STORE_ALL = '全部店铺';
@@ -105,7 +105,7 @@ const mergeWorkspaces = (cloudData, localData) => {
   return normalizeProductLinks({
     ...cloud,
     ...local,
-    discounts: mergeProductLinks(cloud.discounts, local.discounts),
+    discounts: mergeRecordLists(cloud.discounts, local.discounts),
     manualActivities: mergeRecordLists(cloud.manualActivities, local.manualActivities),
     priceReferences: mergeRecordLists(cloud.priceReferences, local.priceReferences),
     operations: mergeRecordLists(cloud.operations, local.operations),
@@ -122,7 +122,7 @@ const mergeBackupWorkspaces = (currentData, backupData) => {
     ...current,
     ...backup,
     products: mergeRecordLists(current.products, backup.products),
-    discounts: mergeProductLinks(current.discounts, backup.discounts),
+    discounts: mergeRecordLists(current.discounts, backup.discounts),
     manualActivities: mergeRecordLists(current.manualActivities, backup.manualActivities),
     priceReferences: mergeRecordLists(current.priceReferences, backup.priceReferences),
     operations: mergeRecordLists(current.operations, backup.operations),
@@ -789,7 +789,6 @@ export default function App() {
     const reportableDiscount = summary.recommendedDiscount;
     const profits = reportableDiscount ? summary.specs.map((spec) => netProfitAtPrice(spec.cost, spec.salePrice * reportableDiscount)) : [];
     const legacyFields = editing ? {
-      ...(editing.duplicateVariants?.length ? { duplicateVariants: editing.duplicateVariants } : {}),
       ...(editing.selectedDiscount != null ? { selectedDiscount: editing.selectedDiscount } : {}),
       ...(editing.startDate ? { startDate: editing.startDate } : {}),
       ...(editing.endDate ? { endDate: editing.endDate } : {}),
@@ -1261,7 +1260,7 @@ function DiscountActivity({ records, manualRecords, search, setSearch, onEdit, o
           const profits = reportableDiscount ? specs.map((spec) => netProfitAtPrice(spec.cost, spec.salePrice * reportableDiscount)) : [];
           const activities = manualRecords.filter((record) => normalizeSkc(record.productCode) === normalizeSkc(item.productCode));
           return <tr key={item.id}>
-            <td><div className="product-cell"><span className="thumb">{item.imageDataUrl ? <img src={item.imageDataUrl} alt="" /> : '链'}</span><div className="product-cell-main"><strong>{item.productName}</strong><small>SKC {item.productCode || '待填写'}{specs.length > 1 ? ` · ${specs.length}个规格 · 限制规格：${summary.limitingSpec?.name}` : ` · ${specs[0]?.name}`}</small><DuplicateLinkDetails link={item} /><ManualActivityChips activities={activities} link={item} onAdd={onAddManualForLink} onQuote={onQuote} onEdit={onEditManual} onDelete={onDeleteManual} /></div></div></td>
+            <td><div className="product-cell"><span className="thumb">{item.imageDataUrl ? <img src={item.imageDataUrl} alt="" /> : '链'}</span><div className="product-cell-main"><strong>{item.productName}</strong><small>SKC {item.productCode || '待填写'}{specs.length > 1 ? ` · ${specs.length}个规格 · 限制规格：${summary.limitingSpec?.name}` : ` · ${specs[0]?.name}`}</small><ManualActivityChips activities={activities} link={item} onAdd={onAddManualForLink} onQuote={onQuote} onEdit={onEditManual} onDelete={onDeleteManual} /></div></div></td>
             <td><Badge>{item.store}</Badge></td>
             <td>{valueRange(specs.map((spec) => spec.cost), money)}</td>
             <td>{valueRange(specs.map((spec) => spec.salePrice), money)}</td>
@@ -1277,25 +1276,6 @@ function DiscountActivity({ records, manualRecords, search, setSearch, onEdit, o
       </tbody></table>
     </TableShell>
   </>;
-}
-
-function DuplicateLinkDetails({ link }) {
-  if (!link.duplicateVariants?.length) return null;
-  const exportVariants = () => {
-    const url = URL.createObjectURL(new Blob([JSON.stringify({ discounts: [link] }, null, 2)], { type: 'application/json' }));
-    const anchor = document.createElement('a'); anchor.href = url; anchor.download = `SKC-${link.productCode}-合并前记录.json`; anchor.click();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
-  };
-  return <details><summary>已合并 {link.duplicateVariants.length} 条重复记录（原件保留）</summary>
-    <small>当前显示最新保存的一条；以下原记录的价格、图片与手动报价均保留，未覆盖。</small>
-    {link.duplicateVariants.map((variant, index) => <div key={index}>
-      <small>{variant.store} · {variant.productName} · {variant.updatedAt || '未记录保存时间'}</small>
-      {variant.imageDataUrl && <img src={variant.imageDataUrl} alt="原记录图片" width="60" height="60" style={{ objectFit: 'cover' }} />}
-      <small>{normalizeDiscountSpecs(variant).map((spec) => `${spec.name}：供货 ${money(spec.cost)} / 售价 ${money(spec.salePrice)}`).join('；')}</small>
-      <small>手动报价 {variant.manualPriceMatrix?.length || 0} 档{variant.note ? ` · 备注：${variant.note}` : ''}</small>
-    </div>)}
-    <button type="button" onClick={exportVariants}>导出完整原记录</button>
-  </details>;
 }
 
 function PriceReferences({ discounts, allDiscounts, products, references, search, setSearch, onEdit, onDelete }) {

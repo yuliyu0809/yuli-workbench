@@ -4,11 +4,11 @@ import { mergeProductLinks, normalizeProductLinks } from './productLinkMerge.js'
 
 const older = { id: 'a', productCode: '123', store: 'AG', productName: '灯', updatedAt: '2026-09-01', specs: [{ id: 's', name: '20灯', cost: 7, salePrice: 20 }], imageDataUrl: 'original', manualPriceMatrix: [{ discount: 7, prices: [{ specId: 's', amount: 12 }] }] };
 const newer = { ...older, id: 'b', updatedAt: '2026-09-02', imageDataUrl: 'different', specs: [{ ...older.specs[0], salePrice: 22 }], manualPriceMatrix: [] };
-test('same SKC uses newest link and preserves full older prices, quotes and image', () => {
+test('same SKC keeps newest link without merging older prices, quotes or image', () => {
   const result = mergeProductLinks([older], [newer]);
   assert.equal(result.length, 1);
   assert.equal(result[0].id, 'b');
-  assert.deepEqual(result[0].duplicateVariants, [older]);
+  assert.deepEqual(result[0], newer);
   assert.equal(older.duplicateVariants, undefined);
 });
 test('normalization and repeatedly importing stale records are idempotent', () => {
@@ -22,12 +22,17 @@ test('blank SKCs stay separate; SKCs are normalized and globally unique', () => 
   assert.equal(mergeProductLinks([{ id: 'x' }, { id: 'y' }]).length, 2);
   assert.equal(mergeProductLinks([older, { ...newer, productCode: ' 123 ', store: 'DS' }]).length, 1);
 });
-test('archives survive editing and primary switch', () => {
+test('existing duplicate archives are deleted and stay deleted on stale import', () => {
+  const archived = { ...newer, duplicateVariants: [older] };
+  assert.deepEqual(mergeProductLinks([archived]), [newer]);
+  assert.deepEqual(mergeProductLinks([archived], [older]), [newer]);
+});
+test('newest record replaces old primary without keeping archives', () => {
   const merged = mergeProductLinks([older, newer]);
   const updated = { ...older, updatedAt: '2026-09-03' };
   const result = mergeProductLinks(merged, [updated]);
   assert.equal(result[0].id, 'a');
-  assert.equal(result[0].duplicateVariants[0].id, 'b');
+  assert.equal(result[0].duplicateVariants, undefined);
   assert.deepEqual(mergeProductLinks(result), result);
 });
 test('legacy references redirect while ads and manual activities stay unchanged', () => {
