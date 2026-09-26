@@ -1,5 +1,5 @@
-// 商品与供货价来自《利润核算参考表（20260820）(2).xls》，利润字段由网站按原表公式实时计算。
-export const lightingCatalogVersion = '20260820-profit-v1';
+// 商品与供货价来自《利润核算参考表（20260918）.xls》，利润字段由网站按原表公式实时计算。
+export const lightingCatalogVersion = '20260918-profit-v1';
 export const lightingProductCatalog = [
   {
     "id": "P0001",
@@ -62,7 +62,7 @@ export const lightingProductCatalog = [
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
     "sourceRow": 3,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0002",
@@ -115,7 +115,7 @@ export const lightingProductCatalog = [
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
     "sourceRow": 8,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0003",
@@ -168,7 +168,7 @@ export const lightingProductCatalog = [
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
     "sourceRow": 12,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0004",
@@ -221,7 +221,7 @@ export const lightingProductCatalog = [
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
     "sourceRow": 16,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0005",
@@ -247,14 +247,14 @@ export const lightingProductCatalog = [
         "itemWeight": 260,
         "packageWeight": 35,
         "cartonQty": 50,
-        "sourceRow": 22
+        "sourceRow": 21
       }
     ],
     "cost": 12,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
     "sourceRow": 20,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0006",
@@ -270,7 +270,7 @@ export const lightingProductCatalog = [
         "itemWeight": 194,
         "packageWeight": 30,
         "cartonQty": 50,
-        "sourceRow": 24
+        "sourceRow": 22
       },
       {
         "id": "P0006-spec-2",
@@ -280,14 +280,14 @@ export const lightingProductCatalog = [
         "itemWeight": 244,
         "packageWeight": 35,
         "cartonQty": 50,
-        "sourceRow": 26
+        "sourceRow": 23
       }
     ],
     "cost": 13.5,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 24,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 22,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0007",
@@ -303,7 +303,7 @@ export const lightingProductCatalog = [
         "itemWeight": 228,
         "packageWeight": 30,
         "cartonQty": 50,
-        "sourceRow": 28
+        "sourceRow": 24
       },
       {
         "id": "P0007-spec-2",
@@ -313,14 +313,14 @@ export const lightingProductCatalog = [
         "itemWeight": 305,
         "packageWeight": 35,
         "cartonQty": 50,
-        "sourceRow": 30
+        "sourceRow": 25
       }
     ],
     "cost": 16,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 28,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 24,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0008",
@@ -336,7 +336,7 @@ export const lightingProductCatalog = [
         "itemWeight": 290,
         "packageWeight": 60,
         "cartonQty": "",
-        "sourceRow": 32
+        "sourceRow": 26
       },
       {
         "id": "P0008-spec-2",
@@ -346,14 +346,14 @@ export const lightingProductCatalog = [
         "itemWeight": 380,
         "packageWeight": 70,
         "cartonQty": 20,
-        "sourceRow": 34
+        "sourceRow": 27
       }
     ],
     "cost": 15,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 32,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 26,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0009",
@@ -369,7 +369,7 @@ export const lightingProductCatalog = [
         "itemWeight": 296,
         "packageWeight": 60,
         "cartonQty": "",
-        "sourceRow": 36
+        "sourceRow": 28
       },
       {
         "id": "P0009-spec-2",
@@ -379,14 +379,14 @@ export const lightingProductCatalog = [
         "itemWeight": 394,
         "packageWeight": 70,
         "cartonQty": 20,
-        "sourceRow": 38
+        "sourceRow": 29
       }
     ],
     "cost": 15,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 36,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 28,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0010",
@@ -402,7 +402,7 @@ export const lightingProductCatalog = [
         "itemWeight": 340,
         "packageWeight": 60,
         "cartonQty": "",
-        "sourceRow": 40
+        "sourceRow": 30
       },
       {
         "id": "P0010-spec-2",
@@ -412,14 +412,14 @@ export const lightingProductCatalog = [
         "itemWeight": 470,
         "packageWeight": 70,
         "cartonQty": 20,
-        "sourceRow": 42
+        "sourceRow": 31
       }
     ],
     "cost": 15,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 40,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 30,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0011",
@@ -435,7 +435,7 @@ export const lightingProductCatalog = [
         "itemWeight": 292,
         "packageWeight": 60,
         "cartonQty": 50,
-        "sourceRow": 44
+        "sourceRow": 32
       },
       {
         "id": "P0011-spec-2",
@@ -445,14 +445,14 @@ export const lightingProductCatalog = [
         "itemWeight": 376,
         "packageWeight": 45,
         "cartonQty": "",
-        "sourceRow": 46
+        "sourceRow": 33
       }
     ],
     "cost": 13.5,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 44,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 32,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0012",
@@ -468,7 +468,7 @@ export const lightingProductCatalog = [
         "itemWeight": 190,
         "packageWeight": 40,
         "cartonQty": 50,
-        "sourceRow": 48
+        "sourceRow": 34
       },
       {
         "id": "P0012-spec-2",
@@ -478,14 +478,14 @@ export const lightingProductCatalog = [
         "itemWeight": 230,
         "packageWeight": 45,
         "cartonQty": "",
-        "sourceRow": 50
+        "sourceRow": 35
       }
     ],
     "cost": 15,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 48,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 34,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0013",
@@ -501,7 +501,7 @@ export const lightingProductCatalog = [
         "itemWeight": 190,
         "packageWeight": 40,
         "cartonQty": 50,
-        "sourceRow": 52
+        "sourceRow": 36
       },
       {
         "id": "P0013-spec-2",
@@ -511,14 +511,14 @@ export const lightingProductCatalog = [
         "itemWeight": 230,
         "packageWeight": 45,
         "cartonQty": "",
-        "sourceRow": 54
+        "sourceRow": 37
       }
     ],
     "cost": 15,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 52,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 36,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0014",
@@ -534,7 +534,7 @@ export const lightingProductCatalog = [
         "itemWeight": 241,
         "packageWeight": 45,
         "cartonQty": "",
-        "sourceRow": 56
+        "sourceRow": 38
       },
       {
         "id": "P0014-spec-2",
@@ -544,14 +544,14 @@ export const lightingProductCatalog = [
         "itemWeight": 300,
         "packageWeight": 55.4,
         "cartonQty": "",
-        "sourceRow": 58
+        "sourceRow": 39
       }
     ],
     "cost": 14.5,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 56,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 38,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0015",
@@ -567,7 +567,7 @@ export const lightingProductCatalog = [
         "itemWeight": 342,
         "packageWeight": 40,
         "cartonQty": 50,
-        "sourceRow": 60
+        "sourceRow": 40
       },
       {
         "id": "P0015-spec-2",
@@ -577,14 +577,14 @@ export const lightingProductCatalog = [
         "itemWeight": 474,
         "packageWeight": 45,
         "cartonQty": "",
-        "sourceRow": 62
+        "sourceRow": 41
       }
     ],
     "cost": 13,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 60,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 40,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0016",
@@ -600,7 +600,7 @@ export const lightingProductCatalog = [
         "itemWeight": 229,
         "packageWeight": 49.5,
         "cartonQty": 50,
-        "sourceRow": 64
+        "sourceRow": 42
       },
       {
         "id": "P0016-spec-2",
@@ -610,7 +610,7 @@ export const lightingProductCatalog = [
         "itemWeight": 290,
         "packageWeight": 72.5,
         "cartonQty": 48,
-        "sourceRow": 65
+        "sourceRow": 43
       },
       {
         "id": "P0016-spec-3",
@@ -620,14 +620,14 @@ export const lightingProductCatalog = [
         "itemWeight": 390,
         "packageWeight": 110,
         "cartonQty": 32,
-        "sourceRow": 66
+        "sourceRow": 44
       }
     ],
     "cost": 15.5,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 64,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 42,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0017",
@@ -643,7 +643,7 @@ export const lightingProductCatalog = [
         "itemWeight": 229,
         "packageWeight": 49.5,
         "cartonQty": 50,
-        "sourceRow": 67
+        "sourceRow": 45
       },
       {
         "id": "P0017-spec-2",
@@ -653,7 +653,7 @@ export const lightingProductCatalog = [
         "itemWeight": 290,
         "packageWeight": 72.5,
         "cartonQty": 48,
-        "sourceRow": 68
+        "sourceRow": 46
       },
       {
         "id": "P0017-spec-3",
@@ -663,14 +663,14 @@ export const lightingProductCatalog = [
         "itemWeight": 390,
         "packageWeight": 110,
         "cartonQty": 32,
-        "sourceRow": 69
+        "sourceRow": 47
       }
     ],
     "cost": 15.5,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 67,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 45,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0018",
@@ -686,7 +686,7 @@ export const lightingProductCatalog = [
         "itemWeight": 204.2,
         "packageWeight": 30,
         "cartonQty": 50,
-        "sourceRow": 70
+        "sourceRow": 48
       },
       {
         "id": "P0018-spec-2",
@@ -696,14 +696,14 @@ export const lightingProductCatalog = [
         "itemWeight": 317.6,
         "packageWeight": 35,
         "cartonQty": 50,
-        "sourceRow": 72
+        "sourceRow": 49
       }
     ],
     "cost": 14,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 70,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 48,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0019",
@@ -719,7 +719,7 @@ export const lightingProductCatalog = [
         "itemWeight": 109.2,
         "packageWeight": 34.6,
         "cartonQty": 108,
-        "sourceRow": 76
+        "sourceRow": 52
       },
       {
         "id": "P0019-spec-2",
@@ -729,7 +729,7 @@ export const lightingProductCatalog = [
         "itemWeight": 110,
         "packageWeight": 34.6,
         "cartonQty": 108,
-        "sourceRow": 77
+        "sourceRow": 53
       },
       {
         "id": "P0019-spec-3",
@@ -739,7 +739,7 @@ export const lightingProductCatalog = [
         "itemWeight": 136.5,
         "packageWeight": 38,
         "cartonQty": 100,
-        "sourceRow": 78
+        "sourceRow": 54
       },
       {
         "id": "P0019-spec-4",
@@ -749,14 +749,14 @@ export const lightingProductCatalog = [
         "itemWeight": 144,
         "packageWeight": 38,
         "cartonQty": 100,
-        "sourceRow": 79
+        "sourceRow": 55
       }
     ],
     "cost": 7,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 76,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 52,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0020",
@@ -772,7 +772,7 @@ export const lightingProductCatalog = [
         "itemWeight": 123,
         "packageWeight": 34.6,
         "cartonQty": 108,
-        "sourceRow": 80
+        "sourceRow": 56
       },
       {
         "id": "P0020-spec-2",
@@ -782,7 +782,7 @@ export const lightingProductCatalog = [
         "itemWeight": 134,
         "packageWeight": 34.6,
         "cartonQty": 108,
-        "sourceRow": 81
+        "sourceRow": 57
       },
       {
         "id": "P0020-spec-3",
@@ -792,7 +792,7 @@ export const lightingProductCatalog = [
         "itemWeight": 151.4,
         "packageWeight": 34.6,
         "cartonQty": 108,
-        "sourceRow": 82
+        "sourceRow": 58
       },
       {
         "id": "P0020-spec-4",
@@ -802,14 +802,14 @@ export const lightingProductCatalog = [
         "itemWeight": 196,
         "packageWeight": 38,
         "cartonQty": 100,
-        "sourceRow": 83
+        "sourceRow": 59
       }
     ],
     "cost": 8,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 80,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 56,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0021",
@@ -825,7 +825,7 @@ export const lightingProductCatalog = [
         "itemWeight": 180,
         "packageWeight": 35,
         "cartonQty": 50,
-        "sourceRow": 84
+        "sourceRow": 60
       },
       {
         "id": "P0021-spec-2",
@@ -835,7 +835,7 @@ export const lightingProductCatalog = [
         "itemWeight": 241,
         "packageWeight": 35,
         "cartonQty": 50,
-        "sourceRow": 85
+        "sourceRow": 61
       },
       {
         "id": "P0021-spec-3",
@@ -845,7 +845,7 @@ export const lightingProductCatalog = [
         "itemWeight": 382,
         "packageWeight": 53.6,
         "cartonQty": "",
-        "sourceRow": 86
+        "sourceRow": 62
       },
       {
         "id": "P0021-spec-4",
@@ -855,14 +855,14 @@ export const lightingProductCatalog = [
         "itemWeight": 528.3,
         "packageWeight": 53.6,
         "cartonQty": "",
-        "sourceRow": 87
+        "sourceRow": 63
       }
     ],
     "cost": 9.5,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 84,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 60,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0022",
@@ -878,7 +878,7 @@ export const lightingProductCatalog = [
         "itemWeight": 113.3,
         "packageWeight": 34.6,
         "cartonQty": 108,
-        "sourceRow": 88
+        "sourceRow": 64
       },
       {
         "id": "P0022-spec-2",
@@ -888,7 +888,7 @@ export const lightingProductCatalog = [
         "itemWeight": 131.2,
         "packageWeight": 34.6,
         "cartonQty": 108,
-        "sourceRow": 89
+        "sourceRow": 65
       },
       {
         "id": "P0022-spec-3",
@@ -898,14 +898,14 @@ export const lightingProductCatalog = [
         "itemWeight": 171.5,
         "packageWeight": 38,
         "cartonQty": 100,
-        "sourceRow": 90
+        "sourceRow": 66
       }
     ],
     "cost": 13,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 88,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 64,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0023",
@@ -921,7 +921,7 @@ export const lightingProductCatalog = [
         "itemWeight": 201,
         "packageWeight": 30,
         "cartonQty": 50,
-        "sourceRow": 93
+        "sourceRow": 69
       },
       {
         "id": "P0023-spec-2",
@@ -931,14 +931,14 @@ export const lightingProductCatalog = [
         "itemWeight": 303,
         "packageWeight": 35,
         "cartonQty": 50,
-        "sourceRow": 95
+        "sourceRow": 70
       }
     ],
     "cost": 12.5,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 93,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 69,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0024",
@@ -954,7 +954,7 @@ export const lightingProductCatalog = [
         "itemWeight": 241,
         "packageWeight": 44.1,
         "cartonQty": 50,
-        "sourceRow": 97
+        "sourceRow": 71
       },
       {
         "id": "P0024-spec-2",
@@ -964,7 +964,7 @@ export const lightingProductCatalog = [
         "itemWeight": 367.5,
         "packageWeight": 52,
         "cartonQty": 20,
-        "sourceRow": 98
+        "sourceRow": 72
       },
       {
         "id": "P0024-spec-3",
@@ -974,14 +974,14 @@ export const lightingProductCatalog = [
         "itemWeight": 513,
         "packageWeight": 91,
         "cartonQty": 20,
-        "sourceRow": 99
+        "sourceRow": 73
       }
     ],
     "cost": 14,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 97,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 71,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0025",
@@ -997,7 +997,7 @@ export const lightingProductCatalog = [
         "itemWeight": 183.4,
         "packageWeight": 35,
         "cartonQty": "",
-        "sourceRow": 102
+        "sourceRow": 76
       },
       {
         "id": "P0025-spec-2",
@@ -1007,14 +1007,14 @@ export const lightingProductCatalog = [
         "itemWeight": 216.5,
         "packageWeight": 35,
         "cartonQty": "",
-        "sourceRow": 104
+        "sourceRow": 77
       }
     ],
     "cost": 19.5,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 102,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 76,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0026",
@@ -1030,7 +1030,7 @@ export const lightingProductCatalog = [
         "itemWeight": 241.3,
         "packageWeight": 35,
         "cartonQty": "",
-        "sourceRow": 106
+        "sourceRow": 78
       },
       {
         "id": "P0026-spec-2",
@@ -1040,7 +1040,7 @@ export const lightingProductCatalog = [
         "itemWeight": 246.5,
         "packageWeight": 35,
         "cartonQty": "",
-        "sourceRow": 107
+        "sourceRow": 79
       },
       {
         "id": "P0026-spec-3",
@@ -1050,7 +1050,7 @@ export const lightingProductCatalog = [
         "itemWeight": 298.9,
         "packageWeight": 35,
         "cartonQty": "",
-        "sourceRow": 108
+        "sourceRow": 80
       },
       {
         "id": "P0026-spec-4",
@@ -1060,14 +1060,14 @@ export const lightingProductCatalog = [
         "itemWeight": 311.5,
         "packageWeight": 35,
         "cartonQty": "",
-        "sourceRow": 109
+        "sourceRow": 81
       }
     ],
     "cost": 20.5,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 106,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 78,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0027",
@@ -1083,14 +1083,14 @@ export const lightingProductCatalog = [
         "itemWeight": 132,
         "packageWeight": 6.6,
         "cartonQty": "",
-        "sourceRow": 112
+        "sourceRow": 84
       }
     ],
     "cost": 9,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 112,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 84,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0028",
@@ -1106,14 +1106,14 @@ export const lightingProductCatalog = [
         "itemWeight": 128,
         "packageWeight": 6.6,
         "cartonQty": "",
-        "sourceRow": 113
+        "sourceRow": 85
       }
     ],
     "cost": 9,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 113,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 85,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0029",
@@ -1124,19 +1124,19 @@ export const lightingProductCatalog = [
       {
         "id": "P0029-spec-1",
         "name": "6灯",
-        "cost": 10.4,
+        "cost": 10.35,
         "packageSize": "55*17*3",
         "itemWeight": 113,
         "packageWeight": 6.6,
         "cartonQty": "",
-        "sourceRow": 114
+        "sourceRow": 86
       }
     ],
-    "cost": 10.4,
+    "cost": 10.35,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 114,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 86,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0030",
@@ -1152,14 +1152,14 @@ export const lightingProductCatalog = [
         "itemWeight": 118,
         "packageWeight": 6.6,
         "cartonQty": "",
-        "sourceRow": 115
+        "sourceRow": 87
       }
     ],
     "cost": 9.9,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 115,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 87,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0031",
@@ -1175,14 +1175,14 @@ export const lightingProductCatalog = [
         "itemWeight": 166.5,
         "packageWeight": 6.6,
         "cartonQty": "",
-        "sourceRow": 116
+        "sourceRow": 88
       }
     ],
     "cost": 11.7,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 116,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 88,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0032",
@@ -1193,19 +1193,19 @@ export const lightingProductCatalog = [
       {
         "id": "P0032-spec-1",
         "name": "20灯",
-        "cost": 12.2,
+        "cost": 12.15,
         "packageSize": "55*17*3",
         "itemWeight": 200,
         "packageWeight": 6.6,
         "cartonQty": "",
-        "sourceRow": 117
+        "sourceRow": 89
       }
     ],
-    "cost": 12.2,
+    "cost": 12.15,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 117,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 89,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0033",
@@ -1221,14 +1221,14 @@ export const lightingProductCatalog = [
         "itemWeight": 184.5,
         "packageWeight": 6.6,
         "cartonQty": "",
-        "sourceRow": 118
+        "sourceRow": 90
       }
     ],
     "cost": 15.3,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 118,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 90,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0034",
@@ -1239,19 +1239,19 @@ export const lightingProductCatalog = [
       {
         "id": "P0034-spec-1",
         "name": "/",
-        "cost": 8.6,
+        "cost": 8.55,
         "packageSize": "55*17*3",
         "itemWeight": 118.5,
         "packageWeight": 6.6,
         "cartonQty": "",
-        "sourceRow": 119
+        "sourceRow": 91
       }
     ],
-    "cost": 8.6,
+    "cost": 8.55,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 119,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 91,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0035",
@@ -1267,14 +1267,14 @@ export const lightingProductCatalog = [
         "itemWeight": 122,
         "packageWeight": 6.6,
         "cartonQty": "",
-        "sourceRow": 120
+        "sourceRow": 92
       }
     ],
     "cost": 9.9,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 120,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 92,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0036",
@@ -1290,14 +1290,14 @@ export const lightingProductCatalog = [
         "itemWeight": 131,
         "packageWeight": 6.6,
         "cartonQty": "",
-        "sourceRow": 121
+        "sourceRow": 93
       }
     ],
     "cost": 12.6,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 121,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 93,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0037",
@@ -1313,14 +1313,14 @@ export const lightingProductCatalog = [
         "itemWeight": 124,
         "packageWeight": 6.6,
         "cartonQty": "",
-        "sourceRow": 122
+        "sourceRow": 94
       }
     ],
     "cost": 10.8,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 122,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 94,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0038",
@@ -1336,14 +1336,14 @@ export const lightingProductCatalog = [
         "itemWeight": 125,
         "packageWeight": 6.6,
         "cartonQty": "",
-        "sourceRow": 123
+        "sourceRow": 95
       }
     ],
     "cost": 10.8,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 123,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 95,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0039",
@@ -1354,19 +1354,19 @@ export const lightingProductCatalog = [
       {
         "id": "P0039-spec-1",
         "name": "3头",
-        "cost": 9.5,
+        "cost": 9.45,
         "packageSize": "55*17*3",
         "itemWeight": 149,
         "packageWeight": 6.6,
         "cartonQty": "",
-        "sourceRow": 124
+        "sourceRow": 96
       }
     ],
-    "cost": 9.5,
+    "cost": 9.45,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 124,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 96,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0040",
@@ -1377,19 +1377,19 @@ export const lightingProductCatalog = [
       {
         "id": "P0040-spec-1",
         "name": "3头",
-        "cost": 9.5,
+        "cost": 9.45,
         "packageSize": "55*17*3",
         "itemWeight": 153.6,
         "packageWeight": 6.6,
         "cartonQty": "",
-        "sourceRow": 125
+        "sourceRow": 97
       }
     ],
-    "cost": 9.5,
+    "cost": 9.45,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 125,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 97,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0041",
@@ -1405,14 +1405,14 @@ export const lightingProductCatalog = [
         "itemWeight": 141,
         "packageWeight": 6.6,
         "cartonQty": "",
-        "sourceRow": 126
+        "sourceRow": 98
       }
     ],
     "cost": 11.7,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 126,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 98,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0042",
@@ -1423,19 +1423,19 @@ export const lightingProductCatalog = [
       {
         "id": "P0042-spec-1",
         "name": "7头",
-        "cost": 9.5,
+        "cost": 9.45,
         "packageSize": "55*17*3",
         "itemWeight": 127,
         "packageWeight": 6.6,
         "cartonQty": "",
-        "sourceRow": 127
+        "sourceRow": 99
       }
     ],
-    "cost": 9.5,
+    "cost": 9.45,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 127,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 99,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0043",
@@ -1446,19 +1446,19 @@ export const lightingProductCatalog = [
       {
         "id": "P0043-spec-1",
         "name": "3头",
-        "cost": 11.3,
+        "cost": 11.25,
         "packageSize": "55*17*3",
         "itemWeight": 138.5,
         "packageWeight": 6.6,
         "cartonQty": "",
-        "sourceRow": 128
+        "sourceRow": 100
       }
     ],
-    "cost": 11.3,
+    "cost": 11.25,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 128,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 100,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0044",
@@ -1474,14 +1474,14 @@ export const lightingProductCatalog = [
         "itemWeight": 233.5,
         "packageWeight": 6.6,
         "cartonQty": "",
-        "sourceRow": 129
+        "sourceRow": 101
       }
     ],
     "cost": 11.7,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 129,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 101,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0045",
@@ -1497,14 +1497,14 @@ export const lightingProductCatalog = [
         "itemWeight": 176,
         "packageWeight": 6.6,
         "cartonQty": "",
-        "sourceRow": 130
+        "sourceRow": 102
       }
     ],
     "cost": 9.9,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 130,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 102,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0046",
@@ -1520,14 +1520,114 @@ export const lightingProductCatalog = [
         "itemWeight": 140.3,
         "packageWeight": 6.6,
         "cartonQty": "",
-        "sourceRow": 131
+        "sourceRow": 103
       }
     ],
     "cost": 10,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 131,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 103,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
+  },
+  {
+    "sourceCategory": "8功能24伏USB铜丝类",
+    "productName": "USB绕盘银线铜丝灯 （暖、彩、白） （8功能）",
+    "sourceRow": 106,
+    "specs": [
+      {
+        "name": "15+2米500灯",
+        "cost": 19.5,
+        "sourceRow": 106,
+        "id": "P0144-20260918-spec-1"
+      },
+      {
+        "name": "30+2米1000灯",
+        "cost": 28.5,
+        "sourceRow": 107,
+        "id": "P0144-20260918-spec-2"
+      }
+    ],
+    "id": "P0144",
+    "category": "灯串",
+    "cost": 19.5,
+    "imageDataUrl": "",
+    "imageNote": "原表图片公式不兼容，待补充",
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
+  },
+  {
+    "sourceCategory": "8功能24伏USB铜丝类",
+    "productName": "USB绕盘墨绿线铜丝灯 （暖、彩、白） （8功能）",
+    "sourceRow": 108,
+    "specs": [
+      {
+        "name": "15+2米500灯",
+        "cost": 19.5,
+        "sourceRow": 108,
+        "id": "P0145-20260918-spec-1"
+      },
+      {
+        "name": "30+2米1000灯",
+        "cost": 28.5,
+        "sourceRow": 109,
+        "id": "P0145-20260918-spec-2"
+      }
+    ],
+    "id": "P0145",
+    "category": "灯串",
+    "cost": 19.5,
+    "imageDataUrl": "",
+    "imageNote": "原表图片公式不兼容，待补充",
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
+  },
+  {
+    "sourceCategory": "8功能24伏USB铜丝类",
+    "productName": "USB绕盘银线鞭炮灯 （暖、彩、白） （8功能）",
+    "sourceRow": 110,
+    "specs": [
+      {
+        "name": "15+2米500灯",
+        "cost": 21.5,
+        "sourceRow": 110,
+        "id": "P0146-20260918-spec-1"
+      },
+      {
+        "name": "30+2米1000灯",
+        "cost": 31,
+        "sourceRow": 111,
+        "id": "P0146-20260918-spec-2"
+      }
+    ],
+    "id": "P0146",
+    "category": "灯串",
+    "cost": 21.5,
+    "imageDataUrl": "",
+    "imageNote": "原表图片公式不兼容，待补充",
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
+  },
+  {
+    "sourceCategory": "8功能24伏USB铜丝类",
+    "productName": "USB绕盘墨绿线鞭炮灯 （暖、彩、白） （8功能）",
+    "sourceRow": 112,
+    "specs": [
+      {
+        "name": "15+2米500灯",
+        "cost": 21.5,
+        "sourceRow": 112,
+        "id": "P0147-20260918-spec-1"
+      },
+      {
+        "name": "30+2米1000灯",
+        "cost": 31,
+        "sourceRow": 113,
+        "id": "P0147-20260918-spec-2"
+      }
+    ],
+    "id": "P0147",
+    "category": "灯串",
+    "cost": 21.5,
+    "imageDataUrl": "",
+    "imageNote": "原表图片公式不兼容，待补充",
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0047",
@@ -1538,29 +1638,29 @@ export const lightingProductCatalog = [
       {
         "id": "P0047-spec-1",
         "name": "1.7米高",
-        "cost": 25,
+        "cost": 24,
         "packageSize": "10*10*34",
         "itemWeight": 296,
         "packageWeight": 91,
         "cartonQty": "",
-        "sourceRow": 134
+        "sourceRow": 116
       },
       {
         "id": "P0047-spec-2",
         "name": "3米高",
-        "cost": 29.5,
+        "cost": 27,
         "packageSize": "10*10*38",
         "itemWeight": 414,
         "packageWeight": 96,
         "cartonQty": "",
-        "sourceRow": 135
+        "sourceRow": 117
       }
     ],
-    "cost": 25,
+    "cost": 24,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 134,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 116,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0048",
@@ -1571,19 +1671,19 @@ export const lightingProductCatalog = [
       {
         "id": "P0048-spec-1",
         "name": "0.45米高",
-        "cost": 27.5,
+        "cost": 22,
         "packageSize": "42*22.5*5",
         "itemWeight": 360,
         "packageWeight": 124,
         "cartonQty": "",
-        "sourceRow": 136
+        "sourceRow": 118
       }
     ],
-    "cost": 27.5,
+    "cost": 22,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 136,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 118,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0049",
@@ -1594,19 +1694,19 @@ export const lightingProductCatalog = [
       {
         "id": "P0049-spec-1",
         "name": "3个星星",
-        "cost": 28.5,
+        "cost": 19,
         "packageSize": "42*22.5*5",
         "itemWeight": 293,
         "packageWeight": 124,
         "cartonQty": "",
-        "sourceRow": 137
+        "sourceRow": 119
       }
     ],
-    "cost": 28.5,
+    "cost": 19,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 137,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 119,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0050",
@@ -1617,19 +1717,19 @@ export const lightingProductCatalog = [
       {
         "id": "P0050-spec-1",
         "name": "10圆环",
-        "cost": 22.5,
+        "cost": 19,
         "packageSize": "17*9*15",
         "itemWeight": 385,
         "packageWeight": 77.5,
         "cartonQty": 30,
-        "sourceRow": 138
+        "sourceRow": 120
       }
     ],
-    "cost": 22.5,
+    "cost": 19,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 138,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 120,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0051",
@@ -1645,7 +1745,7 @@ export const lightingProductCatalog = [
         "itemWeight": 21,
         "packageWeight": 2.2,
         "cartonQty": "",
-        "sourceRow": 141
+        "sourceRow": 123
       },
       {
         "id": "P0051-spec-2",
@@ -1655,7 +1755,7 @@ export const lightingProductCatalog = [
         "itemWeight": 40,
         "packageWeight": 2.2,
         "cartonQty": "",
-        "sourceRow": 142
+        "sourceRow": 124
       },
       {
         "id": "P0051-spec-3",
@@ -1665,14 +1765,14 @@ export const lightingProductCatalog = [
         "itemWeight": 79,
         "packageWeight": 2.2,
         "cartonQty": "",
-        "sourceRow": 143
+        "sourceRow": 125
       }
     ],
     "cost": 4.5,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 141,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 123,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0052",
@@ -1688,7 +1788,7 @@ export const lightingProductCatalog = [
         "itemWeight": 27.4,
         "packageWeight": 2.2,
         "cartonQty": "",
-        "sourceRow": 144
+        "sourceRow": 126
       },
       {
         "id": "P0052-spec-2",
@@ -1698,7 +1798,7 @@ export const lightingProductCatalog = [
         "itemWeight": 37,
         "packageWeight": 2.2,
         "cartonQty": "",
-        "sourceRow": 145
+        "sourceRow": 127
       },
       {
         "id": "P0052-spec-3",
@@ -1708,7 +1808,7 @@ export const lightingProductCatalog = [
         "itemWeight": 55,
         "packageWeight": 2.2,
         "cartonQty": "",
-        "sourceRow": 146
+        "sourceRow": 128
       },
       {
         "id": "P0052-spec-4",
@@ -1718,47 +1818,14 @@ export const lightingProductCatalog = [
         "itemWeight": 70.9,
         "packageWeight": 2.2,
         "cartonQty": "",
-        "sourceRow": 147
+        "sourceRow": 129
       }
     ],
     "cost": 4,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 144,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
-  },
-  {
-    "id": "P0053",
-    "category": "灯串",
-    "sourceCategory": "8功能USB铜丝系列",
-    "productName": "USB绕盘鞭炮灯 （银线、墨绿线） （暖、彩、白） （8功能）",
-    "specs": [
-      {
-        "id": "P0053-spec-1",
-        "name": "15+2米500灯",
-        "cost": 23,
-        "packageSize": "24*24*8",
-        "itemWeight": 137,
-        "packageWeight": 3.8,
-        "cartonQty": "",
-        "sourceRow": 148
-      },
-      {
-        "id": "P0053-spec-2",
-        "name": "30+2米1000灯",
-        "cost": 33,
-        "packageSize": "24*24*8",
-        "itemWeight": 243,
-        "packageWeight": 3.8,
-        "cartonQty": "",
-        "sourceRow": 149
-      }
-    ],
-    "cost": 23,
-    "imageDataUrl": "",
-    "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 148,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 126,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0054",
@@ -1774,7 +1841,7 @@ export const lightingProductCatalog = [
         "itemWeight": 74,
         "packageWeight": 3.8,
         "cartonQty": "",
-        "sourceRow": 150
+        "sourceRow": 130
       },
       {
         "id": "P0054-spec-2",
@@ -1784,7 +1851,7 @@ export const lightingProductCatalog = [
         "itemWeight": 150.4,
         "packageWeight": 3.8,
         "cartonQty": "",
-        "sourceRow": 151
+        "sourceRow": 131
       },
       {
         "id": "P0054-spec-3",
@@ -1794,14 +1861,14 @@ export const lightingProductCatalog = [
         "itemWeight": 301,
         "packageWeight": 3.8,
         "cartonQty": "",
-        "sourceRow": 152
+        "sourceRow": 132
       }
     ],
     "cost": 7.5,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 150,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 130,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0055",
@@ -1817,7 +1884,7 @@ export const lightingProductCatalog = [
         "itemWeight": 34,
         "packageWeight": 3.8,
         "cartonQty": "",
-        "sourceRow": 153
+        "sourceRow": 133
       },
       {
         "id": "P0055-spec-2",
@@ -1827,14 +1894,14 @@ export const lightingProductCatalog = [
         "itemWeight": 64.3,
         "packageWeight": 3.8,
         "cartonQty": "",
-        "sourceRow": 154
+        "sourceRow": 134
       }
     ],
     "cost": 9,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 153,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 133,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0056",
@@ -1850,7 +1917,7 @@ export const lightingProductCatalog = [
         "itemWeight": 33.5,
         "packageWeight": 3.8,
         "cartonQty": "",
-        "sourceRow": 155
+        "sourceRow": 135
       },
       {
         "id": "P0056-spec-2",
@@ -1860,14 +1927,14 @@ export const lightingProductCatalog = [
         "itemWeight": 64.7,
         "packageWeight": 3.8,
         "cartonQty": "",
-        "sourceRow": 156
+        "sourceRow": 136
       }
     ],
     "cost": 9,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 155,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 135,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0057",
@@ -1883,7 +1950,7 @@ export const lightingProductCatalog = [
         "itemWeight": 43,
         "packageWeight": 3.8,
         "cartonQty": "",
-        "sourceRow": 157
+        "sourceRow": 137
       },
       {
         "id": "P0057-spec-2",
@@ -1893,7 +1960,7 @@ export const lightingProductCatalog = [
         "itemWeight": 49,
         "packageWeight": 3.8,
         "cartonQty": "",
-        "sourceRow": 158
+        "sourceRow": 138
       },
       {
         "id": "P0057-spec-3",
@@ -1903,14 +1970,14 @@ export const lightingProductCatalog = [
         "itemWeight": 55,
         "packageWeight": 3.8,
         "cartonQty": "",
-        "sourceRow": 159
+        "sourceRow": 139
       }
     ],
     "cost": 8.5,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 157,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 137,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0058",
@@ -1926,7 +1993,7 @@ export const lightingProductCatalog = [
         "itemWeight": 32,
         "packageWeight": 2.2,
         "cartonQty": "",
-        "sourceRow": 160
+        "sourceRow": 140
       },
       {
         "id": "P0058-spec-2",
@@ -1936,7 +2003,7 @@ export const lightingProductCatalog = [
         "itemWeight": 49.2,
         "packageWeight": 2.2,
         "cartonQty": "",
-        "sourceRow": 161
+        "sourceRow": 141
       },
       {
         "id": "P0058-spec-3",
@@ -1946,14 +2013,14 @@ export const lightingProductCatalog = [
         "itemWeight": 88.3,
         "packageWeight": 3.8,
         "cartonQty": "",
-        "sourceRow": 162
+        "sourceRow": 142
       }
     ],
     "cost": 11.5,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 160,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 140,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0059",
@@ -1969,14 +2036,14 @@ export const lightingProductCatalog = [
         "itemWeight": 229,
         "packageWeight": 5,
         "cartonQty": "",
-        "sourceRow": 163
+        "sourceRow": 143
       }
     ],
     "cost": 18,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 163,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 143,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0060",
@@ -1992,14 +2059,14 @@ export const lightingProductCatalog = [
         "itemWeight": 98.2,
         "packageWeight": 5,
         "cartonQty": "",
-        "sourceRow": 164
+        "sourceRow": 144
       }
     ],
     "cost": 10,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 164,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 144,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0061",
@@ -2015,7 +2082,7 @@ export const lightingProductCatalog = [
         "itemWeight": 45,
         "packageWeight": 2.2,
         "cartonQty": "",
-        "sourceRow": 167
+        "sourceRow": 147
       },
       {
         "id": "P0061-spec-2",
@@ -2025,7 +2092,7 @@ export const lightingProductCatalog = [
         "itemWeight": 56.4,
         "packageWeight": 2.2,
         "cartonQty": "",
-        "sourceRow": 168
+        "sourceRow": 148
       },
       {
         "id": "P0061-spec-3",
@@ -2035,7 +2102,7 @@ export const lightingProductCatalog = [
         "itemWeight": 120,
         "packageWeight": 2.2,
         "cartonQty": "",
-        "sourceRow": 169
+        "sourceRow": 149
       },
       {
         "id": "P0061-spec-4",
@@ -2045,14 +2112,14 @@ export const lightingProductCatalog = [
         "itemWeight": 169,
         "packageWeight": 2.2,
         "cartonQty": "",
-        "sourceRow": 170
+        "sourceRow": 150
       }
     ],
     "cost": 6,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 167,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 147,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0062",
@@ -2068,7 +2135,7 @@ export const lightingProductCatalog = [
         "itemWeight": 45.4,
         "packageWeight": 2.2,
         "cartonQty": "",
-        "sourceRow": 171
+        "sourceRow": 151
       },
       {
         "id": "P0062-spec-2",
@@ -2078,7 +2145,7 @@ export const lightingProductCatalog = [
         "itemWeight": 54,
         "packageWeight": 2.2,
         "cartonQty": "",
-        "sourceRow": 172
+        "sourceRow": 152
       },
       {
         "id": "P0062-spec-3",
@@ -2088,7 +2155,7 @@ export const lightingProductCatalog = [
         "itemWeight": 88,
         "packageWeight": 2.2,
         "cartonQty": "",
-        "sourceRow": 173
+        "sourceRow": 153
       },
       {
         "id": "P0062-spec-4",
@@ -2098,14 +2165,14 @@ export const lightingProductCatalog = [
         "itemWeight": 89,
         "packageWeight": 2.2,
         "cartonQty": "",
-        "sourceRow": 174
+        "sourceRow": 154
       }
     ],
     "cost": 4,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 171,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 151,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0063",
@@ -2121,7 +2188,7 @@ export const lightingProductCatalog = [
         "itemWeight": 42,
         "packageWeight": 3.8,
         "cartonQty": "",
-        "sourceRow": 175
+        "sourceRow": 155
       },
       {
         "id": "P0063-spec-2",
@@ -2131,14 +2198,14 @@ export const lightingProductCatalog = [
         "itemWeight": 81,
         "packageWeight": 3.8,
         "cartonQty": "",
-        "sourceRow": 176
+        "sourceRow": 156
       }
     ],
     "cost": 9.5,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 175,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 155,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0064",
@@ -2154,7 +2221,7 @@ export const lightingProductCatalog = [
         "itemWeight": 42,
         "packageWeight": 3.8,
         "cartonQty": "",
-        "sourceRow": 177
+        "sourceRow": 157
       },
       {
         "id": "P0064-spec-2",
@@ -2164,14 +2231,14 @@ export const lightingProductCatalog = [
         "itemWeight": 82.2,
         "packageWeight": 3.8,
         "cartonQty": "",
-        "sourceRow": 178
+        "sourceRow": 158
       }
     ],
     "cost": 9.5,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 177,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 157,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0065",
@@ -2187,14 +2254,14 @@ export const lightingProductCatalog = [
         "itemWeight": 229,
         "packageWeight": 5,
         "cartonQty": "",
-        "sourceRow": 179
+        "sourceRow": 159
       }
     ],
     "cost": 19,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 179,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 159,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0066",
@@ -2210,14 +2277,14 @@ export const lightingProductCatalog = [
         "itemWeight": 106.5,
         "packageWeight": 5,
         "cartonQty": "",
-        "sourceRow": 180
+        "sourceRow": 160
       }
     ],
     "cost": 11,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 180,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 160,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0067",
@@ -2233,7 +2300,7 @@ export const lightingProductCatalog = [
         "itemWeight": 44.8,
         "packageWeight": 3.8,
         "cartonQty": "",
-        "sourceRow": 183
+        "sourceRow": 163
       },
       {
         "id": "P0067-spec-2",
@@ -2243,7 +2310,7 @@ export const lightingProductCatalog = [
         "itemWeight": 60.1,
         "packageWeight": 3.8,
         "cartonQty": "",
-        "sourceRow": 184
+        "sourceRow": 164
       },
       {
         "id": "P0067-spec-3",
@@ -2253,7 +2320,7 @@ export const lightingProductCatalog = [
         "itemWeight": 101.4,
         "packageWeight": 3.8,
         "cartonQty": "",
-        "sourceRow": 185
+        "sourceRow": 165
       },
       {
         "id": "P0067-spec-4",
@@ -2263,7 +2330,7 @@ export const lightingProductCatalog = [
         "itemWeight": 233.8,
         "packageWeight": 3.8,
         "cartonQty": "",
-        "sourceRow": 186
+        "sourceRow": 166
       },
       {
         "id": "P0067-spec-5",
@@ -2273,14 +2340,14 @@ export const lightingProductCatalog = [
         "itemWeight": 410,
         "packageWeight": 5,
         "cartonQty": "",
-        "sourceRow": 187
+        "sourceRow": 167
       }
     ],
     "cost": 5,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 183,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 163,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0068",
@@ -2296,7 +2363,7 @@ export const lightingProductCatalog = [
         "itemWeight": 178,
         "packageWeight": 5,
         "cartonQty": "",
-        "sourceRow": 188
+        "sourceRow": 168
       },
       {
         "id": "P0068-spec-2",
@@ -2306,14 +2373,14 @@ export const lightingProductCatalog = [
         "itemWeight": 242,
         "packageWeight": 5,
         "cartonQty": "",
-        "sourceRow": 189
+        "sourceRow": 169
       }
     ],
     "cost": 11.5,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 188,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 168,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0069",
@@ -2329,7 +2396,7 @@ export const lightingProductCatalog = [
         "itemWeight": 183,
         "packageWeight": 5,
         "cartonQty": "",
-        "sourceRow": 190
+        "sourceRow": 170
       },
       {
         "id": "P0069-spec-2",
@@ -2339,14 +2406,14 @@ export const lightingProductCatalog = [
         "itemWeight": 264,
         "packageWeight": 5,
         "cartonQty": "",
-        "sourceRow": 191
+        "sourceRow": 171
       }
     ],
     "cost": 11.5,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 190,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 170,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0070",
@@ -2362,7 +2429,7 @@ export const lightingProductCatalog = [
         "itemWeight": 213,
         "packageWeight": 5,
         "cartonQty": "",
-        "sourceRow": 192
+        "sourceRow": 172
       },
       {
         "id": "P0070-spec-2",
@@ -2372,14 +2439,14 @@ export const lightingProductCatalog = [
         "itemWeight": 310,
         "packageWeight": 5,
         "cartonQty": "",
-        "sourceRow": 193
+        "sourceRow": 173
       }
     ],
     "cost": 12,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 192,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 172,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0071",
@@ -2395,7 +2462,7 @@ export const lightingProductCatalog = [
         "itemWeight": 118.8,
         "packageWeight": 3.8,
         "cartonQty": "",
-        "sourceRow": 194
+        "sourceRow": 174
       },
       {
         "id": "P0071-spec-2",
@@ -2405,14 +2472,14 @@ export const lightingProductCatalog = [
         "itemWeight": 213.8,
         "packageWeight": 3.8,
         "cartonQty": "",
-        "sourceRow": 195
+        "sourceRow": 175
       }
     ],
     "cost": 12,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 194,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 174,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0072",
@@ -2428,7 +2495,7 @@ export const lightingProductCatalog = [
         "itemWeight": 158,
         "packageWeight": 5,
         "cartonQty": "",
-        "sourceRow": 196
+        "sourceRow": 176
       },
       {
         "id": "P0072-spec-2",
@@ -2438,14 +2505,14 @@ export const lightingProductCatalog = [
         "itemWeight": 223,
         "packageWeight": 5,
         "cartonQty": "",
-        "sourceRow": 197
+        "sourceRow": 177
       }
     ],
     "cost": 12,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 196,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 176,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0073",
@@ -2461,7 +2528,7 @@ export const lightingProductCatalog = [
         "itemWeight": 122,
         "packageWeight": 5,
         "cartonQty": "",
-        "sourceRow": 198
+        "sourceRow": 178
       },
       {
         "id": "P0073-spec-2",
@@ -2471,14 +2538,14 @@ export const lightingProductCatalog = [
         "itemWeight": 170,
         "packageWeight": 5,
         "cartonQty": "",
-        "sourceRow": 199
+        "sourceRow": 179
       }
     ],
     "cost": 10.5,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 198,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 178,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0074",
@@ -2494,7 +2561,7 @@ export const lightingProductCatalog = [
         "itemWeight": 108,
         "packageWeight": 5,
         "cartonQty": "",
-        "sourceRow": 200
+        "sourceRow": 180
       },
       {
         "id": "P0074-spec-2",
@@ -2504,14 +2571,14 @@ export const lightingProductCatalog = [
         "itemWeight": 150,
         "packageWeight": 5,
         "cartonQty": "",
-        "sourceRow": 201
+        "sourceRow": 181
       }
     ],
     "cost": 11,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 200,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 180,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0075",
@@ -2527,7 +2594,7 @@ export const lightingProductCatalog = [
         "itemWeight": 156,
         "packageWeight": 5,
         "cartonQty": "",
-        "sourceRow": 202
+        "sourceRow": 182
       },
       {
         "id": "P0075-spec-2",
@@ -2537,14 +2604,14 @@ export const lightingProductCatalog = [
         "itemWeight": 222,
         "packageWeight": 5,
         "cartonQty": "",
-        "sourceRow": 203
+        "sourceRow": 183
       }
     ],
     "cost": 14,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 202,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 182,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0076",
@@ -2560,7 +2627,7 @@ export const lightingProductCatalog = [
         "itemWeight": 108,
         "packageWeight": 5,
         "cartonQty": "",
-        "sourceRow": 204
+        "sourceRow": 184
       },
       {
         "id": "P0076-spec-2",
@@ -2570,14 +2637,14 @@ export const lightingProductCatalog = [
         "itemWeight": 150,
         "packageWeight": 5,
         "cartonQty": "",
-        "sourceRow": 205
+        "sourceRow": 185
       }
     ],
     "cost": 13.5,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 204,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 184,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0077",
@@ -2593,7 +2660,7 @@ export const lightingProductCatalog = [
         "itemWeight": 68,
         "packageWeight": 5,
         "cartonQty": "",
-        "sourceRow": 206
+        "sourceRow": 186
       },
       {
         "id": "P0077-spec-2",
@@ -2603,14 +2670,14 @@ export const lightingProductCatalog = [
         "itemWeight": 97,
         "packageWeight": 5,
         "cartonQty": "",
-        "sourceRow": 207
+        "sourceRow": 187
       }
     ],
     "cost": 13.5,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 206,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 186,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0078",
@@ -2626,7 +2693,7 @@ export const lightingProductCatalog = [
         "itemWeight": 136,
         "packageWeight": 5,
         "cartonQty": "",
-        "sourceRow": 208
+        "sourceRow": 188
       },
       {
         "id": "P0078-spec-2",
@@ -2636,14 +2703,14 @@ export const lightingProductCatalog = [
         "itemWeight": 190,
         "packageWeight": 5,
         "cartonQty": "",
-        "sourceRow": 209
+        "sourceRow": 189
       }
     ],
     "cost": 12,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 208,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 188,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0079",
@@ -2659,7 +2726,7 @@ export const lightingProductCatalog = [
         "itemWeight": 153,
         "packageWeight": 5,
         "cartonQty": "",
-        "sourceRow": 210
+        "sourceRow": 190
       },
       {
         "id": "P0079-spec-2",
@@ -2669,14 +2736,14 @@ export const lightingProductCatalog = [
         "itemWeight": 217,
         "packageWeight": 5,
         "cartonQty": "",
-        "sourceRow": 211
+        "sourceRow": 191
       }
     ],
     "cost": 13.5,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 210,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 190,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0080",
@@ -2692,7 +2759,7 @@ export const lightingProductCatalog = [
         "itemWeight": 150,
         "packageWeight": 5,
         "cartonQty": "",
-        "sourceRow": 212
+        "sourceRow": 192
       },
       {
         "id": "P0080-spec-2",
@@ -2702,14 +2769,14 @@ export const lightingProductCatalog = [
         "itemWeight": 212,
         "packageWeight": 5,
         "cartonQty": "",
-        "sourceRow": 213
+        "sourceRow": 193
       }
     ],
     "cost": 13.5,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 212,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 192,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0081",
@@ -2725,7 +2792,7 @@ export const lightingProductCatalog = [
         "itemWeight": 150,
         "packageWeight": 5,
         "cartonQty": "",
-        "sourceRow": 214
+        "sourceRow": 194
       },
       {
         "id": "P0081-spec-2",
@@ -2735,7 +2802,7 @@ export const lightingProductCatalog = [
         "itemWeight": 225,
         "packageWeight": 5,
         "cartonQty": "",
-        "sourceRow": 215
+        "sourceRow": 195
       },
       {
         "id": "P0081-spec-3",
@@ -2745,7 +2812,7 @@ export const lightingProductCatalog = [
         "itemWeight": 260,
         "packageWeight": 5,
         "cartonQty": "",
-        "sourceRow": 216
+        "sourceRow": 196
       },
       {
         "id": "P0081-spec-4",
@@ -2755,14 +2822,14 @@ export const lightingProductCatalog = [
         "itemWeight": 426,
         "packageWeight": 5,
         "cartonQty": "",
-        "sourceRow": 217
+        "sourceRow": 197
       }
     ],
     "cost": 14,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 214,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 194,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0082",
@@ -2778,7 +2845,7 @@ export const lightingProductCatalog = [
         "itemWeight": 205.8,
         "packageWeight": 5,
         "cartonQty": "",
-        "sourceRow": 218
+        "sourceRow": 198
       },
       {
         "id": "P0082-spec-2",
@@ -2788,7 +2855,7 @@ export const lightingProductCatalog = [
         "itemWeight": 307.5,
         "packageWeight": 5,
         "cartonQty": "",
-        "sourceRow": 219
+        "sourceRow": 199
       },
       {
         "id": "P0082-spec-3",
@@ -2798,7 +2865,7 @@ export const lightingProductCatalog = [
         "itemWeight": 368.6,
         "packageWeight": 5,
         "cartonQty": "",
-        "sourceRow": 220
+        "sourceRow": 200
       },
       {
         "id": "P0082-spec-4",
@@ -2808,14 +2875,14 @@ export const lightingProductCatalog = [
         "itemWeight": 587.4,
         "packageWeight": 5,
         "cartonQty": "",
-        "sourceRow": 221
+        "sourceRow": 201
       }
     ],
     "cost": 19,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 218,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 198,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0083",
@@ -2831,7 +2898,7 @@ export const lightingProductCatalog = [
         "itemWeight": 63,
         "packageWeight": 3.8,
         "cartonQty": "",
-        "sourceRow": 224
+        "sourceRow": 204
       },
       {
         "id": "P0083-spec-2",
@@ -2841,7 +2908,7 @@ export const lightingProductCatalog = [
         "itemWeight": 64,
         "packageWeight": 3.8,
         "cartonQty": "",
-        "sourceRow": 225
+        "sourceRow": 205
       },
       {
         "id": "P0083-spec-3",
@@ -2851,7 +2918,7 @@ export const lightingProductCatalog = [
         "itemWeight": 118.8,
         "packageWeight": 3.8,
         "cartonQty": "",
-        "sourceRow": 226
+        "sourceRow": 206
       },
       {
         "id": "P0083-spec-4",
@@ -2861,7 +2928,7 @@ export const lightingProductCatalog = [
         "itemWeight": 251.8,
         "packageWeight": 3.8,
         "cartonQty": "",
-        "sourceRow": 227
+        "sourceRow": 207
       },
       {
         "id": "P0083-spec-5",
@@ -2871,14 +2938,14 @@ export const lightingProductCatalog = [
         "itemWeight": 423,
         "packageWeight": 5,
         "cartonQty": "",
-        "sourceRow": 228
+        "sourceRow": 208
       }
     ],
     "cost": 5.5,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 224,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 204,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0084",
@@ -2894,7 +2961,7 @@ export const lightingProductCatalog = [
         "itemWeight": 130,
         "packageWeight": 5,
         "cartonQty": "",
-        "sourceRow": 229
+        "sourceRow": 209
       },
       {
         "id": "P0084-spec-2",
@@ -2904,14 +2971,14 @@ export const lightingProductCatalog = [
         "itemWeight": 173,
         "packageWeight": 5,
         "cartonQty": "",
-        "sourceRow": 230
+        "sourceRow": 210
       }
     ],
     "cost": 14,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 229,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 209,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0085",
@@ -2927,7 +2994,7 @@ export const lightingProductCatalog = [
         "itemWeight": 130,
         "packageWeight": 5,
         "cartonQty": "",
-        "sourceRow": 231
+        "sourceRow": 211
       },
       {
         "id": "P0085-spec-2",
@@ -2937,14 +3004,14 @@ export const lightingProductCatalog = [
         "itemWeight": 173,
         "packageWeight": 5,
         "cartonQty": "",
-        "sourceRow": 232
+        "sourceRow": 212
       }
     ],
     "cost": 14,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 231,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 211,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0086",
@@ -2960,7 +3027,7 @@ export const lightingProductCatalog = [
         "itemWeight": 154,
         "packageWeight": 5,
         "cartonQty": "",
-        "sourceRow": 233
+        "sourceRow": 213
       },
       {
         "id": "P0086-spec-2",
@@ -2970,14 +3037,14 @@ export const lightingProductCatalog = [
         "itemWeight": 209,
         "packageWeight": 5,
         "cartonQty": "",
-        "sourceRow": 234
+        "sourceRow": 214
       }
     ],
     "cost": 12,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 233,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 213,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0087",
@@ -2993,7 +3060,7 @@ export const lightingProductCatalog = [
         "itemWeight": 176,
         "packageWeight": 5,
         "cartonQty": "",
-        "sourceRow": 235
+        "sourceRow": 215
       },
       {
         "id": "P0087-spec-2",
@@ -3003,14 +3070,14 @@ export const lightingProductCatalog = [
         "itemWeight": 242,
         "packageWeight": 5,
         "cartonQty": "",
-        "sourceRow": 236
+        "sourceRow": 216
       }
     ],
     "cost": 12,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 235,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 215,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0088",
@@ -3026,7 +3093,7 @@ export const lightingProductCatalog = [
         "itemWeight": 200,
         "packageWeight": 5,
         "cartonQty": "",
-        "sourceRow": 237
+        "sourceRow": 217
       },
       {
         "id": "P0088-spec-2",
@@ -3036,14 +3103,14 @@ export const lightingProductCatalog = [
         "itemWeight": 276,
         "packageWeight": 5,
         "cartonQty": "",
-        "sourceRow": 238
+        "sourceRow": 218
       }
     ],
     "cost": 11.5,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 237,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 217,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0089",
@@ -3059,7 +3126,7 @@ export const lightingProductCatalog = [
         "itemWeight": 206,
         "packageWeight": 5,
         "cartonQty": "",
-        "sourceRow": 239
+        "sourceRow": 219
       },
       {
         "id": "P0089-spec-2",
@@ -3069,14 +3136,14 @@ export const lightingProductCatalog = [
         "itemWeight": 287,
         "packageWeight": 5,
         "cartonQty": "",
-        "sourceRow": 240
+        "sourceRow": 220
       }
     ],
     "cost": 11.5,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 239,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 219,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0090",
@@ -3092,7 +3159,7 @@ export const lightingProductCatalog = [
         "itemWeight": 234,
         "packageWeight": 5,
         "cartonQty": "",
-        "sourceRow": 241
+        "sourceRow": 221
       },
       {
         "id": "P0090-spec-2",
@@ -3102,14 +3169,14 @@ export const lightingProductCatalog = [
         "itemWeight": 329,
         "packageWeight": 5,
         "cartonQty": "",
-        "sourceRow": 242
+        "sourceRow": 222
       }
     ],
     "cost": 11.5,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 241,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 221,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0091",
@@ -3125,7 +3192,7 @@ export const lightingProductCatalog = [
         "itemWeight": 143,
         "packageWeight": 5,
         "cartonQty": "",
-        "sourceRow": 243
+        "sourceRow": 223
       },
       {
         "id": "P0091-spec-2",
@@ -3135,14 +3202,14 @@ export const lightingProductCatalog = [
         "itemWeight": 193,
         "packageWeight": 5,
         "cartonQty": "",
-        "sourceRow": 244
+        "sourceRow": 224
       }
     ],
     "cost": 11,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 243,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 223,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0092",
@@ -3158,7 +3225,7 @@ export const lightingProductCatalog = [
         "itemWeight": 171,
         "packageWeight": 5,
         "cartonQty": "",
-        "sourceRow": 245
+        "sourceRow": 225
       },
       {
         "id": "P0092-spec-2",
@@ -3168,14 +3235,14 @@ export const lightingProductCatalog = [
         "itemWeight": 232,
         "packageWeight": 5,
         "cartonQty": "",
-        "sourceRow": 246
+        "sourceRow": 226
       }
     ],
     "cost": 14,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 245,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 225,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0093",
@@ -3191,7 +3258,7 @@ export const lightingProductCatalog = [
         "itemWeight": 121,
         "packageWeight": 5,
         "cartonQty": "",
-        "sourceRow": 247
+        "sourceRow": 227
       },
       {
         "id": "P0093-spec-2",
@@ -3201,14 +3268,14 @@ export const lightingProductCatalog = [
         "itemWeight": 160,
         "packageWeight": 5,
         "cartonQty": "",
-        "sourceRow": 248
+        "sourceRow": 228
       }
     ],
     "cost": 11,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 247,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 227,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0094",
@@ -3224,7 +3291,7 @@ export const lightingProductCatalog = [
         "itemWeight": 169,
         "packageWeight": 5,
         "cartonQty": "",
-        "sourceRow": 249
+        "sourceRow": 229
       },
       {
         "id": "P0094-spec-2",
@@ -3234,14 +3301,14 @@ export const lightingProductCatalog = [
         "itemWeight": 232,
         "packageWeight": 5,
         "cartonQty": "",
-        "sourceRow": 250
+        "sourceRow": 230
       }
     ],
     "cost": 14,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 249,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 229,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0095",
@@ -3257,7 +3324,7 @@ export const lightingProductCatalog = [
         "itemWeight": 167,
         "packageWeight": 5,
         "cartonQty": "",
-        "sourceRow": 251
+        "sourceRow": 231
       },
       {
         "id": "P0095-spec-2",
@@ -3267,14 +3334,14 @@ export const lightingProductCatalog = [
         "itemWeight": 230,
         "packageWeight": 5,
         "cartonQty": "",
-        "sourceRow": 252
+        "sourceRow": 232
       }
     ],
     "cost": 14,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 251,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 231,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0096",
@@ -3290,7 +3357,7 @@ export const lightingProductCatalog = [
         "itemWeight": 136.8,
         "packageWeight": 3.8,
         "cartonQty": "",
-        "sourceRow": 253
+        "sourceRow": 233
       },
       {
         "id": "P0096-spec-2",
@@ -3300,14 +3367,14 @@ export const lightingProductCatalog = [
         "itemWeight": 233.8,
         "packageWeight": 3.8,
         "cartonQty": "",
-        "sourceRow": 254
+        "sourceRow": 234
       }
     ],
     "cost": 12,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 253,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 233,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0097",
@@ -3323,7 +3390,7 @@ export const lightingProductCatalog = [
         "itemWeight": 11.7,
         "packageWeight": 2.2,
         "cartonQty": "",
-        "sourceRow": 257
+        "sourceRow": 237
       },
       {
         "id": "P0097-spec-2",
@@ -3333,74 +3400,74 @@ export const lightingProductCatalog = [
         "itemWeight": 18,
         "packageWeight": 2.2,
         "cartonQty": "",
-        "sourceRow": 258
+        "sourceRow": 238
       },
       {
         "id": "P0097-spec-3",
         "name": "2+0.5米20灯（3件装）",
-        "cost": 4,
+        "cost": 4.5,
         "packageSize": "18*18",
         "itemWeight": 23.4,
         "packageWeight": 2.2,
         "cartonQty": "",
-        "sourceRow": 259
+        "sourceRow": 239
       },
       {
         "id": "P0097-spec-4",
         "name": "5+0.5米50灯（3件装）",
-        "cost": 5.5,
+        "cost": 6,
         "packageSize": "18*18",
         "itemWeight": 36,
         "packageWeight": 2.2,
         "cartonQty": "",
-        "sourceRow": 260
+        "sourceRow": 240
       },
       {
         "id": "P0097-spec-5",
         "name": "2+0.5米20灯（7件装）",
-        "cost": 7,
+        "cost": 8,
         "packageSize": "24*24*8",
         "itemWeight": 81.8,
         "packageWeight": 3.8,
         "cartonQty": "",
-        "sourceRow": 261
+        "sourceRow": 241
       },
       {
         "id": "P0097-spec-6",
         "name": "5+0.5米50灯（7件装）",
-        "cost": 11,
+        "cost": 12,
         "packageSize": "24*24*8",
         "itemWeight": 126,
         "packageWeight": 3.8,
         "cartonQty": "",
-        "sourceRow": 262
+        "sourceRow": 242
       },
       {
         "id": "P0097-spec-7",
         "name": "2+0.5米20灯（14件装）",
-        "cost": 13,
+        "cost": 15,
         "packageSize": "28*28*8",
         "itemWeight": 163.8,
         "packageWeight": 5,
         "cartonQty": "",
-        "sourceRow": 263
+        "sourceRow": 243
       },
       {
         "id": "P0097-spec-8",
         "name": "5+0.5米50灯（14件装）",
-        "cost": 20,
+        "cost": 21.5,
         "packageSize": "28*28*8",
         "itemWeight": 252,
         "packageWeight": 5,
         "cartonQty": "",
-        "sourceRow": 264
+        "sourceRow": 244
       }
     ],
     "cost": 2.5,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 257,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 237,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0098",
@@ -3416,14 +3483,14 @@ export const lightingProductCatalog = [
         "itemWeight": 193,
         "packageWeight": 5,
         "cartonQty": "",
-        "sourceRow": 265
+        "sourceRow": 245
       }
     ],
     "cost": 15.5,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 265,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 245,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0099",
@@ -3439,14 +3506,14 @@ export const lightingProductCatalog = [
         "itemWeight": 95.5,
         "packageWeight": 5,
         "cartonQty": "",
-        "sourceRow": 266
+        "sourceRow": 246
       }
     ],
     "cost": 7,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 266,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 246,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0100",
@@ -3462,7 +3529,7 @@ export const lightingProductCatalog = [
         "itemWeight": 22.2,
         "packageWeight": 2.2,
         "cartonQty": "",
-        "sourceRow": 269
+        "sourceRow": 249
       },
       {
         "id": "P0100-spec-2",
@@ -3472,7 +3539,7 @@ export const lightingProductCatalog = [
         "itemWeight": 30.2,
         "packageWeight": 2.2,
         "cartonQty": "",
-        "sourceRow": 270
+        "sourceRow": 250
       },
       {
         "id": "P0100-spec-3",
@@ -3482,7 +3549,7 @@ export const lightingProductCatalog = [
         "itemWeight": 66.6,
         "packageWeight": 2.2,
         "cartonQty": "",
-        "sourceRow": 271
+        "sourceRow": 251
       },
       {
         "id": "P0100-spec-4",
@@ -3492,7 +3559,7 @@ export const lightingProductCatalog = [
         "itemWeight": 90.6,
         "packageWeight": 2.2,
         "cartonQty": "",
-        "sourceRow": 272
+        "sourceRow": 252
       },
       {
         "id": "P0100-spec-5",
@@ -3502,7 +3569,7 @@ export const lightingProductCatalog = [
         "itemWeight": 155.4,
         "packageWeight": 3.8,
         "cartonQty": "",
-        "sourceRow": 273
+        "sourceRow": 253
       },
       {
         "id": "P0100-spec-6",
@@ -3512,7 +3579,7 @@ export const lightingProductCatalog = [
         "itemWeight": 211.4,
         "packageWeight": 3.8,
         "cartonQty": "",
-        "sourceRow": 274
+        "sourceRow": 254
       },
       {
         "id": "P0100-spec-7",
@@ -3522,7 +3589,7 @@ export const lightingProductCatalog = [
         "itemWeight": 310.8,
         "packageWeight": 5,
         "cartonQty": "",
-        "sourceRow": 275
+        "sourceRow": 255
       },
       {
         "id": "P0100-spec-8",
@@ -3532,14 +3599,14 @@ export const lightingProductCatalog = [
         "itemWeight": 422.8,
         "packageWeight": 5,
         "cartonQty": "",
-        "sourceRow": 276
+        "sourceRow": 256
       }
     ],
     "cost": 2.5,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 269,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 249,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0101",
@@ -3555,14 +3622,14 @@ export const lightingProductCatalog = [
         "itemWeight": 205.2,
         "packageWeight": 5,
         "cartonQty": "",
-        "sourceRow": 277
+        "sourceRow": 257
       }
     ],
     "cost": 15.5,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 277,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 257,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0102",
@@ -3578,14 +3645,14 @@ export const lightingProductCatalog = [
         "itemWeight": 98,
         "packageWeight": 5,
         "cartonQty": "",
-        "sourceRow": 278
+        "sourceRow": 258
       }
     ],
     "cost": 7,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 278,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 258,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0103",
@@ -3601,7 +3668,7 @@ export const lightingProductCatalog = [
         "itemWeight": 27.3,
         "packageWeight": 2.2,
         "cartonQty": "",
-        "sourceRow": 281
+        "sourceRow": 261
       },
       {
         "id": "P0103-spec-2",
@@ -3611,14 +3678,14 @@ export const lightingProductCatalog = [
         "itemWeight": 38.2,
         "packageWeight": 2.2,
         "cartonQty": "",
-        "sourceRow": 282
+        "sourceRow": 262
       }
     ],
     "cost": 3.5,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 281,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 261,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0104",
@@ -3634,7 +3701,7 @@ export const lightingProductCatalog = [
         "itemWeight": 96,
         "packageWeight": 5,
         "cartonQty": "",
-        "sourceRow": 283
+        "sourceRow": 263
       },
       {
         "id": "P0104-spec-2",
@@ -3644,14 +3711,14 @@ export const lightingProductCatalog = [
         "itemWeight": 138,
         "packageWeight": 5,
         "cartonQty": "",
-        "sourceRow": 284
+        "sourceRow": 264
       }
     ],
     "cost": 12,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 283,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 263,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0105",
@@ -3667,7 +3734,7 @@ export const lightingProductCatalog = [
         "itemWeight": 96,
         "packageWeight": 5,
         "cartonQty": "",
-        "sourceRow": 285
+        "sourceRow": 265
       },
       {
         "id": "P0105-spec-2",
@@ -3677,14 +3744,14 @@ export const lightingProductCatalog = [
         "itemWeight": 138,
         "packageWeight": 5,
         "cartonQty": "",
-        "sourceRow": 286
+        "sourceRow": 266
       }
     ],
     "cost": 12,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 285,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 265,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0106",
@@ -3700,7 +3767,7 @@ export const lightingProductCatalog = [
         "itemWeight": 137,
         "packageWeight": 5,
         "cartonQty": "",
-        "sourceRow": 287
+        "sourceRow": 267
       },
       {
         "id": "P0106-spec-2",
@@ -3710,14 +3777,14 @@ export const lightingProductCatalog = [
         "itemWeight": 197,
         "packageWeight": 5,
         "cartonQty": "",
-        "sourceRow": 288
+        "sourceRow": 268
       }
     ],
     "cost": 12,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 287,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 267,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0107",
@@ -3733,7 +3800,7 @@ export const lightingProductCatalog = [
         "itemWeight": 142,
         "packageWeight": 5,
         "cartonQty": "",
-        "sourceRow": 289
+        "sourceRow": 269
       },
       {
         "id": "P0107-spec-2",
@@ -3743,14 +3810,14 @@ export const lightingProductCatalog = [
         "itemWeight": 197,
         "packageWeight": 5,
         "cartonQty": "",
-        "sourceRow": 290
+        "sourceRow": 270
       }
     ],
     "cost": 10,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 289,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 269,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0108",
@@ -3766,7 +3833,7 @@ export const lightingProductCatalog = [
         "itemWeight": 120,
         "packageWeight": 5,
         "cartonQty": "",
-        "sourceRow": 291
+        "sourceRow": 271
       },
       {
         "id": "P0108-spec-2",
@@ -3776,14 +3843,14 @@ export const lightingProductCatalog = [
         "itemWeight": 174,
         "packageWeight": 5,
         "cartonQty": "",
-        "sourceRow": 292
+        "sourceRow": 272
       }
     ],
     "cost": 10.5,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 291,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 271,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0109",
@@ -3799,7 +3866,7 @@ export const lightingProductCatalog = [
         "itemWeight": 200,
         "packageWeight": 5,
         "cartonQty": "",
-        "sourceRow": 293
+        "sourceRow": 273
       },
       {
         "id": "P0109-spec-2",
@@ -3809,14 +3876,14 @@ export const lightingProductCatalog = [
         "itemWeight": 294,
         "packageWeight": 5,
         "cartonQty": "",
-        "sourceRow": 294
+        "sourceRow": 274
       }
     ],
     "cost": 10.5,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 293,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 273,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0110",
@@ -3832,7 +3899,7 @@ export const lightingProductCatalog = [
         "itemWeight": 172,
         "packageWeight": 5,
         "cartonQty": "",
-        "sourceRow": 295
+        "sourceRow": 275
       },
       {
         "id": "P0110-spec-2",
@@ -3842,14 +3909,14 @@ export const lightingProductCatalog = [
         "itemWeight": 252,
         "packageWeight": 5,
         "cartonQty": "",
-        "sourceRow": 296
+        "sourceRow": 276
       }
     ],
     "cost": 10,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 295,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 275,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0111",
@@ -3865,7 +3932,7 @@ export const lightingProductCatalog = [
         "itemWeight": 167,
         "packageWeight": 5,
         "cartonQty": "",
-        "sourceRow": 297
+        "sourceRow": 277
       },
       {
         "id": "P0111-spec-2",
@@ -3875,14 +3942,14 @@ export const lightingProductCatalog = [
         "itemWeight": 241,
         "packageWeight": 5,
         "cartonQty": "",
-        "sourceRow": 298
+        "sourceRow": 278
       }
     ],
     "cost": 10,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 297,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 277,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0112",
@@ -3898,7 +3965,7 @@ export const lightingProductCatalog = [
         "itemWeight": 109,
         "packageWeight": 5,
         "cartonQty": "",
-        "sourceRow": 299
+        "sourceRow": 279
       },
       {
         "id": "P0112-spec-2",
@@ -3908,14 +3975,14 @@ export const lightingProductCatalog = [
         "itemWeight": 158,
         "packageWeight": 5,
         "cartonQty": "",
-        "sourceRow": 300
+        "sourceRow": 280
       }
     ],
     "cost": 9,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 299,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 279,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0113",
@@ -3931,7 +3998,7 @@ export const lightingProductCatalog = [
         "itemWeight": 87,
         "packageWeight": 5,
         "cartonQty": "",
-        "sourceRow": 301
+        "sourceRow": 281
       },
       {
         "id": "P0113-spec-2",
@@ -3941,14 +4008,14 @@ export const lightingProductCatalog = [
         "itemWeight": 125,
         "packageWeight": 5,
         "cartonQty": "",
-        "sourceRow": 302
+        "sourceRow": 282
       }
     ],
     "cost": 9.5,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 301,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 281,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0114",
@@ -3964,7 +4031,7 @@ export const lightingProductCatalog = [
         "itemWeight": 135,
         "packageWeight": 5,
         "cartonQty": "",
-        "sourceRow": 303
+        "sourceRow": 283
       },
       {
         "id": "P0114-spec-2",
@@ -3974,14 +4041,14 @@ export const lightingProductCatalog = [
         "itemWeight": 197,
         "packageWeight": 5,
         "cartonQty": "",
-        "sourceRow": 304
+        "sourceRow": 284
       }
     ],
     "cost": 12,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 303,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 283,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0115",
@@ -3997,7 +4064,7 @@ export const lightingProductCatalog = [
         "itemWeight": 132,
         "packageWeight": 5,
         "cartonQty": "",
-        "sourceRow": 305
+        "sourceRow": 285
       },
       {
         "id": "P0115-spec-2",
@@ -4007,14 +4074,14 @@ export const lightingProductCatalog = [
         "itemWeight": 194,
         "packageWeight": 5,
         "cartonQty": "",
-        "sourceRow": 306
+        "sourceRow": 286
       }
     ],
     "cost": 12,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 305,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 285,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0116",
@@ -4030,7 +4097,7 @@ export const lightingProductCatalog = [
         "itemWeight": 36,
         "packageWeight": 2.2,
         "cartonQty": "",
-        "sourceRow": 309
+        "sourceRow": 289
       },
       {
         "id": "P0116-spec-2",
@@ -4040,14 +4107,14 @@ export const lightingProductCatalog = [
         "itemWeight": 47,
         "packageWeight": 2.2,
         "cartonQty": "",
-        "sourceRow": 310
+        "sourceRow": 290
       }
     ],
     "cost": 3.5,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 309,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 289,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0117",
@@ -4063,7 +4130,7 @@ export const lightingProductCatalog = [
         "itemWeight": 107,
         "packageWeight": 5,
         "cartonQty": "",
-        "sourceRow": 311
+        "sourceRow": 291
       },
       {
         "id": "P0117-spec-2",
@@ -4073,14 +4140,14 @@ export const lightingProductCatalog = [
         "itemWeight": 149,
         "packageWeight": 5,
         "cartonQty": "",
-        "sourceRow": 312
+        "sourceRow": 292
       }
     ],
     "cost": 12,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 311,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 291,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0118",
@@ -4096,7 +4163,7 @@ export const lightingProductCatalog = [
         "itemWeight": 107,
         "packageWeight": 5,
         "cartonQty": "",
-        "sourceRow": 313
+        "sourceRow": 293
       },
       {
         "id": "P0118-spec-2",
@@ -4106,14 +4173,14 @@ export const lightingProductCatalog = [
         "itemWeight": 149,
         "packageWeight": 5,
         "cartonQty": "",
-        "sourceRow": 314
+        "sourceRow": 294
       }
     ],
     "cost": 12,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 313,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 293,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0119",
@@ -4129,7 +4196,7 @@ export const lightingProductCatalog = [
         "itemWeight": 148,
         "packageWeight": 5,
         "cartonQty": "",
-        "sourceRow": 315
+        "sourceRow": 295
       },
       {
         "id": "P0119-spec-2",
@@ -4139,14 +4206,14 @@ export const lightingProductCatalog = [
         "itemWeight": 208,
         "packageWeight": 5,
         "cartonQty": "",
-        "sourceRow": 316
+        "sourceRow": 296
       }
     ],
     "cost": 12,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 315,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 295,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0120",
@@ -4162,7 +4229,7 @@ export const lightingProductCatalog = [
         "itemWeight": 153,
         "packageWeight": 5,
         "cartonQty": "",
-        "sourceRow": 317
+        "sourceRow": 297
       },
       {
         "id": "P0120-spec-2",
@@ -4172,14 +4239,14 @@ export const lightingProductCatalog = [
         "itemWeight": 217,
         "packageWeight": 5,
         "cartonQty": "",
-        "sourceRow": 318
+        "sourceRow": 298
       }
     ],
     "cost": 10,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 317,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 297,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0121",
@@ -4195,7 +4262,7 @@ export const lightingProductCatalog = [
         "itemWeight": 131,
         "packageWeight": 5,
         "cartonQty": "",
-        "sourceRow": 319
+        "sourceRow": 299
       },
       {
         "id": "P0121-spec-2",
@@ -4205,14 +4272,14 @@ export const lightingProductCatalog = [
         "itemWeight": 185,
         "packageWeight": 5,
         "cartonQty": "",
-        "sourceRow": 320
+        "sourceRow": 300
       }
     ],
     "cost": 10.5,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 319,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 299,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0122",
@@ -4228,7 +4295,7 @@ export const lightingProductCatalog = [
         "itemWeight": 211,
         "packageWeight": 5,
         "cartonQty": "",
-        "sourceRow": 321
+        "sourceRow": 301
       },
       {
         "id": "P0122-spec-2",
@@ -4238,14 +4305,14 @@ export const lightingProductCatalog = [
         "itemWeight": 305,
         "packageWeight": 5,
         "cartonQty": "",
-        "sourceRow": 322
+        "sourceRow": 302
       }
     ],
     "cost": 10.5,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 321,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 301,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0123",
@@ -4261,7 +4328,7 @@ export const lightingProductCatalog = [
         "itemWeight": 183,
         "packageWeight": 5,
         "cartonQty": "",
-        "sourceRow": 323
+        "sourceRow": 303
       },
       {
         "id": "P0123-spec-2",
@@ -4271,14 +4338,14 @@ export const lightingProductCatalog = [
         "itemWeight": 263,
         "packageWeight": 5,
         "cartonQty": "",
-        "sourceRow": 324
+        "sourceRow": 304
       }
     ],
     "cost": 10,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 323,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 303,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0124",
@@ -4294,7 +4361,7 @@ export const lightingProductCatalog = [
         "itemWeight": 177,
         "packageWeight": 5,
         "cartonQty": "",
-        "sourceRow": 325
+        "sourceRow": 305
       },
       {
         "id": "P0124-spec-2",
@@ -4304,14 +4371,14 @@ export const lightingProductCatalog = [
         "itemWeight": 252,
         "packageWeight": 5,
         "cartonQty": "",
-        "sourceRow": 326
+        "sourceRow": 306
       }
     ],
     "cost": 10,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 325,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 305,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0125",
@@ -4327,7 +4394,7 @@ export const lightingProductCatalog = [
         "itemWeight": 120,
         "packageWeight": 5,
         "cartonQty": "",
-        "sourceRow": 327
+        "sourceRow": 307
       },
       {
         "id": "P0125-spec-2",
@@ -4337,14 +4404,14 @@ export const lightingProductCatalog = [
         "itemWeight": 169,
         "packageWeight": 5,
         "cartonQty": "",
-        "sourceRow": 328
+        "sourceRow": 308
       }
     ],
     "cost": 9,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 327,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 307,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0126",
@@ -4360,7 +4427,7 @@ export const lightingProductCatalog = [
         "itemWeight": 98,
         "packageWeight": 5,
         "cartonQty": "",
-        "sourceRow": 329
+        "sourceRow": 309
       },
       {
         "id": "P0126-spec-2",
@@ -4370,14 +4437,14 @@ export const lightingProductCatalog = [
         "itemWeight": 136,
         "packageWeight": 5,
         "cartonQty": "",
-        "sourceRow": 330
+        "sourceRow": 310
       }
     ],
     "cost": 9.5,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 329,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 309,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0127",
@@ -4393,7 +4460,7 @@ export const lightingProductCatalog = [
         "itemWeight": 146,
         "packageWeight": 5,
         "cartonQty": "",
-        "sourceRow": 331
+        "sourceRow": 311
       },
       {
         "id": "P0127-spec-2",
@@ -4403,14 +4470,14 @@ export const lightingProductCatalog = [
         "itemWeight": 208,
         "packageWeight": 5,
         "cartonQty": "",
-        "sourceRow": 332
+        "sourceRow": 312
       }
     ],
     "cost": 12,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 331,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 311,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0128",
@@ -4426,7 +4493,7 @@ export const lightingProductCatalog = [
         "itemWeight": 144,
         "packageWeight": 5,
         "cartonQty": "",
-        "sourceRow": 333
+        "sourceRow": 313
       },
       {
         "id": "P0128-spec-2",
@@ -4436,14 +4503,14 @@ export const lightingProductCatalog = [
         "itemWeight": 210,
         "packageWeight": 5,
         "cartonQty": "",
-        "sourceRow": 334
+        "sourceRow": 314
       }
     ],
     "cost": 12,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 333,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 313,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0129",
@@ -4459,14 +4526,14 @@ export const lightingProductCatalog = [
         "itemWeight": 148.5,
         "packageWeight": 6.5,
         "cartonQty": "",
-        "sourceRow": 337
+        "sourceRow": 317
       }
     ],
     "cost": 5.8,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 337,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 317,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0130",
@@ -4482,14 +4549,14 @@ export const lightingProductCatalog = [
         "itemWeight": 166,
         "packageWeight": 6.5,
         "cartonQty": "",
-        "sourceRow": 338
+        "sourceRow": 318
       }
     ],
     "cost": 7.6,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 338,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 318,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0131",
@@ -4505,14 +4572,14 @@ export const lightingProductCatalog = [
         "itemWeight": 250,
         "packageWeight": 6.5,
         "cartonQty": "",
-        "sourceRow": 339
+        "sourceRow": 319
       }
     ],
     "cost": 11.4,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 339,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 319,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0132",
@@ -4528,14 +4595,14 @@ export const lightingProductCatalog = [
         "itemWeight": 166,
         "packageWeight": 6.5,
         "cartonQty": "",
-        "sourceRow": 340
+        "sourceRow": 320
       }
     ],
     "cost": 7.6,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 340,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 320,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0133",
@@ -4551,14 +4618,14 @@ export const lightingProductCatalog = [
         "itemWeight": 250,
         "packageWeight": 6.5,
         "cartonQty": "",
-        "sourceRow": 341
+        "sourceRow": 321
       }
     ],
     "cost": 11.4,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 341,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 321,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0134",
@@ -4574,14 +4641,14 @@ export const lightingProductCatalog = [
         "itemWeight": 132.9,
         "packageWeight": 6.5,
         "cartonQty": "",
-        "sourceRow": 342
+        "sourceRow": 322
       }
     ],
     "cost": 12.5,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 342,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 322,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0135",
@@ -4597,14 +4664,14 @@ export const lightingProductCatalog = [
         "itemWeight": 137,
         "packageWeight": 6.5,
         "cartonQty": "",
-        "sourceRow": 343
+        "sourceRow": 323
       }
     ],
     "cost": 12.5,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 343,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 323,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0136",
@@ -4620,14 +4687,14 @@ export const lightingProductCatalog = [
         "itemWeight": 122.6,
         "packageWeight": 6.5,
         "cartonQty": "",
-        "sourceRow": 344
+        "sourceRow": 324
       }
     ],
     "cost": 5.8,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 344,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 324,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0137",
@@ -4643,14 +4710,14 @@ export const lightingProductCatalog = [
         "itemWeight": 123,
         "packageWeight": 6.5,
         "cartonQty": "",
-        "sourceRow": 345
+        "sourceRow": 325
       }
     ],
     "cost": 5.8,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 345,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 325,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0138",
@@ -4666,14 +4733,14 @@ export const lightingProductCatalog = [
         "itemWeight": 125,
         "packageWeight": 6.5,
         "cartonQty": "",
-        "sourceRow": 346
+        "sourceRow": 326
       }
     ],
     "cost": 7.8,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 346,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 326,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0139",
@@ -4689,14 +4756,14 @@ export const lightingProductCatalog = [
         "itemWeight": 126,
         "packageWeight": 6.5,
         "cartonQty": "",
-        "sourceRow": 347
+        "sourceRow": 327
       }
     ],
     "cost": 7.8,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 347,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 327,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0140",
@@ -4712,14 +4779,14 @@ export const lightingProductCatalog = [
         "itemWeight": 179,
         "packageWeight": 6.5,
         "cartonQty": "",
-        "sourceRow": 348
+        "sourceRow": 328
       }
     ],
     "cost": 10,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 348,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 328,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0141",
@@ -4735,14 +4802,14 @@ export const lightingProductCatalog = [
         "itemWeight": 178,
         "packageWeight": 6.5,
         "cartonQty": "",
-        "sourceRow": 349
+        "sourceRow": 329
       }
     ],
     "cost": 10,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 349,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 329,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0142",
@@ -4758,14 +4825,14 @@ export const lightingProductCatalog = [
         "itemWeight": 179,
         "packageWeight": 6.5,
         "cartonQty": "",
-        "sourceRow": 350
+        "sourceRow": 330
       }
     ],
     "cost": 10.5,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 350,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 330,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
     "id": "P0143",
@@ -4781,13 +4848,13 @@ export const lightingProductCatalog = [
         "itemWeight": 178,
         "packageWeight": 6.5,
         "cartonQty": "",
-        "sourceRow": 351
+        "sourceRow": 331
       }
     ],
     "cost": 10.5,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 351,
-    "updatedAt": "2026-08-18T00:00:00.000+08:00"
+    "sourceRow": 331,
+    "updatedAt": "2026-09-18T00:00:00.000+08:00"
   }
 ];

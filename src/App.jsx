@@ -26,7 +26,7 @@ const nav = [
 const titles = {
   overview: ['早上好，郁荔', '查看三个店铺的商品链接、待办与上新进度。'],
   discounts: ['商品链接', '每个 SKC 汇总商品规格、自动核算和你自己记录的可报活动。'],
-  products: ['商品档案', '已按《利润核算参考表（20260820）》重新整理全部商品、规格与利润价格。'],
+  products: ['商品档案', '已按《利润核算参考表（20260918）》更新商品、规格与利润价格。'],
   tasks: ['运营任务', '把每天要做的事放在一个清晰的队列里。'],
   pricingAds: ['核价与广告', '保留每次核价变化，并按店铺记录每日广告投入。'],
 };
@@ -255,7 +255,12 @@ const migrateCatalogVersion = (current) => {
     const product = catalogById.get(record.productId);
     return product ? { ...record, specs: syncSpecs(record.specs, product) } : record;
   });
-  return { ...current, products: lightingProductCatalog, discounts, priceReferences, productCatalogVersion: lightingCatalogVersion };
+  const retiredProducts = (current.products || []).filter((product) => !catalogById.has(product.id) && !catalogByName.has(product.productName));
+  const products = lightingProductCatalog.map((product) => {
+    const saved = (current.products || []).find((item) => item.id === product.id || item.productName === product.productName);
+    return saved?.imageDataUrl ? { ...product, imageDataUrl: saved.imageDataUrl, imageNote: saved.imageNote || '' } : product;
+  });
+  return { ...current, products: [...products, ...retiredProducts], discounts, priceReferences, productCatalogVersion: lightingCatalogVersion };
 };
 
 const applyLightingCatalog = (data) => {
@@ -1193,7 +1198,7 @@ function Products({ records, search, setSearch, onEdit, onDelete }) {
     <div className="catalog-summary">
       <div><small>商品</small><strong>{records.length}</strong></div>
       <div><small>规格</small><strong>{totalSpecs}</strong></div>
-      <p>来源：利润核算参考表（20260820）<br />售后物流 5% · 广告费 12.5% · 利润率按供货价区间 30%–12% 分段计算</p>
+      <p>来源：利润核算参考表（20260918）<br />售后物流 5% · 广告费 12.5% · 利润率按供货价区间 30%–12% 分段计算</p>
     </div>
     <div className="product-category-tabs">{['全部商品', ...sourceCategories].map((category) => {
       const count = category === '全部商品' ? records.length : records.filter((item) => item.sourceCategory === category).length;
