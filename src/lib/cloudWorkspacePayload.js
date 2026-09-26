@@ -24,17 +24,23 @@ async function cloudThumbnail(dataUrl) {
 
 // Keep the local full-size image when the cloud only contains its exact thumbnail.
 export async function retainLocalOriginalImages(cloudWorkspace, localWorkspace) {
+  async function retainRecord(record, local) {
+    if (!local) return record;
+    const retained = { ...record };
+    if (local.imageDataUrl && record.imageDataUrl && record.imageDataUrl === await cloudThumbnail(local.imageDataUrl)) retained.imageDataUrl = local.imageDataUrl;
+    if (record.duplicateVariants?.length) {
+      const originals = new Map([local, ...(local.duplicateVariants || [])].map((item) => [item.id, item]));
+      retained.duplicateVariants = await Promise.all(record.duplicateVariants.map((item) => retainRecord(item, originals.get(item.id))));
+    }
+    return retained;
+  }
   const result = { ...cloudWorkspace };
   for (const [key, records] of Object.entries(cloudWorkspace || {})) {
     if (!Array.isArray(records) || !Array.isArray(localWorkspace?.[key])) continue;
-    const localById = new Map(localWorkspace[key].map((record) => [record?.id, record]));
+    const localById = new Map(localWorkspace[key].flatMap((record) => [record, ...(record.duplicateVariants || [])]).map((record) => [record?.id, record]));
     result[key] = await Promise.all(records.map(async (record) => {
       const local = localById.get(record?.id);
-      if (!local?.imageDataUrl || !record?.imageDataUrl) return record;
-      const matchingThumbnail = await cloudThumbnail(local.imageDataUrl);
-      return record.imageDataUrl === matchingThumbnail
-        ? { ...record, imageDataUrl: local.imageDataUrl }
-        : record;
+      return retainRecord(record, local);
     }));
   }
   return result;
