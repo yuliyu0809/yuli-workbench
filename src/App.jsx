@@ -3,6 +3,7 @@ import { cloudWorkspace } from './lib/cloudWorkspaceClient.js';
 import { prepareWorkspaceForCloud, retainLocalOriginalImages } from './lib/cloudWorkspacePayload.js';
 import { readIndexedWorkspace, writeIndexedWorkspace } from './lib/localWorkspaceStore.js';
 import { normalizeProductLinks } from './lib/productLinkMerge.js';
+import { matchesDiscountTier } from './lib/discountClassification.js';
 import { lightingCatalogVersion, lightingProductCatalog } from './data/lightingProductCatalog.js';
 
 const STORE_ALL = '全部店铺';
@@ -1230,11 +1231,14 @@ function ManualActivityChips({ activities, link, onAdd, onQuote, onEdit, onDelet
 
 function DiscountActivity({ records, manualRecords, search, setSearch, onEdit, onQuote, onDelete, onAddManualForLink, onEditManual, onDeleteManual }) {
   const [tierFilter, setTierFilter] = useState(null);
+  const matchesCategory = (item, tier) => matchesDiscountTier(
+    manualRecords.filter((record) => normalizeSkc(record.productCode) === normalizeSkc(item.productCode)).map(manualActivityDiscount),
+    recordRecommended(item), tier,
+  );
   const filtered = records.filter((item) => {
     const specNames = normalizeDiscountSpecs(item).map((spec) => spec.name).join('');
-    const recommended = recordRecommended(item);
     const matchesSearch = `${item.productName}${item.productCode}${specNames}`.toLowerCase().includes(search.toLowerCase());
-    const matchesTier = tierFilter === null || (recommended && recommended <= tierFilter);
+    const matchesTier = tierFilter === null || matchesCategory(item, tierFilter);
     return matchesSearch && matchesTier;
   });
   const toggleTier = (tier) => setTierFilter((current) => current === tier ? null : tier);
@@ -1242,7 +1246,7 @@ function DiscountActivity({ records, manualRecords, search, setSearch, onEdit, o
   return <>
     <div className="metrics tier-metrics">
       {tiers.map((tier) => {
-        const count = records.filter((item) => { const recommended = recordRecommended(item); return recommended && recommended <= tier; }).length;
+        const count = records.filter((item) => matchesCategory(item, tier)).length;
         return <button type="button" className={`metric tier-metric ${tierFilter === tier ? 'selected' : ''}`} key={tier} onClick={() => toggleTier(tier)}>
           <i />
           <span>可以报</span>
