@@ -3,6 +3,7 @@ import { cloudWorkspace } from './lib/cloudWorkspaceClient.js';
 import { prepareWorkspaceForCloud, retainLocalOriginalImages } from './lib/cloudWorkspacePayload.js';
 import { readIndexedWorkspace, writeIndexedWorkspace } from './lib/localWorkspaceStore.js';
 import { normalizeProductLinks } from './lib/productLinkMerge.js';
+import { creationTimeForLink, sortProductLinksNewestFirst } from './lib/productLinkOrder.js';
 import { matchesDiscountTier } from './lib/discountClassification.js';
 import { lightingCatalogVersion, lightingProductCatalog } from './data/lightingProductCatalog.js';
 
@@ -799,7 +800,8 @@ export default function App() {
       ...(editing.startDate ? { startDate: editing.startDate } : {}),
       ...(editing.endDate ? { endDate: editing.endDate } : {}),
     } : {};
-    const next = { id: editing?.id || uid(), store: data.get('store'), productCode: skc, productId: catalogProduct?.id || '', productName, specs: summary.specs, limitingSpecName: limitingSpec?.name || '默认规格', cost: limitingSpec?.cost || 0, salePrice: limitingSpec?.salePrice || 0, minimumRatio: summary.minimumRatio, recommendedDiscount: reportableDiscount, discountedPrice: reportableDiscount ? limitingSpec?.salePrice * reportableDiscount : 0, profit: profits.length ? Math.min(...profits) : 0, note: data.get('note'), imageDataUrl, manualPriceMatrix: editing?.manualPriceMatrix || [], manualPriceUpdatedAt: editing?.manualPriceUpdatedAt || '', updatedAt: new Date().toISOString(), ...legacyFields };
+    const savedAt = new Date().toISOString();
+    const next = { id: editing?.id || uid(), store: data.get('store'), productCode: skc, productId: catalogProduct?.id || '', productName, specs: summary.specs, limitingSpecName: limitingSpec?.name || '默认规格', cost: limitingSpec?.cost || 0, salePrice: limitingSpec?.salePrice || 0, minimumRatio: summary.minimumRatio, recommendedDiscount: reportableDiscount, discountedPrice: reportableDiscount ? limitingSpec?.salePrice * reportableDiscount : 0, profit: profits.length ? Math.min(...profits) : 0, note: data.get('note'), imageDataUrl, manualPriceMatrix: editing?.manualPriceMatrix || [], manualPriceUpdatedAt: editing?.manualPriceUpdatedAt || '', createdAt: creationTimeForLink(editing, savedAt), updatedAt: savedAt, ...legacyFields };
     update('discounts', editing ? workspace.discounts.map((item) => item.id === editing.id ? next : item) : [next, ...workspace.discounts]); closeModal(); notify('商品链接已保存');
   };
   const saveManualPriceMatrix = (rows) => {
@@ -1240,12 +1242,12 @@ function DiscountActivity({ records, manualRecords, search, setSearch, onEdit, o
     manualRecords.filter((record) => normalizeSkc(record.productCode) === normalizeSkc(item.productCode)).map(manualActivityDiscount),
     recordRecommended(item), tier,
   );
-  const filtered = records.filter((item) => {
+  const filtered = sortProductLinksNewestFirst(records.filter((item) => {
     const specNames = normalizeDiscountSpecs(item).map((spec) => spec.name).join('');
     const matchesSearch = `${item.productName}${item.productCode}${specNames}`.toLowerCase().includes(search.toLowerCase());
     const matchesTier = tierFilter === null || matchesCategory(item, tierFilter);
     return matchesSearch && matchesTier;
-  });
+  }));
   const toggleTier = (tier) => setTierFilter((current) => current === tier ? null : tier);
 
   return <>
