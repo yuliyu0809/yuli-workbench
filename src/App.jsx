@@ -756,7 +756,7 @@ export default function App() {
     const next = { id: editing?.id || uid(), store: data.get('store'), skc, productId: product.id, productName: product.productName, specId: spec.id, specName: spec.name, previousPrice: Number(data.get('previousPrice')), currentPrice: Number(data.get('currentPrice')), priceDate: data.get('priceDate'), note: data.get('note'), updatedAt: new Date().toISOString() };
     update('pricingHistory', editing ? workspace.pricingHistory.map((item) => item.id === editing.id ? next : item) : [next, ...workspace.pricingHistory]); closeModal(); notify('核价变化已保存');
   };
-  const saveAdRecord = async (event) => {
+  const saveAdRecord = (event) => {
     event.preventDefault(); const data = new FormData(event.currentTarget);
     const recordDate = String(data.get('recordDate')); const recordStore = String(data.get('store'));
     const skc = String(data.get('skc') || '').trim();
@@ -772,7 +772,7 @@ export default function App() {
     if (selectedSpecs.some((spec) => !spec)) { notify('请检查每一行的规格 SKU'); return; }
     const currentRecords = workspace.adRecords || [];
     const sibling = currentRecords.find((item) => item.store === recordStore && item.productId === product.id && normalizeSkc(item.skc) === normalizeSkc(skc) && item.id !== editing?.id);
-    let imageDataUrl = editing?.imageDataUrl || sibling?.imageDataUrl || linkedProduct?.imageDataUrl || product.imageDataUrl || ''; const file = data.get('image'); if (file?.size) imageDataUrl = await imageToDataUrl(file);
+    const imageDataUrl = editing?.imageDataUrl || sibling?.imageDataUrl || linkedProduct?.imageDataUrl || product.imageDataUrl || '';
     const adSpends = data.getAll('adSpend'); const logistics = data.getAll('afterSalesLogistics'); const sales = data.getAll('adSales'); const orders = data.getAll('adOrders');
     const replacedIds = new Set();
     const nextRecords = selectedSpecs.map((spec, index) => {
@@ -1198,7 +1198,6 @@ function AdRecordForm({ editing, initialDate, products, links, currentStore, onS
     {linkedProduct && <p className="skc-match">已找到 {linkedProduct.store} 店商品链接：{linkedProduct.productName}</p>}
     <Field label="商品链接"><select name="productId" value={productId} onChange={(event) => changeProduct(event.target.value)} required>{products.map((item) => <option key={item.id} value={item.id}>{productCategoryOf(item)} · {item.productName}</option>)}</select></Field>
     <div className="ad-sku-editor"><div className="ad-sku-editor-title"><div><b>规格 SKU</b><small>同一个 SKC 可以同时录入多个规格；售后物流按参考表 5% 规则自动带入，可修改</small></div><button type="button" onClick={addSkuRow} disabled={allSpecsAdded}>{allSpecsAdded ? '已添加全部规格' : '＋ 添加规格 SKU'}</button></div>{skuRows.map((row, index) => <div className="ad-sku-entry" key={row.key}><div className="ad-sku-entry-head"><b>SKU {index + 1}</b>{skuRows.length > 1 && <button type="button" onClick={() => removeSkuRow(row.key)}>移除</button>}</div><div className="form-grid"><Field label="规格"><select name="specId" value={row.specId} onChange={(event) => changeSkuRow(row.key, 'specId', event.target.value)} required>{specs.map((spec) => <option key={spec.id} value={spec.id}>{spec.name} · 供货价 {money(spec.cost)}</option>)}</select></Field><Field label="广告费"><input name="adSpend" type="number" min="0" step="0.01" value={row.adSpend} onChange={(event) => changeSkuRow(row.key, 'adSpend', event.target.value)} required /></Field><Field label="单个售后物流费"><input name="afterSalesLogistics" type="number" min="0" step="0.01" value={row.afterSalesLogistics} onChange={(event) => changeSkuRow(row.key, 'afterSalesLogistics', event.target.value)} placeholder="按所选规格自动带入，可修改" required /></Field><Field label="广告销售额"><input name="adSales" type="number" min="0" step="0.01" value={row.adSales} onChange={(event) => changeSkuRow(row.key, 'adSales', event.target.value)} required /></Field><Field label="广告订单数"><input name="adOrders" type="number" min="0" step="1" value={row.adOrders} onChange={(event) => changeSkuRow(row.key, 'adOrders', event.target.value)} required /></Field></div></div>)}</div>
-    <Field label="产品图片"><input name="image" type="file" accept="image/*" />{editing?.imageDataUrl && <span className="field-help">已保存图片；不重新选择会保留原图</span>}</Field>
     <Field label="备注"><textarea name="note" defaultValue={editing?.note} placeholder="例如：活动加投、预算调整" /></Field><div className="calc-note"><b>售后物流总额</b>＝单个售后物流费 × 广告订单数；<b>预计利润</b>＝广告销售额 − 广告费 − 售后物流总额 −（SKU供货价 × 广告订单数）。</div><FormActions onClose={onClose} />
   </form> : <><Empty text="请先在商品档案中添加商品和规格，再记录 SKU 广告费" /><div className="actions"><button type="button" onClick={onClose}>关闭</button></div></>}</Modal>;
 }
