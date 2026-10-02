@@ -6,6 +6,7 @@ import { normalizeProductLinks } from './lib/productLinkMerge.js';
 import { creationTimeForLink, sortProductLinksNewestFirst } from './lib/productLinkOrder.js';
 import { matchesDiscountTier } from './lib/discountClassification.js';
 import { focusCoverage, mergeProductFocus } from './lib/productFocus.js';
+import { allocateSkcAdSpend } from './lib/adSpendAllocation.js';
 import { lightingCatalogVersion, lightingProductCatalog } from './data/lightingProductCatalog.js';
 
 const STORE_ALL = '全部店铺';
@@ -17,7 +18,7 @@ const initialQuoteDiscounts = [7, 7.5, 8, 8.5, 9];
 const buyerAppealUrl = 'https://seller.kuajingmaihuo.com/questionnaire?surveyId=185879097376';
 const dailyFormMiniProgram = '#小程序://腾讯文档/d1X1NPShvA6gzZE';
 const emptyListingHelper = { chineseTitle: '', englishTitle: '', lengthCm: '', lengthM: '' };
-const emptyWorkspace = { discounts: [], manualActivities: [], priceReferences: [], products: [], productFocus: {}, operations: [], tasks: [], launches: [], pricingHistory: [], adRecords: [], dailyFormCompletedDate: '', listingHelper: emptyListingHelper };
+const emptyWorkspace = { discounts: [], manualActivities: [], priceReferences: [], products: [], productFocus: {}, productPricing: {}, operations: [], tasks: [], launches: [], pricingHistory: [], adRecords: [], dailyFormCompletedDate: '', listingHelper: emptyListingHelper };
 const nav = [
   ['overview', '⌂', '运营总览'],
   ['discounts', '%', '商品链接'],
@@ -99,6 +100,7 @@ const adRecordMetrics = (record, products = []) => {
 // otherwise a newly opened browser could replace real data with a blank copy.
 const hasWorkspaceRecords = (data) => ['discounts', 'manualActivities', 'priceReferences', 'operations', 'tasks', 'launches', 'pricingHistory', 'adRecords'].some((key) => Array.isArray(data?.[key]) && data[key].length > 0)
   || Object.values(data?.productFocus || {}).some((entry) => typeof entry?.active === 'boolean')
+  || Object.values(data?.productPricing || {}).some((entry) => typeof entry?.active === 'boolean')
   || Boolean(data?.dailyFormCompletedDate)
   || Object.values(data?.listingHelper || {}).some((value) => String(value || '').trim());
 const mergeRecordLists = (cloudRecords, localRecords) => {
@@ -113,6 +115,7 @@ const mergeWorkspaces = (cloudData, localData) => {
     ...cloud,
     ...local,
     productFocus: mergeProductFocus(cloud.productFocus, local.productFocus),
+    productPricing: mergeProductFocus(cloud.productPricing, local.productPricing),
     discounts: mergeRecordLists(cloud.discounts, local.discounts),
     manualActivities: mergeRecordLists(cloud.manualActivities, local.manualActivities),
     priceReferences: mergeRecordLists(cloud.priceReferences, local.priceReferences),
@@ -130,6 +133,7 @@ const mergeBackupWorkspaces = (currentData, backupData) => {
     ...current,
     ...backup,
     productFocus: mergeProductFocus(current.productFocus, backup.productFocus),
+    productPricing: mergeProductFocus(current.productPricing, backup.productPricing),
     products: mergeRecordLists(current.products, backup.products),
     discounts: mergeRecordLists(current.discounts, backup.discounts),
     manualActivities: mergeRecordLists(current.manualActivities, backup.manualActivities),
@@ -662,6 +666,12 @@ export default function App() {
     update('productFocus', { ...(workspace.productFocus || {}), [product.id]: { active, updatedAt: new Date().toISOString() } });
     notify(active ? '已标记为重点产品' : '已取消重点标记');
   };
+  const toggleProductPricing = (product, targetStore) => {
+    const key = `${product.id}:${targetStore}`;
+    const active = !workspace.productPricing?.[key]?.active;
+    update('productPricing', { ...(workspace.productPricing || {}), [key]: { active, updatedAt: new Date().toISOString() } });
+    notify(active ? `${targetStore} 店已标记核价完成` : `${targetStore} 店已取消核价标记`);
+  };
   const remove = (key, item, label) => {
     if (!confirm(`确定删除“${label}”吗？`)) return;
     update(key, workspace[key].filter((row) => row.id !== item.id));
@@ -771,10 +781,17 @@ export default function App() {
     const selectedSpecs = specIds.map((id) => specs.find((item) => item.id === id));
     if (selectedSpecs.some((spec) => !spec)) { notify('请检查每一行的规格 SKU'); return; }
     const currentRecords = workspace.adRecords || [];
+    if (!editing && currentRecords.some((item) => item.recordDate === recordDate && item.store === recordStore && item.productId === product.id && normalizeSkc(item.skc) === normalizeSkc(skc))) {
+      notify('这一天的 SKC 已有广告记录，请在明细中编辑整组 SKU'); return;
+    }
     const sibling = currentRecords.find((item) => item.store === recordStore && item.productId === product.id && normalizeSkc(item.skc) === normalizeSkc(skc) && item.id !== editing?.id);
     const imageDataUrl = editing?.imageDataUrl || sibling?.imageDataUrl || linkedProduct?.imageDataUrl || product.imageDataUrl || '';
-    const adSpends = data.getAll('adSpend'); const logistics = data.getAll('afterSalesLogistics'); const sales = data.getAll('adSales'); const orders = data.getAll('adOrders');
-    const replacedIds = new Set();
+    const logistics = data.getAll('afterSalesLogistics'); const sales = data.getAll('adSales'); const orders = data.getAll('adOrders');
+    const skcAdSpend = Number(data.get('skcAdSpend'));
+    if (!Number.isFinite(skcAdSpend) || skcAdSpend < 0) { notify('请填写 SKC 的广告费总额'); return; }
+    const adSpends = allocateSkcAdSpend(skcAdSpend, selectedSpecs.map((_, index) => ({ adSales: sales[index], adOrders: orders[index] })));
+    const originalGroup = editing ? currentRecords.filter((item) => item.recordDate === editing.recordDate && item.store === editing.store && item.productId === editing.productId && normalizeSkc(item.skc) === normalizeSkc(editing.skc)) : [];
+    const replacedIds = new Set(originalGroup.map((item) => item.id));
     const nextRecords = selectedSpecs.map((spec, index) => {
       const baseSpecId = spec.baseSpecId || spec.id;
       const packQuantity = Math.max(1, Number(spec.packQuantity) || 1);
@@ -785,9 +802,10 @@ export default function App() {
         && (item.baseSpecId || item.sourceSpecId || item.specId) === baseSpecId
         && Math.max(1, Number(item.packQuantity) || 1) === packQuantity
         && item.id !== editing?.id);
-      const id = index === 0 && editing?.id ? editing.id : duplicate?.id || uid();
+      const original = originalGroup.find((item) => (item.baseSpecId || item.sourceSpecId || item.specId) === baseSpecId && Math.max(1, Number(item.packQuantity) || 1) === packQuantity);
+      const id = duplicate?.id || original?.id || uid();
       replacedIds.add(id); if (duplicate?.id) replacedIds.add(duplicate.id);
-      return { id, store: recordStore, recordDate, productId: product.id, productName: product.productName, specId: spec.id, baseSpecId, specName: spec.name, unitCost: Number(spec.unitCost ?? spec.cost ?? 0), packQuantity, specCost: Number(spec.cost || 0), skc, imageDataUrl, adSpend: Number(adSpends[index]), adSales: Number(sales[index]), adOrders: Number(orders[index]), afterSalesLogistics: Number(logistics[index]), note: data.get('note'), updatedAt: new Date().toISOString() };
+      return { id, store: recordStore, recordDate, productId: product.id, productName: product.productName, specId: spec.id, baseSpecId, specName: spec.name, unitCost: Number(spec.unitCost ?? spec.cost ?? 0), packQuantity, specCost: Number(spec.cost || 0), skc, imageDataUrl, adSpend: adSpends[index], adSpendAllocation: selectedSpecs.length > 1 ? 'estimated' : 'direct', adSales: Number(sales[index]), adOrders: Number(orders[index]), afterSalesLogistics: Number(logistics[index]), note: data.get('note'), updatedAt: new Date().toISOString() };
     });
     if (editing?.id) replacedIds.add(editing.id);
     update('adRecords', [...nextRecords, ...currentRecords.filter((item) => !replacedIds.has(item.id))]); closeModal(); notify(`${nextRecords.length} 个规格 SKU 广告费已保存`);
@@ -884,7 +902,7 @@ export default function App() {
         <div className="page-head"><div><small>{store === STORE_ALL ? '三店合计' : `${store} 店铺`}</small><h1>{pageTitle[0]}</h1><p>{pageTitle[1]}</p></div>{page !== 'overview' && page !== 'pricingAds' && page !== 'discounts' && <button className="primary" onClick={() => openNew(page === 'products' ? 'product' : 'task')}>＋ {page === 'products' ? '新增商品' : '新增任务'}</button>}</div>
         <div className="workspace-note"><span>🌿</span><strong>温柔待办</strong><p>{pageReminder}</p></div>
         {page === 'overview' && <Overview workspace={workspace} store={store} pending={pending} setPage={setPage} dailyFormDone={dailyFormDone} onCopyDailyForm={copyDailyFormEntry} onToggleDailyForm={toggleDailyForm} listingHelper={{ ...emptyListingHelper, ...(workspace.listingHelper || {}) }} translationBusy={translationBusy} onTranslateListingTitle={translateListingTitle} onUpdateListingHelper={updateListingHelper} onCopyListingText={copyListingText} onClearListingHelper={clearListingHelper} onAdd={() => openNew('launch')} onEdit={(item) => openEdit('launch', item)} onDelete={(item) => remove('launches', item, `${item.store} ${item.launchDate} ${launchQuantity(item)}条`)} />}
-        {page === 'discounts' && <Discounts records={visible(workspace.discounts)} allLinks={workspace.discounts} products={workspace.products} productFocus={workspace.productFocus || {}} manualRecords={visible(workspace.manualActivities || [])} search={search} setSearch={setSearch} onAdd={() => openNew('discount')} onAddCoverageLink={openCoverageLink} onGoProducts={() => setPage('products')} onEdit={(item) => openEdit('discount', item)} onQuote={(item) => openEdit('quoteMatrix', item)} onDelete={(item) => remove('discounts', item, item.productName)} onAddManualForLink={openManualForLink} onEditManual={(item) => openEdit('manualActivity', item)} onDeleteManual={(item) => remove('manualActivities', item, item.productName)} />}
+        {page === 'discounts' && <Discounts records={visible(workspace.discounts)} allLinks={workspace.discounts} products={workspace.products} productFocus={workspace.productFocus || {}} productPricing={workspace.productPricing || {}} manualRecords={visible(workspace.manualActivities || [])} search={search} setSearch={setSearch} onAdd={() => openNew('discount')} onAddCoverageLink={openCoverageLink} onTogglePricing={toggleProductPricing} onGoProducts={() => setPage('products')} onEdit={(item) => openEdit('discount', item)} onQuote={(item) => openEdit('quoteMatrix', item)} onDelete={(item) => remove('discounts', item, item.productName)} onAddManualForLink={openManualForLink} onEditManual={(item) => openEdit('manualActivity', item)} onDeleteManual={(item) => remove('manualActivities', item, item.productName)} />}
         {page === 'products' && <Products records={workspace.products} productFocus={workspace.productFocus || {}} search={search} setSearch={setSearch} onToggleFocus={toggleProductFocus} onEdit={(item) => openEdit('product', item)} onDelete={(item) => remove('products', item, item.productName)} />}
         {page === 'tasks' && <Tasks records={visible(workspace.tasks)} update={(records) => update('tasks', records)} onEdit={(item) => openEdit('task', item)} onDelete={(item) => remove('tasks', item, item.title)} />}
         {page === 'pricingAds' && <PricingAds products={workspace.products} pricingRecords={visible(workspace.pricingHistory || [])} adRecords={visible(workspace.adRecords || [])} onAddPricing={() => openNew('pricingHistory')} onAddAd={(date) => { setAdEntryDate(date || today()); openNew('adRecord'); }} onEditPricing={(item) => openEdit('pricingHistory', item)} onEditAd={(item) => openEdit('adRecord', item)} onDeletePricing={(item) => remove('pricingHistory', item, `${item.productName} ${item.specName}`)} onDeleteAd={(item) => remove('adRecords', item, `${item.store} ${item.recordDate}`)} />}
@@ -1028,7 +1046,7 @@ function PricingAds({ products, pricingRecords, adRecords, onAddPricing, onAddAd
       <div className="metrics finance-metrics"><Metric label="本月广告费" value={money(adSpend)} /><Metric label="广告销售额" value={money(adSales)} /><Metric label="预计利润" value={estimatedProfit == null ? '待补充' : money(estimatedProfit)} /><Metric label="ROAS" value={adSpend ? `${(adSales / adSpend).toFixed(2)}x` : '—'} /><Metric label="广告订单" value={adOrders} /><Metric label="单均广告成本" value={adOrders ? money(adSpend / adOrders) : '—'} /></div>
       <AdCalendar month={calendarMonth} records={adRecords} selectedDate={selectedAdDate} onChangeMonth={(month) => { setCalendarMonth(month); setSelectedAdDate(''); }} onSelectDate={(date) => { setSelectedAdDate(date); onAddAd(date); }} />
       <AdTrendChart records={monthAds} />
-      <TableShell title="SKC 与 SKU 每日广告记录" subtitle={selectedAdDate ? `当前查看 ${selectedAdDate} 的广告明细` : '一个 SKC 对应一个商品链接，下方可展开查看并分别核算多个 SKU'}>
+      <TableShell title="SKC 与 SKU 每日广告记录" subtitle={selectedAdDate ? `当前查看 ${selectedAdDate} 的广告明细；SKU 广告费为估算分摊时会单独标注` : 'SKC 广告费只录一次；SKU 按销售额占比估算分摊（无销售额时按订单数，再无则均分）。旧记录不自动重算。'}>
         {selectedAdDate && <div className="ad-day-filter"><span>已选择 {selectedAdDate}</span><button type="button" onClick={() => setSelectedAdDate('')}>查看全部日期</button></div>}
         <AdGroupTable records={displayedAds} products={products} onEdit={onEditAd} onDelete={onDeleteAd} />
       </TableShell>
@@ -1104,8 +1122,8 @@ function AdGroupTable({ records, products, onEdit, onDelete }) {
     {groups.flatMap((group) => {
       const isCollapsed = collapsed.has(group.key);
       const image = group.items.find((item) => item.imageDataUrl)?.imageDataUrl;
-      const parent = <tr className="ad-group-row" key={`group-${group.key}`}><td>{group.first.recordDate}</td><td><Badge>{group.first.store}</Badge></td><td className="ad-product-cell"><div className="product-cell"><span className="thumb">{image ? <img src={image} alt="" /> : '链'}</span><span><strong>{group.first.productName || '商品链接'}</strong><small>SKC 汇总</small></span></div></td><td><strong>{group.first.skc || '待填写'}</strong></td><td><button className="ad-group-toggle" type="button" onClick={() => toggle(group.key)}>{isCollapsed ? '▸' : '▾'} {group.items.length} 个 SKU</button></td><td>—</td><td><strong>{money(group.adSpend)}</strong></td><td>{group.afterSales == null ? '待补充' : money(group.afterSales)}</td><td>{group.adSales ? money(group.adSales) : '—'}</td><td>{group.orders || '—'}</td><td>{group.productCost == null ? '待补充' : money(group.productCost)}</td><td className={group.profit == null ? 'pending-value' : group.profit >= 0 ? 'positive' : 'negative'}>{group.profit == null ? '待补充' : money(group.profit)}</td><td className={group.profit == null ? 'pending-value' : group.profitPerOrder == null ? '' : group.profitPerOrder >= 0 ? 'positive' : 'negative'}>{group.profit == null ? '待补充' : group.profitPerOrder == null ? '—' : money(group.profitPerOrder)}</td><td className={group.profitRate == null ? '' : group.profitRate >= 0 ? 'positive' : 'negative'}>{group.profitRate == null ? '—' : `${(group.profitRate * 100).toFixed(1)}%`}</td><td>汇总</td></tr>;
-      const children = isCollapsed ? [] : group.rows.map(({ item, metrics }) => { const orderCount = Number(item.adOrders || 0); return <tr className="ad-sku-row" key={item.id}><td /><td /><td><span className="sku-branch">↳ SKU 明细</span></td><td /><td><strong>{item.specName || '未区分 SKU'}</strong><small>{item.note || ''}</small></td><td>{metrics.specCost == null ? '待补充' : money(metrics.specCost)}</td><td><strong>{money(item.adSpend)}</strong></td><td>{metrics.afterSalesTotal == null ? '待补充' : <><strong>{money(metrics.afterSalesTotal)}</strong><small>{money(metrics.afterSalesPerOrder)}/单</small></>}</td><td>{Number(item.adSales) ? money(item.adSales) : '—'}</td><td>{orderCount || '—'}</td><td>{metrics.productCost == null ? '待补充' : money(metrics.productCost)}</td><td className={metrics.profit == null ? 'pending-value' : metrics.profit >= 0 ? 'positive' : 'negative'}>{metrics.profit == null ? '待补充' : money(metrics.profit)}</td><td className={metrics.profit == null ? 'pending-value' : metrics.profitPerOrder == null ? '' : metrics.profitPerOrder >= 0 ? 'positive' : 'negative'}>{metrics.profit == null ? '待补充' : metrics.profitPerOrder == null ? '—' : money(metrics.profitPerOrder)}</td><td className={metrics.profitRate == null ? '' : metrics.profitRate >= 0 ? 'positive' : 'negative'}>{metrics.profitRate == null ? '—' : `${(metrics.profitRate * 100).toFixed(1)}%`}</td><td><RowActions onEdit={() => onEdit(item)} onDelete={() => onDelete(item)} /></td></tr>; });
+      const parent = <tr className="ad-group-row" key={`group-${group.key}`}><td>{group.first.recordDate}</td><td><Badge>{group.first.store}</Badge></td><td className="ad-product-cell"><div className="product-cell"><span className="thumb">{image ? <img src={image} alt="" /> : '链'}</span><span><strong>{group.first.productName || '商品链接'}</strong><small>SKC 汇总</small></span></div></td><td><strong>{group.first.skc || '待填写'}</strong></td><td><button className="ad-group-toggle" type="button" onClick={() => toggle(group.key)}>{isCollapsed ? '▸' : '▾'} {group.items.length} 个 SKU</button></td><td>—</td><td><strong>{money(group.adSpend)}</strong><small>SKC 实际总额</small></td><td>{group.afterSales == null ? '待补充' : money(group.afterSales)}</td><td>{group.adSales ? money(group.adSales) : '—'}</td><td>{group.orders || '—'}</td><td>{group.productCost == null ? '待补充' : money(group.productCost)}</td><td className={group.profit == null ? 'pending-value' : group.profit >= 0 ? 'positive' : 'negative'}>{group.profit == null ? '待补充' : money(group.profit)}</td><td className={group.profit == null ? 'pending-value' : group.profitPerOrder == null ? '' : group.profitPerOrder >= 0 ? 'positive' : 'negative'}>{group.profit == null ? '待补充' : group.profitPerOrder == null ? '—' : money(group.profitPerOrder)}</td><td className={group.profitRate == null ? '' : group.profitRate >= 0 ? 'positive' : 'negative'}>{group.profitRate == null ? '—' : `${(group.profitRate * 100).toFixed(1)}%`}</td><td>汇总</td></tr>;
+      const children = isCollapsed ? [] : group.rows.map(({ item, metrics }) => { const orderCount = Number(item.adOrders || 0); return <tr className="ad-sku-row" key={item.id}><td /><td /><td><span className="sku-branch">↳ SKU 明细</span></td><td /><td><strong>{item.specName || '未区分 SKU'}</strong><small>{item.note || ''}</small></td><td>{metrics.specCost == null ? '待补充' : money(metrics.specCost)}</td><td><strong>{money(item.adSpend)}</strong>{item.adSpendAllocation === 'estimated' && <small>估算分摊</small>}</td><td>{metrics.afterSalesTotal == null ? '待补充' : <><strong>{money(metrics.afterSalesTotal)}</strong><small>{money(metrics.afterSalesPerOrder)}/单</small></>}</td><td>{Number(item.adSales) ? money(item.adSales) : '—'}</td><td>{orderCount || '—'}</td><td>{metrics.productCost == null ? '待补充' : money(metrics.productCost)}</td><td className={metrics.profit == null ? 'pending-value' : metrics.profit >= 0 ? 'positive' : 'negative'}>{metrics.profit == null ? '待补充' : money(metrics.profit)}</td><td className={metrics.profit == null ? 'pending-value' : metrics.profitPerOrder == null ? '' : metrics.profitPerOrder >= 0 ? 'positive' : 'negative'}>{metrics.profit == null ? '待补充' : metrics.profitPerOrder == null ? '—' : money(metrics.profitPerOrder)}</td><td className={metrics.profitRate == null ? '' : metrics.profitRate >= 0 ? 'positive' : 'negative'}>{metrics.profitRate == null ? '—' : `${(metrics.profitRate * 100).toFixed(1)}%`}</td><td><RowActions onEdit={() => onEdit(item)} onDelete={() => onDelete(item)} /></td></tr>; });
       return [parent, ...children];
     })}
     {!groups.length && <tr><td colSpan="15"><Empty text="暂无 SKU 广告记录，点击“记录广告费”开始录入" /></td></tr>}
@@ -1162,8 +1180,10 @@ function AdRecordForm({ editing, initialDate, products, links, currentStore, onS
   const selectedProduct = products.find((item) => item.id === productId);
   const specs = expandProductSpecsForPacks(selectedProduct);
   const editingSpec = selectedProduct ? findExpandedProductSpec(selectedProduct, editing) : null;
-  const blankRow = (spec = null) => ({ key: uid(), specId: spec?.id || '', adSpend: '', afterSalesLogistics: referenceAfterSalesPerOrder(spec), adSales: '', adOrders: '' });
-  const [skuRows, setSkuRows] = useState([editing ? { key: uid(), specId: editingSpec?.id || specs[0]?.id || '', adSpend: editing.adSpend ?? '', afterSalesLogistics: editing.afterSalesLogistics ?? referenceAfterSalesPerOrder(editingSpec || specs[0]), adSales: editing.adSales ?? '', adOrders: editing.adOrders ?? '' } : blankRow(specs[0])]);
+  const editingGroup = editing ? adRecords.filter((item) => item.recordDate === editing.recordDate && item.store === editing.store && item.productId === editing.productId && normalizeSkc(item.skc) === normalizeSkc(editing.skc)) : [];
+  const [skcAdSpend, setSkcAdSpend] = useState(() => editingGroup.reduce((sum, item) => sum + Number(item.adSpend || 0), 0).toFixed(2));
+  const blankRow = (spec = null) => ({ key: uid(), specId: spec?.id || '', afterSalesLogistics: referenceAfterSalesPerOrder(spec), adSales: '', adOrders: '' });
+  const [skuRows, setSkuRows] = useState(() => editingGroup.length ? editingGroup.map((item) => ({ key: uid(), specId: findExpandedProductSpec(selectedProduct, item)?.id || editingSpec?.id || specs[0]?.id || '', afterSalesLogistics: item.afterSalesLogistics ?? referenceAfterSalesPerOrder(findExpandedProductSpec(selectedProduct, item)), adSales: item.adSales ?? '', adOrders: item.adOrders ?? '' })) : [blankRow(specs[0])]);
   const changeSkc = (value) => {
     setSkc(value);
     const found = findLinkBySkc(links, value);
@@ -1197,7 +1217,8 @@ function AdRecordForm({ editing, initialDate, products, links, currentStore, onS
     <Field label="SKC（输入后自动查找商品链接）"><input name="skc" value={skc} onChange={(event) => changeSkc(event.target.value)} placeholder="输入 SKC 查找商品链接" /></Field>
     {linkedProduct && <p className="skc-match">已找到 {linkedProduct.store} 店商品链接：{linkedProduct.productName}</p>}
     <Field label="商品链接"><select name="productId" value={productId} onChange={(event) => changeProduct(event.target.value)} required>{products.map((item) => <option key={item.id} value={item.id}>{productCategoryOf(item)} · {item.productName}</option>)}</select></Field>
-    <div className="ad-sku-editor"><div className="ad-sku-editor-title"><div><b>规格 SKU</b><small>同一个 SKC 可以同时录入多个规格；售后物流按参考表 5% 规则自动带入，可修改</small></div><button type="button" onClick={addSkuRow} disabled={allSpecsAdded}>{allSpecsAdded ? '已添加全部规格' : '＋ 添加规格 SKU'}</button></div>{skuRows.map((row, index) => <div className="ad-sku-entry" key={row.key}><div className="ad-sku-entry-head"><b>SKU {index + 1}</b>{skuRows.length > 1 && <button type="button" onClick={() => removeSkuRow(row.key)}>移除</button>}</div><div className="form-grid"><Field label="规格"><select name="specId" value={row.specId} onChange={(event) => changeSkuRow(row.key, 'specId', event.target.value)} required>{specs.map((spec) => <option key={spec.id} value={spec.id}>{spec.name} · 供货价 {money(spec.cost)}</option>)}</select></Field><Field label="广告费"><input name="adSpend" type="number" min="0" step="0.01" value={row.adSpend} onChange={(event) => changeSkuRow(row.key, 'adSpend', event.target.value)} required /></Field><Field label="单个售后物流费"><input name="afterSalesLogistics" type="number" min="0" step="0.01" value={row.afterSalesLogistics} onChange={(event) => changeSkuRow(row.key, 'afterSalesLogistics', event.target.value)} placeholder="按所选规格自动带入，可修改" required /></Field><Field label="广告销售额"><input name="adSales" type="number" min="0" step="0.01" value={row.adSales} onChange={(event) => changeSkuRow(row.key, 'adSales', event.target.value)} required /></Field><Field label="广告订单数"><input name="adOrders" type="number" min="0" step="1" value={row.adOrders} onChange={(event) => changeSkuRow(row.key, 'adOrders', event.target.value)} required /></Field></div></div>)}</div>
+    <Field label="该 SKC 当日广告费总额"><input name="skcAdSpend" type="number" min="0" step="0.01" value={skcAdSpend} onChange={(event) => setSkcAdSpend(event.target.value)} placeholder="只填写整条 SKC 的一笔总广告费" required /></Field>
+    <div className="ad-sku-editor"><div className="ad-sku-editor-title"><div><b>规格 SKU</b><small>广告费只在上方录入一次；多个 SKU 的广告费按销售额占比估算分摊（无销售额时按订单数，再无则均分）</small></div><button type="button" onClick={addSkuRow} disabled={allSpecsAdded}>{allSpecsAdded ? '已添加全部规格' : '＋ 添加规格 SKU'}</button></div>{skuRows.map((row, index) => <div className="ad-sku-entry" key={row.key}><div className="ad-sku-entry-head"><b>SKU {index + 1}</b>{skuRows.length > 1 && <button type="button" onClick={() => removeSkuRow(row.key)}>移除</button>}</div><div className="form-grid"><Field label="规格"><select name="specId" value={row.specId} onChange={(event) => changeSkuRow(row.key, 'specId', event.target.value)} required>{specs.map((spec) => <option key={spec.id} value={spec.id}>{spec.name} · 供货价 {money(spec.cost)}</option>)}</select></Field><Field label="单个售后物流费"><input name="afterSalesLogistics" type="number" min="0" step="0.01" value={row.afterSalesLogistics} onChange={(event) => changeSkuRow(row.key, 'afterSalesLogistics', event.target.value)} placeholder="按所选规格自动带入，可修改" required /></Field><Field label="广告销售额"><input name="adSales" type="number" min="0" step="0.01" value={row.adSales} onChange={(event) => changeSkuRow(row.key, 'adSales', event.target.value)} required /></Field><Field label="广告订单数"><input name="adOrders" type="number" min="0" step="1" value={row.adOrders} onChange={(event) => changeSkuRow(row.key, 'adOrders', event.target.value)} required /></Field></div></div>)}</div>
     <Field label="备注"><textarea name="note" defaultValue={editing?.note} placeholder="例如：活动加投、预算调整" /></Field><div className="calc-note"><b>售后物流总额</b>＝单个售后物流费 × 广告订单数；<b>预计利润</b>＝广告销售额 − 广告费 − 售后物流总额 −（SKU供货价 × 广告订单数）。</div><FormActions onClose={onClose} />
   </form> : <><Empty text="请先在商品档案中添加商品和规格，再记录 SKU 广告费" /><div className="actions"><button type="button" onClick={onClose}>关闭</button></div></>}</Modal>;
 }
@@ -1228,16 +1249,24 @@ function Tasks({ records, update, onEdit, onDelete }) {
   const section = (period, title) => { const rows = records.filter((item) => item.period === period); return <div className="panel task-panel"><div className="panel-title"><h2>{title}</h2><Badge>{rows.length}</Badge></div>{rows.map((item) => <div className={`task ${item.completed ? 'done' : ''}`} key={item.id}><input type="checkbox" checked={item.completed} onChange={() => update(records.map((row) => row.id === item.id ? { ...row, completed: !row.completed } : row))} /><div><strong>{item.title}</strong><small>{item.store} · {item.priority}优先级</small></div><RowActions onEdit={() => onEdit(item)} onDelete={() => onDelete(item)} /></div>)}{!rows.length && <Empty text="暂无任务" />}</div>; };
   return <div className="task-grid">{section('today', '今天')}{section('week', '本周')}</div>;
 }
-function FocusCoverage({ products, links, productFocus, onAddLink, onGoProducts }) {
+function FocusCoverage({ products, links, productFocus, productPricing, onAddLink, onTogglePricing, onGoProducts }) {
   const rows = focusCoverage(products, links, productFocus, stores);
   const ready = rows.filter((row) => !row.missing.length).length;
-  return <div className="panel focus-coverage-panel"><div className="panel-title focus-coverage-heading"><div><h2>重点产品三店覆盖</h2><p>每个重点产品在 AG、DS、HX 各需至少 1 条商品链接；按 SKC 计数。</p></div><span>{rows.length ? `${ready}/${rows.length} 个已达标` : '尚未标记重点产品'}</span></div>{rows.length ? <div className="focus-coverage-scroll"><table className="focus-coverage-table"><thead><tr><th>重点产品</th>{stores.map((store) => <th key={store}>{store}</th>)}<th>状态</th></tr></thead><tbody>{rows.map(({ product, counts, missing }) => <tr key={product.id}><td><strong>{product.productName}</strong></td>{stores.map((store) => <td key={store}>{counts[store] ? <span className="focus-covered">✓ {counts[store]} 条</span> : <button type="button" className="focus-missing" onClick={() => onAddLink(product, store)}>＋ {store} 新增链接</button>}</td>)}<td><span className={missing.length ? 'focus-incomplete' : 'focus-complete'}>{missing.length ? `待补 ${missing.join('、')}` : '已达标'}</span></td></tr>)}</tbody></table></div> : <div className="focus-coverage-empty">先在商品档案中给需要重点关注的产品标记星号。<button type="button" onClick={onGoProducts}>去商品档案 →</button></div>}</div>;
+  const pricedWaiting = rows.reduce((count, row) => count + row.missing.filter((store) => productPricing[`${row.product.id}:${store}`]?.active).length, 0);
+  return <div className="panel focus-coverage-panel">
+    <div className="panel-title focus-coverage-heading"><div><h2>重点产品三店覆盖</h2><p>每店至少 1 条商品链接才算达标；已核价但未上链接单独标记。</p></div><span>{rows.length ? `${ready}/${rows.length} 个已达标 · ${pricedWaiting} 店待上链接` : '尚未标记重点产品'}</span></div>
+    {rows.length ? <div className="focus-coverage-scroll"><table className="focus-coverage-table"><thead><tr><th>重点产品</th>{stores.map((store) => <th key={store}>{store}</th>)}<th>状态</th></tr></thead><tbody>{rows.map(({ product, counts, missing }) => <tr key={product.id}>
+      <td><strong>{product.productName}</strong></td>
+      {stores.map((store) => <td key={store}>{counts[store] ? <span className="focus-covered">✓ 已有 {counts[store]} 条链接</span> : <div className="focus-store-actions">{productPricing[`${product.id}:${store}`]?.active ? <button type="button" className="focus-priced" onClick={() => onTogglePricing(product, store)} title="点击取消已核价标记">✓ 已核价 · 待上链接</button> : <button type="button" className="focus-unpriced" onClick={() => onTogglePricing(product, store)}>标记已核价</button>}<button type="button" className="focus-missing" onClick={() => onAddLink(product, store)}>＋ 新增链接</button></div>}</td>)}
+      <td><span className={missing.length ? 'focus-incomplete' : 'focus-complete'}>{missing.length ? `待补 ${missing.join('、')}` : '已达标'}</span></td>
+    </tr>)}</tbody></table></div> : <div className="focus-coverage-empty">先在商品档案中给需要重点关注的产品标记星号。<button type="button" onClick={onGoProducts}>去商品档案 →</button></div>}
+  </div>;
 }
-function Discounts({ records, allLinks, products, productFocus, manualRecords, search, setSearch, onAdd, onAddCoverageLink, onGoProducts, onEdit, onQuote, onDelete, onAddManualForLink, onEditManual, onDeleteManual }) {
+function Discounts({ records, allLinks, products, productFocus, productPricing, manualRecords, search, setSearch, onAdd, onAddCoverageLink, onTogglePricing, onGoProducts, onEdit, onQuote, onDelete, onAddManualForLink, onEditManual, onDeleteManual }) {
   const unmatchedManual = manualRecords.filter((item) => !findLinkBySkc(records, item.productCode));
   return <>
     <div className="record-view-head"><p className="merged-record-hint">一个 SKC 对应一条商品，手动可报活动直接记在商品下。</p><button type="button" className="primary" onClick={onAdd}>＋ 新增商品链接</button></div>
-    <FocusCoverage products={products} links={allLinks} productFocus={productFocus} onAddLink={onAddCoverageLink} onGoProducts={onGoProducts} />
+    <FocusCoverage products={products} links={allLinks} productFocus={productFocus} productPricing={productPricing} onAddLink={onAddCoverageLink} onTogglePricing={onTogglePricing} onGoProducts={onGoProducts} />
     <DiscountActivity records={records} manualRecords={manualRecords} search={search} setSearch={setSearch} onEdit={onEdit} onQuote={onQuote} onDelete={onDelete} onAddManualForLink={onAddManualForLink} onEditManual={onEditManual} onDeleteManual={onDeleteManual} />
     {unmatchedManual.length > 0 && <ManualActivities records={unmatchedManual} links={records} search={search} setSearch={setSearch} onEdit={onEditManual} onDelete={onDeleteManual} unmatched />}
   </>;
