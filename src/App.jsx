@@ -6,7 +6,7 @@ import { normalizeProductLinks } from './lib/productLinkMerge.js';
 import { creationTimeForLink, sortProductLinksNewestFirst } from './lib/productLinkOrder.js';
 import { matchesDiscountTier } from './lib/discountClassification.js';
 import { focusCoverage, mergeProductFocus } from './lib/productFocus.js';
-import { allocateSkcAdSpend } from './lib/adSpendAllocation.js';
+import { removeAdSkuPreservingTotals, summarizeSkcAdRows } from './lib/skcAdSummary.js';
 import { lightingCatalogVersion, lightingProductCatalog } from './data/lightingProductCatalog.js';
 
 const STORE_ALL = '全部店铺';
@@ -91,10 +91,19 @@ const adRecordMetrics = (record, products = []) => {
   const productCost = hasSpecCost ? specCost * orders : null;
   const afterSalesPerOrder = hasAfterSales ? Number(record.afterSalesLogistics) : null;
   const afterSalesTotal = afterSalesPerOrder != null ? afterSalesPerOrder * orders : null;
-  const profit = hasSpecCost && hasAfterSales ? Number(record?.adSales || 0) - Number(record?.adSpend || 0) - afterSalesTotal - productCost : null;
+  const profit = record?.financialScope !== 'skc-total' && hasSpecCost && hasAfterSales ? Number(record?.adSales || 0) - Number(record?.adSpend || 0) - afterSalesTotal - productCost : null;
   const profitPerOrder = profit != null && orders > 0 ? profit / orders : null;
   return { specCost, productCost, afterSalesPerOrder, afterSalesTotal, profit, profitPerOrder, profitRate: profit != null && Number(record?.adSales || 0) > 0 ? profit / Number(record.adSales) : null };
 };
+const groupAdRecords = (records, products) => [...records.reduce((map, item) => {
+  const key = [item.recordDate, item.store, item.productId || item.productName, normalizeSkc(item.skc)].join('::');
+  if (!map.has(key)) map.set(key, { key, items: [] });
+  map.get(key).items.push(item);
+  return map;
+}, new Map()).values()].map((group) => {
+  const rows = group.items.map((item) => ({ item, metrics: adRecordMetrics(item, products) }));
+  return { ...group, first: group.items[0], rows, ...summarizeSkcAdRows(rows) };
+});
 // The product catalog is bundled with every fresh browser. Only user-entered
 // records count when deciding whether an empty cloud workspace may be claimed,
 // otherwise a newly opened browser could replace real data with a blank copy.
@@ -677,6 +686,12 @@ export default function App() {
     update(key, workspace[key].filter((row) => row.id !== item.id));
     notify('已删除');
   };
+  const removeAdRecord = (item) => {
+    if (!confirm(`确定删除“${item.store} ${item.recordDate} ${item.specName || 'SKU'}”吗？`)) return;
+    const next = removeAdSkuPreservingTotals(workspace.adRecords || [], item);
+    update('adRecords', next);
+    notify(item.financialScope === 'skc-total' && next.some((row) => row.id !== item.id && row.recordDate === item.recordDate && row.store === item.store && row.productId === item.productId && normalizeSkc(row.skc) === normalizeSkc(item.skc)) ? 'SKU 已删除；SKC 总额已保留' : 'SKU 记录已删除');
+  };
   const copyDailyFormEntry = async () => {
     try {
       await navigator.clipboard.writeText(dailyFormMiniProgram);
@@ -784,12 +799,17 @@ export default function App() {
     if (!editing && currentRecords.some((item) => item.recordDate === recordDate && item.store === recordStore && item.productId === product.id && normalizeSkc(item.skc) === normalizeSkc(skc))) {
       notify('这一天的 SKC 已有广告记录，请在明细中编辑整组 SKU'); return;
     }
+    if (editing && currentRecords.some((item) => item.id !== editing.id && item.recordDate === recordDate && item.store === recordStore && item.productId === product.id && normalizeSkc(item.skc) === normalizeSkc(skc)
+      && (recordDate !== editing.recordDate || recordStore !== editing.store || product.id !== editing.productId || normalizeSkc(skc) !== normalizeSkc(editing.skc)))) {
+      notify('目标日期已有这条 SKC 的广告记录，请直接编辑那一天的记录'); return;
+    }
     const sibling = currentRecords.find((item) => item.store === recordStore && item.productId === product.id && normalizeSkc(item.skc) === normalizeSkc(skc) && item.id !== editing?.id);
     const imageDataUrl = editing?.imageDataUrl || sibling?.imageDataUrl || linkedProduct?.imageDataUrl || product.imageDataUrl || '';
-    const logistics = data.getAll('afterSalesLogistics'); const sales = data.getAll('adSales'); const orders = data.getAll('adOrders');
+    const logistics = data.getAll('afterSalesLogistics'); const orders = data.getAll('adOrders');
     const skcAdSpend = Number(data.get('skcAdSpend'));
+    const skcAdSales = Number(data.get('skcAdSales'));
     if (!Number.isFinite(skcAdSpend) || skcAdSpend < 0) { notify('请填写 SKC 的广告费总额'); return; }
-    const adSpends = allocateSkcAdSpend(skcAdSpend, selectedSpecs.map((_, index) => ({ adSales: sales[index], adOrders: orders[index] })));
+    if (!Number.isFinite(skcAdSales) || skcAdSales < 0) { notify('请填写 SKC 的销售额总额'); return; }
     const originalGroup = editing ? currentRecords.filter((item) => item.recordDate === editing.recordDate && item.store === editing.store && item.productId === editing.productId && normalizeSkc(item.skc) === normalizeSkc(editing.skc)) : [];
     const replacedIds = new Set(originalGroup.map((item) => item.id));
     const nextRecords = selectedSpecs.map((spec, index) => {
@@ -805,10 +825,10 @@ export default function App() {
       const original = originalGroup.find((item) => (item.baseSpecId || item.sourceSpecId || item.specId) === baseSpecId && Math.max(1, Number(item.packQuantity) || 1) === packQuantity);
       const id = duplicate?.id || original?.id || uid();
       replacedIds.add(id); if (duplicate?.id) replacedIds.add(duplicate.id);
-      return { id, store: recordStore, recordDate, productId: product.id, productName: product.productName, specId: spec.id, baseSpecId, specName: spec.name, unitCost: Number(spec.unitCost ?? spec.cost ?? 0), packQuantity, specCost: Number(spec.cost || 0), skc, imageDataUrl, adSpend: adSpends[index], adSpendAllocation: selectedSpecs.length > 1 ? 'estimated' : 'direct', adSales: Number(sales[index]), adOrders: Number(orders[index]), afterSalesLogistics: Number(logistics[index]), note: data.get('note'), updatedAt: new Date().toISOString() };
+      return { id, store: recordStore, recordDate, productId: product.id, productName: product.productName, specId: spec.id, baseSpecId, specName: spec.name, unitCost: Number(spec.unitCost ?? spec.cost ?? 0), packQuantity, specCost: Number(spec.cost || 0), skc, imageDataUrl, financialScope: 'skc-total', adSpend: index === 0 ? skcAdSpend : 0, adSales: index === 0 ? skcAdSales : 0, adOrders: Number(orders[index]), afterSalesLogistics: Number(logistics[index]), note: data.get('note'), updatedAt: new Date().toISOString() };
     });
     if (editing?.id) replacedIds.add(editing.id);
-    update('adRecords', [...nextRecords, ...currentRecords.filter((item) => !replacedIds.has(item.id))]); closeModal(); notify(`${nextRecords.length} 个规格 SKU 广告费已保存`);
+    update('adRecords', [...nextRecords, ...currentRecords.filter((item) => !replacedIds.has(item.id))]); closeModal(); notify(`SKC 总额与 ${nextRecords.length} 个 SKU 订单已保存`);
   };
   const saveDiscount = async (event) => {
     event.preventDefault(); const data = new FormData(event.currentTarget);
@@ -905,7 +925,7 @@ export default function App() {
         {page === 'discounts' && <Discounts records={visible(workspace.discounts)} allLinks={workspace.discounts} products={workspace.products} productFocus={workspace.productFocus || {}} productPricing={workspace.productPricing || {}} manualRecords={visible(workspace.manualActivities || [])} search={search} setSearch={setSearch} onAdd={() => openNew('discount')} onAddCoverageLink={openCoverageLink} onTogglePricing={toggleProductPricing} onGoProducts={() => setPage('products')} onEdit={(item) => openEdit('discount', item)} onQuote={(item) => openEdit('quoteMatrix', item)} onDelete={(item) => remove('discounts', item, item.productName)} onAddManualForLink={openManualForLink} onEditManual={(item) => openEdit('manualActivity', item)} onDeleteManual={(item) => remove('manualActivities', item, item.productName)} />}
         {page === 'products' && <Products records={workspace.products} productFocus={workspace.productFocus || {}} search={search} setSearch={setSearch} onToggleFocus={toggleProductFocus} onEdit={(item) => openEdit('product', item)} onDelete={(item) => remove('products', item, item.productName)} />}
         {page === 'tasks' && <Tasks records={visible(workspace.tasks)} update={(records) => update('tasks', records)} onEdit={(item) => openEdit('task', item)} onDelete={(item) => remove('tasks', item, item.title)} />}
-        {page === 'pricingAds' && <PricingAds products={workspace.products} pricingRecords={visible(workspace.pricingHistory || [])} adRecords={visible(workspace.adRecords || [])} onAddPricing={() => openNew('pricingHistory')} onAddAd={(date) => { setAdEntryDate(date || today()); openNew('adRecord'); }} onEditPricing={(item) => openEdit('pricingHistory', item)} onEditAd={(item) => openEdit('adRecord', item)} onDeletePricing={(item) => remove('pricingHistory', item, `${item.productName} ${item.specName}`)} onDeleteAd={(item) => remove('adRecords', item, `${item.store} ${item.recordDate}`)} />}
+        {page === 'pricingAds' && <PricingAds products={workspace.products} pricingRecords={visible(workspace.pricingHistory || [])} adRecords={visible(workspace.adRecords || [])} onAddPricing={() => openNew('pricingHistory')} onAddAd={(date) => { setAdEntryDate(date || today()); openNew('adRecord'); }} onEditPricing={(item) => openEdit('pricingHistory', item)} onEditAd={(item) => openEdit('adRecord', item)} onDeletePricing={(item) => remove('pricingHistory', item, `${item.productName} ${item.specName}`)} onDeleteAd={removeAdRecord} />}
       </section>
     </main>
     {modal === 'product' && <ProductForm editing={editing} onSubmit={saveProduct} onClose={closeModal} />}
@@ -1029,9 +1049,8 @@ function PricingAds({ products, pricingRecords, adRecords, onAddPricing, onAddAd
   const adSpend = monthAds.reduce((sum, item) => sum + Number(item.adSpend || 0), 0);
   const adSales = monthAds.reduce((sum, item) => sum + Number(item.adSales || 0), 0);
   const adOrders = monthAds.reduce((sum, item) => sum + Number(item.adOrders || 0), 0);
-  const calculatedMonthAds = monthAds.map((item) => adRecordMetrics(item, products));
-  const completeMonthAds = calculatedMonthAds.filter((item) => item.profit != null);
-  const estimatedProfit = monthAds.length && completeMonthAds.length === monthAds.length ? completeMonthAds.reduce((sum, item) => sum + item.profit, 0) : null;
+  const monthGroups = groupAdRecords(monthAds, products);
+  const estimatedProfit = monthGroups.length && monthGroups.every((group) => group.profit != null) ? monthGroups.reduce((sum, group) => sum + group.profit, 0) : null;
   const increased = monthPricing.filter((item) => Number(item.currentPrice) > Number(item.previousPrice)).length;
   const decreased = monthPricing.filter((item) => Number(item.currentPrice) < Number(item.previousPrice)).length;
   const sortedAds = [...adRecords].sort((a, b) => String(b.recordDate).localeCompare(String(a.recordDate)) || String(a.store).localeCompare(String(b.store)));
@@ -1044,9 +1063,9 @@ function PricingAds({ products, pricingRecords, adRecords, onAddPricing, onAddAd
     </div>
     {view === 'ads' ? <>
       <div className="metrics finance-metrics"><Metric label="本月广告费" value={money(adSpend)} /><Metric label="广告销售额" value={money(adSales)} /><Metric label="预计利润" value={estimatedProfit == null ? '待补充' : money(estimatedProfit)} /><Metric label="ROAS" value={adSpend ? `${(adSales / adSpend).toFixed(2)}x` : '—'} /><Metric label="广告订单" value={adOrders} /><Metric label="单均广告成本" value={adOrders ? money(adSpend / adOrders) : '—'} /></div>
-      <AdCalendar month={calendarMonth} records={adRecords} selectedDate={selectedAdDate} onChangeMonth={(month) => { setCalendarMonth(month); setSelectedAdDate(''); }} onSelectDate={(date) => { setSelectedAdDate(date); onAddAd(date); }} />
+      <AdCalendar month={calendarMonth} records={adRecords} selectedDate={selectedAdDate} onChangeMonth={(month) => { setCalendarMonth(month); setSelectedAdDate(''); }} onSelectDate={setSelectedAdDate} onAddDate={(date) => { setSelectedAdDate(date); onAddAd(date); }} />
       <AdTrendChart records={monthAds} />
-      <TableShell title="SKC 与 SKU 每日广告记录" subtitle={selectedAdDate ? `当前查看 ${selectedAdDate} 的广告明细；SKU 广告费为估算分摊时会单独标注` : 'SKC 广告费只录一次；SKU 按销售额占比估算分摊（无销售额时按订单数，再无则均分）。旧记录不自动重算。'}>
+      <TableShell title="SKC 与 SKU 每日广告记录" subtitle={selectedAdDate ? `当前查看 ${selectedAdDate} 的广告明细` : 'SKC 记录广告费与销售额总额；SKU 记录各自订单和成本。旧记录不自动重算。'}>
         {selectedAdDate && <div className="ad-day-filter"><span>已选择 {selectedAdDate}</span><button type="button" onClick={() => setSelectedAdDate('')}>查看全部日期</button></div>}
         <AdGroupTable records={displayedAds} products={products} onEdit={onEditAd} onDelete={onDeleteAd} />
       </TableShell>
@@ -1062,7 +1081,7 @@ function PricingAds({ products, pricingRecords, adRecords, onAddPricing, onAddAd
   </>;
 }
 
-function AdCalendar({ month, records, selectedDate, onChangeMonth, onSelectDate }) {
+function AdCalendar({ month, records, selectedDate, onChangeMonth, onSelectDate, onAddDate }) {
   const [year, monthNumber] = month.split('-').map(Number);
   const firstWeekday = (new Date(year, monthNumber - 1, 1).getDay() + 6) % 7;
   const daysInMonth = new Date(year, monthNumber, 0).getDate();
@@ -1080,17 +1099,20 @@ function AdCalendar({ month, records, selectedDate, onChangeMonth, onSelectDate 
     onChangeMonth(`${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, '0')}`);
   };
   return <div className="panel ad-calendar-panel">
-    <div className="panel-title ad-calendar-title"><div><h2>每日广告日历</h2><p>点击日期，直接录入当天各链接、各 SKU 的广告数据</p></div><div className="ad-calendar-nav"><button type="button" onClick={() => moveMonth(-1)} aria-label="上个月">‹</button><strong>{year}年{monthNumber}月</strong><button type="button" onClick={() => moveMonth(1)} aria-label="下个月">›</button><button type="button" onClick={() => onChangeMonth(today().slice(0, 7))}>本月</button></div></div>
+    <div className="panel-title ad-calendar-title"><div><h2>每日广告日历</h2><p>点日期查看当天记录；只有点“＋录入”才新建记录。</p></div><div className="ad-calendar-nav"><button type="button" onClick={() => moveMonth(-1)} aria-label="上个月">‹</button><strong>{year}年{monthNumber}月</strong><button type="button" onClick={() => moveMonth(1)} aria-label="下个月">›</button><button type="button" onClick={() => onChangeMonth(today().slice(0, 7))}>本月</button></div></div>
     <div className="ad-calendar-grid" aria-label={`${year}年${monthNumber}月广告日历`}>
       {['一', '二', '三', '四', '五', '六', '日'].map((day) => <span className="ad-calendar-weekday" key={day}>周{day}</span>)}
       {Array.from({ length: firstWeekday }, (_, index) => <span className="ad-calendar-blank" key={`blank-${index}`} />)}
       {Array.from({ length: daysInMonth }, (_, index) => {
         const date = `${month}-${String(index + 1).padStart(2, '0')}`;
         const summary = totals.get(date);
-        return <button type="button" className={`ad-calendar-day${date === today() ? ' is-today' : ''}${date === selectedDate ? ' is-selected' : ''}`} key={date} onClick={() => onSelectDate(date)} aria-label={`${date}，${summary ? `${summary.count} 条广告记录，合计 ${money(summary.spend)}` : '暂无广告记录'}，点击录入`}>
-          <span className="ad-calendar-number">{index + 1}</span>
-          {summary ? <><strong>{money(summary.spend)}</strong><small>{summary.count} 条 SKU</small><span className="ad-calendar-store-dots">{stores.filter((store) => summary.stores.has(store)).map((store) => <i key={store} className={`dot ${store.toLowerCase()}`} />)}</span></> : <small className="ad-calendar-empty">＋ 录入</small>}
-        </button>;
+        return <div className={`ad-calendar-day${date === today() ? ' is-today' : ''}${date === selectedDate ? ' is-selected' : ''}`} key={date}>
+          <button type="button" className="ad-calendar-view" onClick={() => onSelectDate(date)} aria-label={`${date}，${summary ? `${summary.count} 条 SKU 广告记录，合计 ${money(summary.spend)}` : '暂无广告记录'}，点击查看`}>
+            <span className="ad-calendar-number">{index + 1}</span>
+            {summary && <><strong>{money(summary.spend)}</strong><small>{summary.count} 条 SKU</small><span className="ad-calendar-store-dots">{stores.filter((store) => summary.stores.has(store)).map((store) => <i key={store} className={`dot ${store.toLowerCase()}`} />)}</span></>}
+          </button>
+          <button type="button" className="ad-calendar-add" onClick={() => onAddDate(date)} aria-label={`${date}，录入广告记录`}>＋ 录入</button>
+        </div>;
       })}
     </div>
   </div>;
@@ -1098,32 +1120,14 @@ function AdCalendar({ month, records, selectedDate, onChangeMonth, onSelectDate 
 
 function AdGroupTable({ records, products, onEdit, onDelete }) {
   const [collapsed, setCollapsed] = useState(() => new Set());
-  const groups = [...records.reduce((map, item) => {
-    const key = [item.recordDate, item.store, item.productId || item.productName, item.skc || ''].join('::');
-    if (!map.has(key)) map.set(key, { key, items: [] });
-    map.get(key).items.push(item);
-    return map;
-  }, new Map()).values()].map((group) => {
-    const first = group.items[0];
-    const rows = group.items.map((item) => ({ item, metrics: adRecordMetrics(item, products) }));
-    const orders = group.items.reduce((sum, item) => sum + Number(item.adOrders || 0), 0);
-    const adSpend = group.items.reduce((sum, item) => sum + Number(item.adSpend || 0), 0);
-    const adSales = group.items.reduce((sum, item) => sum + Number(item.adSales || 0), 0);
-    const hasAfterSales = rows.every(({ metrics }) => metrics.afterSalesTotal != null);
-    const afterSales = hasAfterSales ? rows.reduce((sum, { metrics }) => sum + metrics.afterSalesTotal, 0) : null;
-    const hasCosts = rows.every(({ metrics }) => metrics.productCost != null);
-    const productCost = hasCosts ? rows.reduce((sum, { metrics }) => sum + metrics.productCost, 0) : null;
-    const complete = rows.every(({ metrics }) => metrics.profit != null);
-    const profit = complete ? rows.reduce((sum, { metrics }) => sum + metrics.profit, 0) : null;
-    return { ...group, first, rows, orders, adSpend, adSales, afterSales, productCost, profit, profitPerOrder: profit != null && orders ? profit / orders : null, profitRate: profit != null && adSales ? profit / adSales : null };
-  });
+  const groups = groupAdRecords(records, products);
   const toggle = (key) => setCollapsed((current) => { const next = new Set(current); if (next.has(key)) next.delete(key); else next.add(key); return next; });
   return <table className="ad-group-table"><thead><tr><th>日期</th><th>店铺</th><th>商品链接</th><th>SKC</th><th>SKU</th><th>供货价</th><th>广告费</th><th>售后物流总额</th><th>广告销售额</th><th>订单</th><th>商品成本</th><th>预计利润</th><th>每单利润</th><th>利润率</th><th>操作</th></tr></thead><tbody>
     {groups.flatMap((group) => {
       const isCollapsed = collapsed.has(group.key);
       const image = group.items.find((item) => item.imageDataUrl)?.imageDataUrl;
       const parent = <tr className="ad-group-row" key={`group-${group.key}`}><td>{group.first.recordDate}</td><td><Badge>{group.first.store}</Badge></td><td className="ad-product-cell"><div className="product-cell"><span className="thumb">{image ? <img src={image} alt="" /> : '链'}</span><span><strong>{group.first.productName || '商品链接'}</strong><small>SKC 汇总</small></span></div></td><td><strong>{group.first.skc || '待填写'}</strong></td><td><button className="ad-group-toggle" type="button" onClick={() => toggle(group.key)}>{isCollapsed ? '▸' : '▾'} {group.items.length} 个 SKU</button></td><td>—</td><td><strong>{money(group.adSpend)}</strong><small>SKC 实际总额</small></td><td>{group.afterSales == null ? '待补充' : money(group.afterSales)}</td><td>{group.adSales ? money(group.adSales) : '—'}</td><td>{group.orders || '—'}</td><td>{group.productCost == null ? '待补充' : money(group.productCost)}</td><td className={group.profit == null ? 'pending-value' : group.profit >= 0 ? 'positive' : 'negative'}>{group.profit == null ? '待补充' : money(group.profit)}</td><td className={group.profit == null ? 'pending-value' : group.profitPerOrder == null ? '' : group.profitPerOrder >= 0 ? 'positive' : 'negative'}>{group.profit == null ? '待补充' : group.profitPerOrder == null ? '—' : money(group.profitPerOrder)}</td><td className={group.profitRate == null ? '' : group.profitRate >= 0 ? 'positive' : 'negative'}>{group.profitRate == null ? '—' : `${(group.profitRate * 100).toFixed(1)}%`}</td><td>汇总</td></tr>;
-      const children = isCollapsed ? [] : group.rows.map(({ item, metrics }) => { const orderCount = Number(item.adOrders || 0); return <tr className="ad-sku-row" key={item.id}><td /><td /><td><span className="sku-branch">↳ SKU 明细</span></td><td /><td><strong>{item.specName || '未区分 SKU'}</strong><small>{item.note || ''}</small></td><td>{metrics.specCost == null ? '待补充' : money(metrics.specCost)}</td><td><strong>{money(item.adSpend)}</strong>{item.adSpendAllocation === 'estimated' && <small>估算分摊</small>}</td><td>{metrics.afterSalesTotal == null ? '待补充' : <><strong>{money(metrics.afterSalesTotal)}</strong><small>{money(metrics.afterSalesPerOrder)}/单</small></>}</td><td>{Number(item.adSales) ? money(item.adSales) : '—'}</td><td>{orderCount || '—'}</td><td>{metrics.productCost == null ? '待补充' : money(metrics.productCost)}</td><td className={metrics.profit == null ? 'pending-value' : metrics.profit >= 0 ? 'positive' : 'negative'}>{metrics.profit == null ? '待补充' : money(metrics.profit)}</td><td className={metrics.profit == null ? 'pending-value' : metrics.profitPerOrder == null ? '' : metrics.profitPerOrder >= 0 ? 'positive' : 'negative'}>{metrics.profit == null ? '待补充' : metrics.profitPerOrder == null ? '—' : money(metrics.profitPerOrder)}</td><td className={metrics.profitRate == null ? '' : metrics.profitRate >= 0 ? 'positive' : 'negative'}>{metrics.profitRate == null ? '—' : `${(metrics.profitRate * 100).toFixed(1)}%`}</td><td><RowActions onEdit={() => onEdit(item)} onDelete={() => onDelete(item)} /></td></tr>; });
+      const children = isCollapsed ? [] : group.rows.map(({ item, metrics }) => { const orderCount = Number(item.adOrders || 0); return <tr className="ad-sku-row" key={item.id}><td /><td /><td><span className="sku-branch">↳ SKU 明细</span></td><td /><td><strong>{item.specName || '未区分 SKU'}</strong><small>{item.note || ''}</small></td><td>{metrics.specCost == null ? '待补充' : money(metrics.specCost)}</td><td>{item.financialScope === 'skc-total' ? '—' : <><strong>{money(item.adSpend)}</strong>{item.adSpendAllocation === 'estimated' && <small>估算分摊</small>}</>}</td><td>{metrics.afterSalesTotal == null ? '待补充' : <><strong>{money(metrics.afterSalesTotal)}</strong><small>{money(metrics.afterSalesPerOrder)}/单</small></>}</td><td>{item.financialScope === 'skc-total' ? '—' : Number(item.adSales) ? money(item.adSales) : '—'}</td><td>{orderCount || '—'}</td><td>{metrics.productCost == null ? '待补充' : money(metrics.productCost)}</td><td className={metrics.profit == null ? 'pending-value' : metrics.profit >= 0 ? 'positive' : 'negative'}>{item.financialScope === 'skc-total' ? '—' : metrics.profit == null ? '待补充' : money(metrics.profit)}</td><td className={metrics.profit == null ? 'pending-value' : metrics.profitPerOrder == null ? '' : metrics.profitPerOrder >= 0 ? 'positive' : 'negative'}>{item.financialScope === 'skc-total' ? '—' : metrics.profit == null ? '待补充' : metrics.profitPerOrder == null ? '—' : money(metrics.profitPerOrder)}</td><td className={metrics.profitRate == null ? '' : metrics.profitRate >= 0 ? 'positive' : 'negative'}>{item.financialScope === 'skc-total' ? '—' : metrics.profitRate == null ? '—' : `${(metrics.profitRate * 100).toFixed(1)}%`}</td><td><RowActions onEdit={() => onEdit(item)} onDelete={() => onDelete(item)} /></td></tr>; });
       return [parent, ...children];
     })}
     {!groups.length && <tr><td colSpan="15"><Empty text="暂无 SKU 广告记录，点击“记录广告费”开始录入" /></td></tr>}
@@ -1181,9 +1185,10 @@ function AdRecordForm({ editing, initialDate, products, links, currentStore, onS
   const specs = expandProductSpecsForPacks(selectedProduct);
   const editingSpec = selectedProduct ? findExpandedProductSpec(selectedProduct, editing) : null;
   const editingGroup = editing ? adRecords.filter((item) => item.recordDate === editing.recordDate && item.store === editing.store && item.productId === editing.productId && normalizeSkc(item.skc) === normalizeSkc(editing.skc)) : [];
-  const [skcAdSpend, setSkcAdSpend] = useState(() => editingGroup.reduce((sum, item) => sum + Number(item.adSpend || 0), 0).toFixed(2));
-  const blankRow = (spec = null) => ({ key: uid(), specId: spec?.id || '', afterSalesLogistics: referenceAfterSalesPerOrder(spec), adSales: '', adOrders: '' });
-  const [skuRows, setSkuRows] = useState(() => editingGroup.length ? editingGroup.map((item) => ({ key: uid(), specId: findExpandedProductSpec(selectedProduct, item)?.id || editingSpec?.id || specs[0]?.id || '', afterSalesLogistics: item.afterSalesLogistics ?? referenceAfterSalesPerOrder(findExpandedProductSpec(selectedProduct, item)), adSales: item.adSales ?? '', adOrders: item.adOrders ?? '' })) : [blankRow(specs[0])]);
+  const [skcAdSpend, setSkcAdSpend] = useState(() => editingGroup.length ? editingGroup.reduce((sum, item) => sum + Number(item.adSpend || 0), 0).toFixed(2) : '');
+  const [skcAdSales, setSkcAdSales] = useState(() => editingGroup.length ? editingGroup.reduce((sum, item) => sum + Number(item.adSales || 0), 0).toFixed(2) : '');
+  const blankRow = (spec = null) => ({ key: uid(), specId: spec?.id || '', afterSalesLogistics: referenceAfterSalesPerOrder(spec), adOrders: '' });
+  const [skuRows, setSkuRows] = useState(() => editingGroup.length ? editingGroup.map((item) => ({ key: uid(), specId: findExpandedProductSpec(selectedProduct, item)?.id || editingSpec?.id || specs[0]?.id || '', afterSalesLogistics: item.afterSalesLogistics ?? referenceAfterSalesPerOrder(findExpandedProductSpec(selectedProduct, item)), adOrders: item.adOrders ?? '' })) : [blankRow(specs[0])]);
   const changeSkc = (value) => {
     setSkc(value);
     const found = findLinkBySkc(links, value);
@@ -1212,14 +1217,15 @@ function AdRecordForm({ editing, initialDate, products, links, currentStore, onS
   };
   const removeSkuRow = (key) => setSkuRows((rows) => rows.length > 1 ? rows.filter((row) => row.key !== key) : rows);
   const allSpecsAdded = skuRows.length >= specs.length;
-  return <Modal title={editing ? '修改 SKU 广告费' : '记录 SKU 广告费'} onClose={onClose}>{products.length ? <form onSubmit={onSubmit}>
+  return <Modal title={editing ? '修改 SKC 广告记录' : '记录 SKC 广告数据'} onClose={onClose}>{products.length ? <form onSubmit={onSubmit}>
     <div className="form-grid"><Field label="店铺"><select name="store" value={selectedStore} onChange={(event) => setSelectedStore(event.target.value)}>{stores.map((name) => <option key={name}>{name}</option>)}</select></Field><Field label="日期"><input name="recordDate" type="date" defaultValue={editing?.recordDate || initialDate || today()} required /></Field></div>
     <Field label="SKC（输入后自动查找商品链接）"><input name="skc" value={skc} onChange={(event) => changeSkc(event.target.value)} placeholder="输入 SKC 查找商品链接" /></Field>
     {linkedProduct && <p className="skc-match">已找到 {linkedProduct.store} 店商品链接：{linkedProduct.productName}</p>}
     <Field label="商品链接"><select name="productId" value={productId} onChange={(event) => changeProduct(event.target.value)} required>{products.map((item) => <option key={item.id} value={item.id}>{productCategoryOf(item)} · {item.productName}</option>)}</select></Field>
     <Field label="该 SKC 当日广告费总额"><input name="skcAdSpend" type="number" min="0" step="0.01" value={skcAdSpend} onChange={(event) => setSkcAdSpend(event.target.value)} placeholder="只填写整条 SKC 的一笔总广告费" required /></Field>
-    <div className="ad-sku-editor"><div className="ad-sku-editor-title"><div><b>规格 SKU</b><small>广告费只在上方录入一次；多个 SKU 的广告费按销售额占比估算分摊（无销售额时按订单数，再无则均分）</small></div><button type="button" onClick={addSkuRow} disabled={allSpecsAdded}>{allSpecsAdded ? '已添加全部规格' : '＋ 添加规格 SKU'}</button></div>{skuRows.map((row, index) => <div className="ad-sku-entry" key={row.key}><div className="ad-sku-entry-head"><b>SKU {index + 1}</b>{skuRows.length > 1 && <button type="button" onClick={() => removeSkuRow(row.key)}>移除</button>}</div><div className="form-grid"><Field label="规格"><select name="specId" value={row.specId} onChange={(event) => changeSkuRow(row.key, 'specId', event.target.value)} required>{specs.map((spec) => <option key={spec.id} value={spec.id}>{spec.name} · 供货价 {money(spec.cost)}</option>)}</select></Field><Field label="单个售后物流费"><input name="afterSalesLogistics" type="number" min="0" step="0.01" value={row.afterSalesLogistics} onChange={(event) => changeSkuRow(row.key, 'afterSalesLogistics', event.target.value)} placeholder="按所选规格自动带入，可修改" required /></Field><Field label="广告销售额"><input name="adSales" type="number" min="0" step="0.01" value={row.adSales} onChange={(event) => changeSkuRow(row.key, 'adSales', event.target.value)} required /></Field><Field label="广告订单数"><input name="adOrders" type="number" min="0" step="1" value={row.adOrders} onChange={(event) => changeSkuRow(row.key, 'adOrders', event.target.value)} required /></Field></div></div>)}</div>
-    <Field label="备注"><textarea name="note" defaultValue={editing?.note} placeholder="例如：活动加投、预算调整" /></Field><div className="calc-note"><b>售后物流总额</b>＝单个售后物流费 × 广告订单数；<b>预计利润</b>＝广告销售额 − 广告费 − 售后物流总额 −（SKU供货价 × 广告订单数）。</div><FormActions onClose={onClose} />
+    <Field label="该 SKC 当日广告销售额总额"><input name="skcAdSales" type="number" min="0" step="0.01" value={skcAdSales} onChange={(event) => setSkcAdSales(event.target.value)} placeholder="只填写整条 SKC 的一笔总销售额" required /></Field>
+    <div className="ad-sku-editor"><div className="ad-sku-editor-title"><div><b>规格 SKU</b><small>广告费和销售额只在上方按 SKC 填一次；各 SKU 只填写订单数和单个售后物流费</small></div><button type="button" onClick={addSkuRow} disabled={allSpecsAdded}>{allSpecsAdded ? '已添加全部规格' : '＋ 添加规格 SKU'}</button></div>{skuRows.map((row, index) => <div className="ad-sku-entry" key={row.key}><div className="ad-sku-entry-head"><b>SKU {index + 1}</b>{skuRows.length > 1 && <button type="button" onClick={() => removeSkuRow(row.key)}>移除</button>}</div><div className="form-grid"><Field label="规格"><select name="specId" value={row.specId} onChange={(event) => changeSkuRow(row.key, 'specId', event.target.value)} required>{specs.map((spec) => <option key={spec.id} value={spec.id}>{spec.name} · 供货价 {money(spec.cost)}</option>)}</select></Field><Field label="单个售后物流费"><input name="afterSalesLogistics" type="number" min="0" step="0.01" value={row.afterSalesLogistics} onChange={(event) => changeSkuRow(row.key, 'afterSalesLogistics', event.target.value)} placeholder="按所选规格自动带入，可修改" required /></Field><Field label="该 SKU 订单数"><input name="adOrders" type="number" min="0" step="1" value={row.adOrders} onChange={(event) => changeSkuRow(row.key, 'adOrders', event.target.value)} required /></Field></div></div>)}</div>
+    <Field label="备注"><textarea name="note" defaultValue={editing?.note} placeholder="例如：活动加投、预算调整" /></Field><div className="calc-note"><b>售后物流总额</b>＝各 SKU 的单个售后物流费 × 各自订单数之和；<b>SKC 预计利润</b>＝SKC 销售额总额 − SKC 广告费总额 − 售后物流总额 − 各 SKU 供货成本。SKU 没有独立销售额，因此不单独计算利润。</div><FormActions onClose={onClose} />
   </form> : <><Empty text="请先在商品档案中添加商品和规格，再记录 SKU 广告费" /><div className="actions"><button type="button" onClick={onClose}>关闭</button></div></>}</Modal>;
 }
 
