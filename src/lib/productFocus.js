@@ -8,11 +8,13 @@ export function mergeProductFocus(primary = {}, secondary = {}) {
   return merged;
 }
 
-export function focusCoverage(products = [], links = [], focus = {}, stores = []) {
+export function focusCoverage(products = [], links = [], focus = {}, stores = [], pricing = {}) {
   return products.filter((product) => focus?.[product.id]?.active).map((product) => {
     const counts = Object.fromEntries(stores.map((store) => [store, new Set(links.filter((link) => link.store === store
       && (link.productId ? link.productId === product.id : link.productName === product.productName))
       .map((link) => String(link.productCode || link.skc || '').trim().toUpperCase()).filter(Boolean)).size]));
-    return { product, counts, missing: stores.filter((store) => !counts[store]) };
+    const pendingLinks = stores.filter((store) => !counts[store]);
+    const missing = pendingLinks.filter((store) => !pricing[`${product.id}:${store}`]?.active);
+    return { product, counts, missing, pendingLinks };
   }).sort((left, right) => right.missing.length - left.missing.length || left.product.productName.localeCompare(right.product.productName, 'zh-CN'));
 }

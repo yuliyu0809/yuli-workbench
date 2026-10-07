@@ -1256,15 +1256,15 @@ function Tasks({ records, update, onEdit, onDelete }) {
   return <div className="task-grid">{section('today', '今天')}{section('week', '本周')}</div>;
 }
 function FocusCoverage({ products, links, productFocus, productPricing, onAddLink, onTogglePricing, onGoProducts }) {
-  const rows = focusCoverage(products, links, productFocus, stores);
+  const rows = focusCoverage(products, links, productFocus, stores, productPricing);
   const ready = rows.filter((row) => !row.missing.length).length;
-  const pricedWaiting = rows.reduce((count, row) => count + row.missing.filter((store) => productPricing[`${row.product.id}:${store}`]?.active).length, 0);
+  const pricedWaiting = rows.reduce((count, row) => count + row.pendingLinks.filter((store) => productPricing[`${row.product.id}:${store}`]?.active).length, 0);
   return <div className="panel focus-coverage-panel">
-    <div className="panel-title focus-coverage-heading"><div><h2>重点产品三店覆盖</h2><p>每店至少 1 条商品链接才算达标；已核价但未上链接单独标记。</p></div><span>{rows.length ? `${ready}/${rows.length} 个已达标 · ${pricedWaiting} 店待上链接` : '尚未标记重点产品'}</span></div>
-    {rows.length ? <div className="focus-coverage-scroll"><table className="focus-coverage-table"><thead><tr><th>重点产品</th>{stores.map((store) => <th key={store}>{store}</th>)}<th>状态</th></tr></thead><tbody>{rows.map(({ product, counts, missing }) => <tr key={product.id}>
+    <div className="panel-title focus-coverage-heading"><div><h2>重点产品三店进度</h2><p>每店已有链接或标记已核价就算完成；未上链接仍单独提醒。</p></div><span>{rows.length ? `${ready}/${rows.length} 个已完成 · ${pricedWaiting} 店待上链接` : '尚未标记重点产品'}</span></div>
+    {rows.length ? <div className="focus-coverage-scroll"><table className="focus-coverage-table"><thead><tr><th>重点产品</th>{stores.map((store) => <th key={store}>{store}</th>)}<th>状态</th></tr></thead><tbody>{rows.map(({ product, counts, missing, pendingLinks }) => <tr key={product.id}>
       <td><strong>{product.productName}</strong></td>
       {stores.map((store) => <td key={store}>{counts[store] ? <span className="focus-covered">✓ 已有 {counts[store]} 条链接</span> : <div className="focus-store-actions">{productPricing[`${product.id}:${store}`]?.active ? <button type="button" className="focus-priced" onClick={() => onTogglePricing(product, store)} title="点击取消已核价标记">✓ 已核价 · 待上链接</button> : <button type="button" className="focus-unpriced" onClick={() => onTogglePricing(product, store)}>标记已核价</button>}<button type="button" className="focus-missing" onClick={() => onAddLink(product, store)}>＋ 新增链接</button></div>}</td>)}
-      <td><span className={missing.length ? 'focus-incomplete' : 'focus-complete'}>{missing.length ? `待补 ${missing.join('、')}` : '已达标'}</span></td>
+      <td><span className={missing.length ? 'focus-incomplete' : 'focus-complete'}>{missing.length ? `待完成 ${missing.join('、')}` : '✓ 已完成'}</span>{!missing.length && pendingLinks.length > 0 && <small className="focus-link-reminder">待上链接 {pendingLinks.join('、')}</small>}</td>
     </tr>)}</tbody></table></div> : <div className="focus-coverage-empty">先在商品档案中给需要重点关注的产品标记星号。<button type="button" onClick={onGoProducts}>去商品档案 →</button></div>}
   </div>;
 }

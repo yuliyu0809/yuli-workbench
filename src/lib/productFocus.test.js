@@ -9,6 +9,16 @@ test('coverage counts distinct SKC links per store, not specifications', () => {
   assert.equal(rows.length, 1);
   assert.deepEqual(rows[0].counts, { AG: 1, DS: 0, HX: 1 });
   assert.deepEqual(rows[0].missing, ['DS']);
+  assert.deepEqual(rows[0].pendingLinks, ['DS']);
+});
+
+test('a store marked priced is complete even before its link is added', () => {
+  const products = [{ id: 'p1', productName: '灯串' }];
+  const links = [{ productId: 'p1', store: 'AG', productCode: 'A' }];
+  const pricing = { 'p1:DS': { active: true }, 'p1:HX': { active: true } };
+  const [row] = focusCoverage(products, links, { p1: { active: true } }, ['AG', 'DS', 'HX'], pricing);
+  assert.deepEqual(row.missing, []);
+  assert.deepEqual(row.pendingLinks, ['DS', 'HX']);
 });
 
 test('newer focus changes win, including unmarking', () => {
