@@ -1036,7 +1036,7 @@ function LaunchChart({ records, target }) {
   </div>;
 }
 function Metric({ label, value }) { return <div className="metric"><i /><span>{label}</span><strong>{value}</strong></div>; }
-function TableShell({ title, subtitle, search, setSearch, action, children }) { return <div className="panel table-panel"><div className="panel-title"><div><h2>{title}</h2><p>{subtitle}</p></div>{(setSearch || action) && <div className="table-panel-actions">{setSearch && <input className="search" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="搜索商品名称" />}{action}</div>}</div>{children}</div>; }
+function TableShell({ title, subtitle, search, setSearch, action, children }) { return <div className="panel table-panel"><div className="panel-title"><div><h2>{title}</h2><p>{subtitle}</p></div>{(setSearch || action) && <div className="table-panel-actions">{action}{setSearch && <input className="search" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="搜索商品名称" />}</div>}</div>{children}</div>; }
 function RowActions({ onEdit, onDelete }) { return <div className="row-actions"><button onClick={onEdit}>编辑</button><button className="danger" onClick={onDelete}>删除</button></div>; }
 
 function PricingAds({ products, pricingRecords, adRecords, onAddPricing, onAddAd, onEditPricing, onEditAd, onDeletePricing, onDeleteAd }) {
@@ -1274,7 +1274,7 @@ function Discounts({ records, allLinks, products, productFocus, productPricing, 
   return <>
     <div className="record-view-head"><p className="merged-record-hint">一个 SKC 对应一条商品，手动可报活动直接记在商品下。</p><button type="button" className="primary" onClick={onAdd}>＋ 新增商品链接</button></div>
     <FocusCoverage products={products} links={allLinks} productFocus={productFocus} productPricing={productPricing} onAddLink={onAddCoverageLink} onTogglePricing={onTogglePricing} onGoProducts={onGoProducts} />
-    <DiscountActivity records={records} manualRecords={manualRecords} search={search} setSearch={setSearch} onEdit={onEdit} onQuote={onQuote} onDelete={onDelete} onAddManualForLink={onAddManualForLink} onEditManual={onEditManual} onDeleteManual={onDeleteManual} />
+    <DiscountActivity records={records} manualRecords={manualRecords} search={search} setSearch={setSearch} onAdd={onAdd} onEdit={onEdit} onQuote={onQuote} onDelete={onDelete} onAddManualForLink={onAddManualForLink} onEditManual={onEditManual} onDeleteManual={onDeleteManual} />
     {unmatchedManual.length > 0 && <ManualActivities records={unmatchedManual} links={records} search={search} setSearch={setSearch} onEdit={onEditManual} onDelete={onDeleteManual} unmatched />}
   </>;
 }
@@ -1293,7 +1293,7 @@ function ManualActivityChips({ activities, link, onAdd, onQuote, onEdit, onDelet
   return <div className="merged-activity-list"><button type="button" className="quote-open-button" onClick={() => onQuote(link)}>可报价记录表</button>{activities.map((activity) => <span className="merged-activity" key={activity.id}><button type="button" onClick={() => onEdit(activity)} title="修改这条可报活动">{discountText(manualActivityDiscount(activity))}</button><button type="button" className="merged-activity-remove" onClick={() => onDelete(activity)} title="删除这条可报活动" aria-label={`删除 ${discountText(manualActivityDiscount(activity))} 活动`}>×</button></span>)}<button type="button" className="merged-activity-add" onClick={() => onAdd(link)}>{activities.length ? '＋ 添加折扣' : '＋ 记录可报折扣'}</button></div>;
 }
 
-function DiscountActivity({ records, manualRecords, search, setSearch, onEdit, onQuote, onDelete, onAddManualForLink, onEditManual, onDeleteManual }) {
+function DiscountActivity({ records, manualRecords, search, setSearch, onAdd, onEdit, onQuote, onDelete, onAddManualForLink, onEditManual, onDeleteManual }) {
   const [tierFilter, setTierFilter] = useState(null);
   const matchesCategory = (item, tier) => matchesDiscountTier(
     manualRecords.filter((record) => normalizeSkc(record.productCode) === normalizeSkc(item.productCode)).map(manualActivityDiscount),
@@ -1319,7 +1319,7 @@ function DiscountActivity({ records, manualRecords, search, setSearch, onEdit, o
         </button>;
       })}
     </div>
-    <TableShell title="商品链接记录" subtitle={`每个 SKC 对应一条商品；“最低可报”是自动核算，“我的可报活动”是你单独记录的折扣${tierFilter ? ` · 当前查看可报 ${discountText(tierFilter)} 的商品` : ''}`} search={search} setSearch={setSearch}>
+    <TableShell title="商品链接记录" subtitle={`每个 SKC 对应一条商品；“最低可报”是自动核算，“我的可报活动”是你单独记录的折扣${tierFilter ? ` · 当前查看可报 ${discountText(tierFilter)} 的商品` : ''}`} search={search} setSearch={setSearch} action={<button className="primary" type="button" onClick={onAdd}>＋ 新增链接</button>}>
       <table><thead><tr><th>商品（含我的可报活动）</th><th>店铺</th><th>供货价</th><th>当前售价</th><th>最低售价</th><th>最低折扣</th><th>最低可报</th><th>活动价</th><th>预计利润</th><th>操作</th></tr></thead><tbody>
         {filtered.map((item) => {
           const specs = normalizeDiscountSpecs(item);
