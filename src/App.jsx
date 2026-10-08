@@ -1046,11 +1046,12 @@ function PricingAds({ products, pricingRecords, adRecords, onAddPricing, onAddAd
   const monthKey = today().slice(0, 7);
   const monthAds = adRecords.filter((item) => item.recordDate?.startsWith(monthKey));
   const monthPricing = pricingRecords.filter((item) => item.priceDate?.startsWith(monthKey));
-  const adSpend = monthAds.reduce((sum, item) => sum + Number(item.adSpend || 0), 0);
-  const adSales = monthAds.reduce((sum, item) => sum + Number(item.adSales || 0), 0);
-  const adOrders = monthAds.reduce((sum, item) => sum + Number(item.adOrders || 0), 0);
-  const monthGroups = groupAdRecords(monthAds, products);
-  const estimatedProfit = monthGroups.length && monthGroups.every((group) => group.profit != null) ? monthGroups.reduce((sum, group) => sum + group.profit, 0) : null;
+  const metricAds = selectedAdDate ? adRecords.filter((item) => item.recordDate === selectedAdDate) : monthAds;
+  const adSpend = metricAds.reduce((sum, item) => sum + Number(item.adSpend || 0), 0);
+  const adSales = metricAds.reduce((sum, item) => sum + Number(item.adSales || 0), 0);
+  const adOrders = metricAds.reduce((sum, item) => sum + Number(item.adOrders || 0), 0);
+  const metricGroups = groupAdRecords(metricAds, products);
+  const estimatedProfit = metricGroups.length && metricGroups.every((group) => group.profit != null) ? metricGroups.reduce((sum, group) => sum + group.profit, 0) : null;
   const increased = monthPricing.filter((item) => Number(item.currentPrice) > Number(item.previousPrice)).length;
   const decreased = monthPricing.filter((item) => Number(item.currentPrice) < Number(item.previousPrice)).length;
   const sortedAds = [...adRecords].sort((a, b) => String(b.recordDate).localeCompare(String(a.recordDate)) || String(a.store).localeCompare(String(b.store)));
@@ -1062,7 +1063,7 @@ function PricingAds({ products, pricingRecords, adRecords, onAddPricing, onAddAd
       <button className="primary" type="button" onClick={() => view === 'ads' ? onAddAd() : onAddPricing()}>＋ {view === 'ads' ? '记录广告费' : '记录核价变化'}</button>
     </div>
     {view === 'ads' ? <>
-      <div className="metrics finance-metrics"><Metric label="本月广告费" value={money(adSpend)} /><Metric label="广告销售额" value={money(adSales)} /><Metric label="预计利润" value={estimatedProfit == null ? '待补充' : money(estimatedProfit)} /><Metric label="ROAS" value={adSpend ? `${(adSales / adSpend).toFixed(2)}x` : '—'} /><Metric label="广告订单" value={adOrders} /><Metric label="单均广告成本" value={adOrders ? money(adSpend / adOrders) : '—'} /></div>
+      <div className="metrics finance-metrics"><Metric label={selectedAdDate ? '当日广告费' : '本月广告费'} value={money(adSpend)} /><Metric label="广告销售额" value={money(adSales)} /><Metric label="预计利润" value={estimatedProfit == null ? '待补充' : money(estimatedProfit)} /><Metric label="ROAS" value={adSpend ? `${(adSales / adSpend).toFixed(2)}x` : '—'} /><Metric label="广告订单" value={adOrders} /><Metric label="单均广告成本" value={adOrders ? money(adSpend / adOrders) : '—'} /></div>
       <AdCalendar month={calendarMonth} records={adRecords} selectedDate={selectedAdDate} onChangeMonth={(month) => { setCalendarMonth(month); setSelectedAdDate(''); }} onSelectDate={setSelectedAdDate} onAddDate={(date) => { setSelectedAdDate(date); onAddAd(date); }} />
       <AdTrendChart records={monthAds} />
       <TableShell title="SKC 与 SKU 每日广告记录" subtitle={selectedAdDate ? `当前查看 ${selectedAdDate} 的广告明细` : 'SKC 记录广告费与销售额总额；SKU 记录各自订单和成本。旧记录不自动重算。'} action={<button className="primary" type="button" onClick={() => onAddAd(selectedAdDate || today())}>＋ 新增</button>}>
