@@ -1036,7 +1036,7 @@ function LaunchChart({ records, target }) {
   </div>;
 }
 function Metric({ label, value }) { return <div className="metric"><i /><span>{label}</span><strong>{value}</strong></div>; }
-function TableShell({ title, subtitle, search, setSearch, children }) { return <div className="panel table-panel"><div className="panel-title"><div><h2>{title}</h2><p>{subtitle}</p></div>{setSearch && <input className="search" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="搜索商品名称" />}</div>{children}</div>; }
+function TableShell({ title, subtitle, search, setSearch, action, children }) { return <div className="panel table-panel"><div className="panel-title"><div><h2>{title}</h2><p>{subtitle}</p></div>{(setSearch || action) && <div className="table-panel-actions">{setSearch && <input className="search" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="搜索商品名称" />}{action}</div>}</div>{children}</div>; }
 function RowActions({ onEdit, onDelete }) { return <div className="row-actions"><button onClick={onEdit}>编辑</button><button className="danger" onClick={onDelete}>删除</button></div>; }
 
 function PricingAds({ products, pricingRecords, adRecords, onAddPricing, onAddAd, onEditPricing, onEditAd, onDeletePricing, onDeleteAd }) {
@@ -1065,7 +1065,7 @@ function PricingAds({ products, pricingRecords, adRecords, onAddPricing, onAddAd
       <div className="metrics finance-metrics"><Metric label="本月广告费" value={money(adSpend)} /><Metric label="广告销售额" value={money(adSales)} /><Metric label="预计利润" value={estimatedProfit == null ? '待补充' : money(estimatedProfit)} /><Metric label="ROAS" value={adSpend ? `${(adSales / adSpend).toFixed(2)}x` : '—'} /><Metric label="广告订单" value={adOrders} /><Metric label="单均广告成本" value={adOrders ? money(adSpend / adOrders) : '—'} /></div>
       <AdCalendar month={calendarMonth} records={adRecords} selectedDate={selectedAdDate} onChangeMonth={(month) => { setCalendarMonth(month); setSelectedAdDate(''); }} onSelectDate={setSelectedAdDate} onAddDate={(date) => { setSelectedAdDate(date); onAddAd(date); }} />
       <AdTrendChart records={monthAds} />
-      <TableShell title="SKC 与 SKU 每日广告记录" subtitle={selectedAdDate ? `当前查看 ${selectedAdDate} 的广告明细` : 'SKC 记录广告费与销售额总额；SKU 记录各自订单和成本。旧记录不自动重算。'}>
+      <TableShell title="SKC 与 SKU 每日广告记录" subtitle={selectedAdDate ? `当前查看 ${selectedAdDate} 的广告明细` : 'SKC 记录广告费与销售额总额；SKU 记录各自订单和成本。旧记录不自动重算。'} action={<button className="primary" type="button" onClick={() => onAddAd(selectedAdDate || today())}>＋ 新增</button>}>
         {selectedAdDate && <div className="ad-day-filter"><span>已选择 {selectedAdDate}</span><button type="button" onClick={() => setSelectedAdDate('')}>查看全部日期</button></div>}
         <AdGroupTable records={displayedAds} products={products} onEdit={onEditAd} onDelete={onDeleteAd} />
       </TableShell>
