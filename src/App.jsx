@@ -1194,6 +1194,12 @@ function AdRecordForm({ editing, initialDate, products, links, adRecords = [], c
   const [productId, setProductId] = useState(initialProductId);
   const [skc, setSkc] = useState(editing?.skc || '');
   const [selectedStore, setSelectedStore] = useState(editing?.store || (currentStore === STORE_ALL ? 'AG' : currentStore));
+  const [showSkcSuggestions, setShowSkcSuggestions] = useState(false);
+  const skcQuery = skc.trim().toLowerCase();
+  const skcSuggestions = links.filter((link) => {
+    const code = String(link.productCode || link.skc || '').trim();
+    return code && (!skcQuery || `${code} ${link.productName || ''}`.toLowerCase().includes(skcQuery));
+  }).sort((a, b) => Number(b.store === selectedStore) - Number(a.store === selectedStore)).slice(0, 8);
   const linkedProduct = findLinkBySkc(links, skc);
   const selectedProduct = products.find((item) => item.id === productId);
   const specs = expandProductSpecsForPacks(selectedProduct);
@@ -1233,7 +1239,7 @@ function AdRecordForm({ editing, initialDate, products, links, adRecords = [], c
   const allSpecsAdded = skuRows.length >= specs.length;
   return <Modal title={editing ? '修改 SKC 广告记录' : '记录 SKC 广告数据'} onClose={onClose}>{products.length ? <form onSubmit={onSubmit}>
     <div className="form-grid"><Field label="店铺"><select name="store" value={selectedStore} onChange={(event) => setSelectedStore(event.target.value)}>{stores.map((name) => <option key={name}>{name}</option>)}</select></Field><Field label="日期"><input name="recordDate" type="date" defaultValue={editing?.recordDate || initialDate || today()} required /></Field></div>
-    <Field label="SKC（输入后自动查找商品链接）"><input name="skc" value={skc} onChange={(event) => changeSkc(event.target.value)} placeholder="输入 SKC 查找商品链接" /></Field>
+    <div className="field skc-image-picker" onBlur={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) setShowSkcSuggestions(false); }}><label htmlFor="ad-record-skc">SKC（可按编号或商品名称查找）</label><input id="ad-record-skc" name="skc" autoComplete="off" value={skc} onFocus={() => setShowSkcSuggestions(true)} onChange={(event) => { changeSkc(event.target.value); setShowSkcSuggestions(true); }} onKeyDown={(event) => { if (event.key === 'Escape') setShowSkcSuggestions(false); }} placeholder="输入或选择商品链接的 SKC" />{showSkcSuggestions && skcSuggestions.length > 0 && <div className="skc-image-options">{skcSuggestions.map((link) => { const code = String(link.productCode || link.skc).trim(); const product = products.find((item) => item.id === link.productId || item.productName === link.productName); const image = link.imageDataUrl || product?.imageDataUrl; return <button type="button" key={link.id || `${link.store}-${code}`} onMouseDown={(event) => event.preventDefault()} onClick={() => { changeSkc(code); setShowSkcSuggestions(false); }}><span className="skc-option-image">{image ? <img src={image} alt="" /> : '链'}</span><span className="skc-option-detail"><strong>{link.productName || product?.productName || '商品链接'}</strong><small>{link.store} 店 · SKC {code}</small></span></button>; })}</div>}</div>
     {linkedProduct && <p className="skc-match">已找到 {linkedProduct.store} 店商品链接：{linkedProduct.productName}</p>}
     <Field label="商品链接"><select name="productId" value={productId} onChange={(event) => changeProduct(event.target.value)} required>{products.map((item) => <option key={item.id} value={item.id}>{productCategoryOf(item)} · {item.productName}</option>)}</select></Field>
     <Field label="该 SKC 当日广告费总额"><input name="skcAdSpend" type="number" min="0" step="0.01" value={skcAdSpend} onChange={(event) => setSkcAdSpend(event.target.value)} placeholder="只填写整条 SKC 的一笔总广告费" required /></Field>
