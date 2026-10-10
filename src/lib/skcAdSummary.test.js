@@ -10,6 +10,7 @@ test('SKC-level revenue and ad spend are counted once while SKU costs add up', (
   assert.equal(summary.adSpend, 20);
   assert.equal(summary.adSales, 100);
   assert.equal(summary.orders, 3);
+  assert.equal(summary.adSpendPerOrder, 20 / 3);
   assert.equal(summary.profit, 42);
 });
 
@@ -19,6 +20,20 @@ test('historical SKU-level profits are preserved in group totals', () => {
     { item: { adSpend: 3, adSales: 10, adOrders: 1 }, metrics: { afterSalesTotal: 1, productCost: 2, profit: 4 } },
   ]);
   assert.equal(summary.profit, 14);
+  assert.equal(summary.adSpendPerOrder, 4);
+});
+
+test('per-order advertising spend matches the actual SKC total divided by orders', () => {
+  const summary = summarizeSkcAdRows([
+    { item: { financialScope: 'skc-total', adSpend: 11.65, adOrders: 5 }, metrics: {} },
+  ]);
+  assert.equal(summary.adSpendPerOrder.toFixed(2), '2.33');
+});
+
+test('per-order advertising spend is unavailable without positive orders', () => {
+  for (const rows of [[], [{ item: { adSpend: 10, adOrders: 0 }, metrics: {} }]]) {
+    assert.equal(summarizeSkcAdRows(rows).adSpendPerOrder, null);
+  }
 });
 
 test('deleting the carrier SKU preserves actual SKC totals on the remaining SKU', () => {

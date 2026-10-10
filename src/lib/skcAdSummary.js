@@ -12,6 +12,7 @@ export function summarizeSkcAdRows(rows) {
     ? afterSales != null && productCost != null ? adSales - adSpend - afterSales - productCost : null
     : rows.every(({ metrics }) => metrics.profit != null) ? rows.reduce((sum, { metrics }) => sum + metrics.profit, 0) : null;
   return { orders, adSpend, adSales, afterSales, productCost, profit,
+    adSpendPerOrder: orders > 0 ? adSpend / orders : null,
     profitPerOrder: profit != null && orders ? profit / orders : null,
     profitRate: profit != null && adSales ? profit / adSales : null };
 }
