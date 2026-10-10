@@ -67,3 +67,4 @@ tbody tr:hover,tbody tr:hover td{background:rgba(236,246,252,.64)}
 .quote-minimum-summary{display:inline-flex;align-items:center;gap:6px;margin-top:9px;padding:6px 10px;border:1px solid rgba(133,184,206,.65);border-radius:10px;background:rgba(248,253,255,.76);color:#436b78;font-size:12px}.quote-minimum-summary b{color:#235b5f;font-size:13px}.quote-spec-name,.quote-spec-own-price,.quote-spec-minimum{display:block}.quote-spec-own-price,.quote-spec-minimum{margin-top:5px;font-size:11px;font-weight:700;white-space:nowrap}.quote-spec-own-price{color:#285b4d}.quote-spec-minimum{color:#2f7180}
 .focus-link-reminder{display:block;margin-top:4px;color:#8a7867;font-size:11px;white-space:nowrap}
 .table-panel-actions{display:flex;align-items:center;gap:10px;flex-shrink:0}.table-panel-actions .primary{white-space:nowrap}
+.translation-service-note{margin:0 0 12px;color:#71848b;font-size:11px;line-height:1.6}

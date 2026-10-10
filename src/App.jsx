@@ -7,6 +7,7 @@ import { creationTimeForLink, sortProductLinksNewestFirst } from './lib/productL
 import { matchesDiscountTier } from './lib/discountClassification.js';
 import { focusCoverage, mergeProductFocus } from './lib/productFocus.js';
 import { removeAdSkuPreservingTotals, summarizeSkcAdRows } from './lib/skcAdSummary.js';
+import { createTitleTranslationController } from './lib/titleTranslation.js';
 import { lightingCatalogVersion, lightingProductCatalog } from './data/lightingProductCatalog.js';
 
 const STORE_ALL = '全部店铺';
@@ -361,6 +362,9 @@ export default function App() {
   const backgroundSyncRef = useRef(false);
   const lastCloudUpdatedAtRef = useRef('');
   const backupInputRef = useRef(null);
+  const titleTranslationRef = useRef(null);
+  const titleInputRef = useRef(null);
+  useEffect(() => () => titleTranslationRef.current?.cancel(), []);
 
   const queueLocalSnapshot = (data, dirty = localDirtyRef.current) => {
     const write = localWriteQueue.current.catch(() => {}).then(() => writeIndexedWorkspace({ workspace: data, dirty }));
@@ -712,7 +716,13 @@ export default function App() {
     update('dailyFormCompletedDate', dailyFormDone ? '' : today());
     notify(dailyFormDone ? '已恢复为今日待填写' : '已记录今日填表完成');
   };
-  const updateListingHelper = (key, value) => update('listingHelper', { ...emptyListingHelper, ...(workspace.listingHelper || {}), [key]: value });
+  const updateListingHelper = (key, value, composing = false) => {
+    update('listingHelper', { ...emptyListingHelper, ...(workspaceRef.current.listingHelper || {}), [key]: value });
+    if (key === 'chineseTitle' || key === 'englishTitle') {
+      titleInputRef.current = { key, value };
+      titleTranslationRef.current.request(value, key, { composing });
+    }
+  };
   const copyListingText = async (value, label) => {
     if (!String(value || '').trim()) { notify(`请先填写${label}`); return; }
     try {
@@ -722,26 +732,28 @@ export default function App() {
       notify('复制失败，请选中文字复制');
     }
   };
-  const translateListingTitle = async () => {
-    const source = String(workspace.listingHelper?.chineseTitle || '').trim();
-    if (!source) { notify('请先填写中文标题'); return; }
-    if (new TextEncoder().encode(source).length > 480) { notify('标题太长，请缩短后再翻译'); return; }
-    setTranslationBusy(true);
-    try {
-      const response = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(source)}&langpair=zh-CN%7Cen`);
+  if (!titleTranslationRef.current) titleTranslationRef.current = createTitleTranslationController({
+    translate: async (source, langpair, signal) => {
+      const response = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(source)}&langpair=${encodeURIComponent(langpair)}`, { signal });
       const data = await response.json();
       const rawTranslation = data?.responseData?.translatedText;
-      if (!response.ok || !rawTranslation) throw new Error('translation failed');
+      if (!response.ok || Number(data?.responseStatus) !== 200 || !rawTranslation) throw new Error('translation failed');
       const translated = new DOMParser().parseFromString(String(rawTranslation), 'text/html').documentElement.textContent.trim();
-      updateListingHelper('englishTitle', translated);
-      notify('英文标题已生成，请检查后使用');
-    } catch {
-      notify('暂时无法翻译，请稍后重试');
-    } finally {
-      setTranslationBusy(false);
-    }
+      if (!translated) throw new Error('translation empty');
+      return translated;
+    },
+    onResult: ({ sourceKey, targetKey, source, translated }) => update('listingHelper', { ...emptyListingHelper, ...(workspaceRef.current.listingHelper || {}), [sourceKey]: source, [targetKey]: translated }),
+    onStatus: (status, message) => { setTranslationBusy(status === 'busy'); if (message) notify(message); },
+  });
+  const translateListingTitle = () => {
+    const helper = workspaceRef.current.listingHelper || {};
+    const input = titleInputRef.current || (helper.chineseTitle ? { key: 'chineseTitle', value: helper.chineseTitle } : { key: 'englishTitle', value: helper.englishTitle });
+    if (!String(input.value || '').trim()) { notify('请先填写中文或英文标题'); return; }
+    titleTranslationRef.current.request(input.value, input.key, { immediate: true });
   };
   const clearListingHelper = () => {
+    titleTranslationRef.current.cancel();
+    titleInputRef.current = null;
     update('listingHelper', { ...emptyListingHelper });
     notify('上新助手已清空');
   };
@@ -990,10 +1002,11 @@ function ListingHelper({ value, translating, onTranslate, onChange, onCopy, onCl
     <div className="listing-helper-head"><div><h2>上新标题与尺寸助手</h2><p>中英文标题和换算内容会自动保存，方便写商品链接时直接复制。</p></div><button type="button" onClick={onClear}>清空</button></div>
     <div className="listing-helper-grid">
       <section className="title-helper">
-        <div className="helper-section-title"><strong>标题翻译</strong><span>中文 → 英文</span></div>
-        <label><span>中文标题</span><textarea value={value.chineseTitle} onChange={(event) => onChange('chineseTitle', event.target.value)} placeholder="输入需要翻译的中文商品标题" /></label>
-        <div className="title-helper-actions"><button type="button" className="translate-button" disabled={translating} onClick={onTranslate}>{translating ? '正在翻译…' : '翻译成英文'}</button><button type="button" onClick={() => onCopy(value.chineseTitle, '中文标题')}>复制中文</button></div>
-        <label><span>英文标题</span><textarea value={value.englishTitle} onChange={(event) => onChange('englishTitle', event.target.value)} placeholder="翻译结果会显示在这里，也可以继续修改" /></label>
+        <div className="helper-section-title"><strong>标题翻译</strong><span>中文 ⇄ 英文 · 输入后自动翻译</span></div>
+        <p className="translation-service-note">停顿约 0.8 秒后自动翻译；标题会发送到在线翻译服务，请检查结果后使用。</p>
+        <label><span>中文标题</span><textarea value={value.chineseTitle} onCompositionStart={(event) => onChange('chineseTitle', event.currentTarget.value, true)} onCompositionEnd={(event) => onChange('chineseTitle', event.currentTarget.value)} onChange={(event) => onChange('chineseTitle', event.target.value, event.nativeEvent.isComposing)} placeholder="输入中文标题，停顿后自动翻译成英文" /></label>
+        <div className="title-helper-actions"><button type="button" className="translate-button" disabled={translating} onClick={onTranslate}>{translating ? '正在翻译…' : '重新翻译'}</button><button type="button" onClick={() => onCopy(value.chineseTitle, '中文标题')}>复制中文</button></div>
+        <label><span>英文标题</span><textarea value={value.englishTitle} onCompositionStart={(event) => onChange('englishTitle', event.currentTarget.value, true)} onCompositionEnd={(event) => onChange('englishTitle', event.currentTarget.value)} onChange={(event) => onChange('englishTitle', event.target.value, event.nativeEvent.isComposing)} placeholder="输入英文标题，停顿后自动翻译成中文" /></label>
         <button type="button" className="copy-primary" onClick={() => onCopy(value.englishTitle, '英文标题')}>复制英文标题</button>
       </section>
       <section className="size-helper">
