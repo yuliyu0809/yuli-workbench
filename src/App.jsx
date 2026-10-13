@@ -261,17 +261,18 @@ function readLocal() {
 const migrateCatalogVersion = (current) => {
   const catalogById = new Map(lightingProductCatalog.map((product) => [product.id, product]));
   const catalogByName = new Map(lightingProductCatalog.map((product) => [product.productName, product]));
+  const savedProductIdByName = new Map((current.products || []).map((product) => [product.productName, product.id]));
   const syncSpecs = (savedSpecs, product) => (savedSpecs || []).map((spec) => {
     const catalogSpec = product?.specs?.find((item) => item.id === spec.id || item.id === spec.specId);
     if (!catalogSpec) return spec;
     return spec.specId ? { ...spec, specName: catalogSpec.name } : { ...spec, name: catalogSpec.name };
   });
   const discounts = (current.discounts || []).map((record) => {
-    const product = catalogByName.get(record.productName);
+    const product = catalogById.get(record.productId) || catalogByName.get(record.productName) || catalogById.get(savedProductIdByName.get(record.productName));
     if (!product) return record;
     const specs = syncSpecs(record.specs, product);
     const limitingSpec = specs.find((spec) => spec.id === record.specs?.find((item) => item.name === record.limitingSpecName)?.id);
-    return { ...record, specs, limitingSpecName: limitingSpec?.name || record.limitingSpecName };
+    return { ...record, productName: product.productName, specs, limitingSpecName: limitingSpec?.name || record.limitingSpecName };
   });
   const priceReferences = (current.priceReferences || []).map((record) => {
     const product = catalogById.get(record.productId);

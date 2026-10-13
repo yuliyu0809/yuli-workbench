@@ -1,5 +1,5 @@
 // 商品与供货价来自《利润核算参考表（20260918）.xls》，利润字段由网站按原表公式实时计算。
-export const lightingCatalogVersion = '20260918-profit-v1';
+export const lightingCatalogVersion = '20260918-profit-v2';
 export const lightingProductCatalog = [
   {
     "id": "P0001",
@@ -1535,13 +1535,13 @@ export const lightingProductCatalog = [
     "sourceRow": 106,
     "specs": [
       {
-        "name": "15+2米500灯",
+        "name": "50+2米500灯",
         "cost": 19.5,
         "sourceRow": 106,
         "id": "P0144-20260918-spec-1"
       },
       {
-        "name": "30+2米1000灯",
+        "name": "100+2米1000灯",
         "cost": 28.5,
         "sourceRow": 107,
         "id": "P0144-20260918-spec-2"
@@ -1552,7 +1552,7 @@ export const lightingProductCatalog = [
     "cost": 19.5,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "updatedAt": "2026-09-18T00:00:00.000+08:00"
+    "updatedAt": "2026-10-11T22:34:58.000+08:00"
   },
   {
     "sourceCategory": "8功能24伏USB铜丝类",
@@ -1560,13 +1560,13 @@ export const lightingProductCatalog = [
     "sourceRow": 108,
     "specs": [
       {
-        "name": "15+2米500灯",
+        "name": "50+2米500灯",
         "cost": 19.5,
         "sourceRow": 108,
         "id": "P0145-20260918-spec-1"
       },
       {
-        "name": "30+2米1000灯",
+        "name": "100+2米1000灯",
         "cost": 28.5,
         "sourceRow": 109,
         "id": "P0145-20260918-spec-2"
@@ -1577,7 +1577,7 @@ export const lightingProductCatalog = [
     "cost": 19.5,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "updatedAt": "2026-09-18T00:00:00.000+08:00"
+    "updatedAt": "2026-10-11T22:34:58.000+08:00"
   },
   {
     "sourceCategory": "8功能24伏USB铜丝类",
@@ -2031,7 +2031,7 @@ export const lightingProductCatalog = [
       {
         "id": "P0059-spec-1",
         "name": "一个40cm76目花环 +50灯铜丝灯",
-        "cost": 18,
+        "cost": 17,
         "packageSize": "28*28*8",
         "itemWeight": 229,
         "packageWeight": 5,
@@ -2039,11 +2039,11 @@ export const lightingProductCatalog = [
         "sourceRow": 143
       }
     ],
-    "cost": 18,
+    "cost": 17,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
     "sourceRow": 143,
-    "updatedAt": "2026-09-18T00:00:00.000+08:00"
+    "updatedAt": "2026-10-11T22:34:58.000+08:00"
   },
   {
     "id": "P0060",
@@ -2249,7 +2249,7 @@ export const lightingProductCatalog = [
       {
         "id": "P0065-spec-1",
         "name": "一个40cm76目花环 +50灯铜丝灯",
-        "cost": 19,
+        "cost": 18,
         "packageSize": "28*28*8",
         "itemWeight": 229,
         "packageWeight": 5,
@@ -2257,11 +2257,11 @@ export const lightingProductCatalog = [
         "sourceRow": 159
       }
     ],
-    "cost": 19,
+    "cost": 18,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
     "sourceRow": 159,
-    "updatedAt": "2026-09-18T00:00:00.000+08:00"
+    "updatedAt": "2026-10-11T22:34:58.000+08:00"
   },
   {
     "id": "P0066",
@@ -3478,7 +3478,7 @@ export const lightingProductCatalog = [
       {
         "id": "P0098-spec-1",
         "name": "一个40cm76目花环 +50灯铜丝灯",
-        "cost": 15.5,
+        "cost": 15,
         "packageSize": "28*28*8",
         "itemWeight": 193,
         "packageWeight": 5,
@@ -3486,11 +3486,11 @@ export const lightingProductCatalog = [
         "sourceRow": 245
       }
     ],
-    "cost": 15.5,
+    "cost": 15,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
     "sourceRow": 245,
-    "updatedAt": "2026-09-18T00:00:00.000+08:00"
+    "updatedAt": "2026-10-11T22:34:58.000+08:00"
   },
   {
     "id": "P0099",
@@ -3617,7 +3617,7 @@ export const lightingProductCatalog = [
       {
         "id": "P0101-spec-1",
         "name": "一个40cm76目花环 +50灯铜丝灯",
-        "cost": 15.5,
+        "cost": 15,
         "packageSize": "28*28*8",
         "itemWeight": 205.2,
         "packageWeight": 5,
@@ -3625,11 +3625,11 @@ export const lightingProductCatalog = [
         "sourceRow": 257
       }
     ],
-    "cost": 15.5,
+    "cost": 15,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
     "sourceRow": 257,
-    "updatedAt": "2026-09-18T00:00:00.000+08:00"
+    "updatedAt": "2026-10-11T22:34:58.000+08:00"
   },
   {
     "id": "P0102",
@@ -4628,56 +4628,10 @@ export const lightingProductCatalog = [
     "updatedAt": "2026-09-18T00:00:00.000+08:00"
   },
   {
-    "id": "P0134",
-    "category": "灯串",
-    "sourceCategory": "单功能电池盒树枝灯类",
-    "productName": "电池盒白色光纤荷花棕色树枝灯 （可2件装）",
-    "specs": [
-      {
-        "id": "P0134-spec-1",
-        "name": "20灯",
-        "cost": 12.5,
-        "packageSize": "55*17",
-        "itemWeight": 132.9,
-        "packageWeight": 6.5,
-        "cartonQty": "",
-        "sourceRow": 322
-      }
-    ],
-    "cost": 12.5,
-    "imageDataUrl": "",
-    "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 322,
-    "updatedAt": "2026-09-18T00:00:00.000+08:00"
-  },
-  {
-    "id": "P0135",
-    "category": "灯串",
-    "sourceCategory": "单功能电池盒树枝灯类",
-    "productName": "电池盒白色光纤荷花白色树枝灯 （可2件装）",
-    "specs": [
-      {
-        "id": "P0135-spec-1",
-        "name": "20灯",
-        "cost": 12.5,
-        "packageSize": "55*17",
-        "itemWeight": 137,
-        "packageWeight": 6.5,
-        "cartonQty": "",
-        "sourceRow": 323
-      }
-    ],
-    "cost": 12.5,
-    "imageDataUrl": "",
-    "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 323,
-    "updatedAt": "2026-09-18T00:00:00.000+08:00"
-  },
-  {
     "id": "P0136",
     "category": "灯串",
     "sourceCategory": "单功能电池盒树枝灯类",
-    "productName": "电池盒樱花棕色树枝灯 （可2/3件装）",
+    "productName": "电池盒樱花棕色树枝灯",
     "specs": [
       {
         "id": "P0136-spec-1",
@@ -4687,20 +4641,20 @@ export const lightingProductCatalog = [
         "itemWeight": 122.6,
         "packageWeight": 6.5,
         "cartonQty": "",
-        "sourceRow": 324
+        "sourceRow": 322
       }
     ],
     "cost": 5.8,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 324,
-    "updatedAt": "2026-09-18T00:00:00.000+08:00"
+    "sourceRow": 322,
+    "updatedAt": "2026-10-11T22:34:58.000+08:00"
   },
   {
     "id": "P0137",
     "category": "灯串",
     "sourceCategory": "单功能电池盒树枝灯类",
-    "productName": "电池盒樱花白色树枝灯 （可2/3件装）",
+    "productName": "电池盒樱花白色树枝灯",
     "specs": [
       {
         "id": "P0137-spec-1",
@@ -4710,20 +4664,20 @@ export const lightingProductCatalog = [
         "itemWeight": 123,
         "packageWeight": 6.5,
         "cartonQty": "",
-        "sourceRow": 325
+        "sourceRow": 323
       }
     ],
     "cost": 5.8,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 325,
-    "updatedAt": "2026-09-18T00:00:00.000+08:00"
+    "sourceRow": 323,
+    "updatedAt": "2026-10-11T22:34:58.000+08:00"
   },
   {
     "id": "P0138",
     "category": "灯串",
     "sourceCategory": "单功能电池盒树枝灯类",
-    "productName": "电池盒粉色梅花白色树枝灯 （可2/3件装）",
+    "productName": "电池盒粉色梅花白色树枝灯",
     "specs": [
       {
         "id": "P0138-spec-1",
@@ -4733,20 +4687,20 @@ export const lightingProductCatalog = [
         "itemWeight": 125,
         "packageWeight": 6.5,
         "cartonQty": "",
-        "sourceRow": 326
+        "sourceRow": 324
       }
     ],
     "cost": 7.8,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 326,
-    "updatedAt": "2026-09-18T00:00:00.000+08:00"
+    "sourceRow": 324,
+    "updatedAt": "2026-10-11T22:34:58.000+08:00"
   },
   {
     "id": "P0139",
     "category": "灯串",
     "sourceCategory": "单功能电池盒树枝灯类",
-    "productName": "电池盒粉色梅花棕色树枝灯 （可2/3件装）",
+    "productName": "电池盒粉色梅花棕色树枝灯",
     "specs": [
       {
         "id": "P0139-spec-1",
@@ -4756,20 +4710,20 @@ export const lightingProductCatalog = [
         "itemWeight": 126,
         "packageWeight": 6.5,
         "cartonQty": "",
-        "sourceRow": 327
+        "sourceRow": 325
       }
     ],
     "cost": 7.8,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 327,
-    "updatedAt": "2026-09-18T00:00:00.000+08:00"
+    "sourceRow": 325,
+    "updatedAt": "2026-10-11T22:34:58.000+08:00"
   },
   {
     "id": "P0140",
     "category": "灯串",
     "sourceCategory": "单功能电池盒树枝灯类",
-    "productName": "电池盒黄色摩洛哥棕色树枝灯 （可2件装）",
+    "productName": "电池盒黄色摩洛哥棕色树枝灯",
     "specs": [
       {
         "id": "P0140-spec-1",
@@ -4779,20 +4733,20 @@ export const lightingProductCatalog = [
         "itemWeight": 179,
         "packageWeight": 6.5,
         "cartonQty": "",
-        "sourceRow": 328
+        "sourceRow": 326
       }
     ],
     "cost": 10,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 328,
-    "updatedAt": "2026-09-18T00:00:00.000+08:00"
+    "sourceRow": 326,
+    "updatedAt": "2026-10-11T22:34:58.000+08:00"
   },
   {
     "id": "P0141",
     "category": "灯串",
     "sourceCategory": "单功能电池盒树枝灯类",
-    "productName": "电池盒黄色摩洛哥白色树枝灯 （可2件装）",
+    "productName": "电池盒黄色摩洛哥白色树枝灯",
     "specs": [
       {
         "id": "P0141-spec-1",
@@ -4802,20 +4756,20 @@ export const lightingProductCatalog = [
         "itemWeight": 178,
         "packageWeight": 6.5,
         "cartonQty": "",
-        "sourceRow": 329
+        "sourceRow": 327
       }
     ],
     "cost": 10,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 329,
-    "updatedAt": "2026-09-18T00:00:00.000+08:00"
+    "sourceRow": 327,
+    "updatedAt": "2026-10-11T22:34:58.000+08:00"
   },
   {
     "id": "P0142",
     "category": "灯串",
     "sourceCategory": "单功能电池盒树枝灯类",
-    "productName": "电池盒彩色圣诞球棕色树枝灯 （可2件装）",
+    "productName": "电池盒彩色圣诞球棕色树枝灯",
     "specs": [
       {
         "id": "P0142-spec-1",
@@ -4825,20 +4779,20 @@ export const lightingProductCatalog = [
         "itemWeight": 179,
         "packageWeight": 6.5,
         "cartonQty": "",
-        "sourceRow": 330
+        "sourceRow": 328
       }
     ],
     "cost": 10.5,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
-    "sourceRow": 330,
-    "updatedAt": "2026-09-18T00:00:00.000+08:00"
+    "sourceRow": 328,
+    "updatedAt": "2026-10-11T22:34:58.000+08:00"
   },
   {
     "id": "P0143",
     "category": "灯串",
     "sourceCategory": "单功能电池盒树枝灯类",
-    "productName": "电池盒彩色圣诞球白色树枝灯 （可2件装）",
+    "productName": "电池盒彩色圣诞球白色树枝灯",
     "specs": [
       {
         "id": "P0143-spec-1",
@@ -4848,13 +4802,105 @@ export const lightingProductCatalog = [
         "itemWeight": 178,
         "packageWeight": 6.5,
         "cartonQty": "",
-        "sourceRow": 331
+        "sourceRow": 329
       }
     ],
     "cost": 10.5,
     "imageDataUrl": "",
     "imageNote": "原表图片公式不兼容，待补充",
+    "sourceRow": 329,
+    "updatedAt": "2026-10-11T22:34:58.000+08:00"
+  },
+  {
+    "id": "P0148",
+    "category": "灯串",
+    "sourceCategory": "单功能电池盒树枝灯类",
+    "productName": "电池盒樱花棕色树枝灯 单根2件装",
+    "specs": [
+      {
+        "id": "P0148-spec-1",
+        "name": "2*20灯",
+        "cost": 11,
+        "packageSize": "",
+        "itemWeight": "",
+        "packageWeight": "",
+        "cartonQty": "",
+        "sourceRow": 330
+      }
+    ],
+    "cost": 11,
+    "imageDataUrl": "",
+    "imageNote": "原表图片公式不兼容，待补充",
+    "sourceRow": 330,
+    "updatedAt": "2026-10-11T22:34:58.000+08:00"
+  },
+  {
+    "id": "P0149",
+    "category": "灯串",
+    "sourceCategory": "单功能电池盒树枝灯类",
+    "productName": "电池盒樱花白色树枝灯 单根2件装",
+    "specs": [
+      {
+        "id": "P0149-spec-1",
+        "name": "2*20灯",
+        "cost": 11,
+        "packageSize": "",
+        "itemWeight": "",
+        "packageWeight": "",
+        "cartonQty": "",
+        "sourceRow": 331
+      }
+    ],
+    "cost": 11,
+    "imageDataUrl": "",
+    "imageNote": "原表图片公式不兼容，待补充",
     "sourceRow": 331,
-    "updatedAt": "2026-09-18T00:00:00.000+08:00"
+    "updatedAt": "2026-10-11T22:34:58.000+08:00"
+  },
+  {
+    "id": "P0150",
+    "category": "灯串",
+    "sourceCategory": "单功能电池盒树枝灯类",
+    "productName": "电池盒粉色梅花白色树枝灯 单根2件装",
+    "specs": [
+      {
+        "id": "P0150-spec-1",
+        "name": "2*20灯",
+        "cost": 15,
+        "packageSize": "",
+        "itemWeight": "",
+        "packageWeight": "",
+        "cartonQty": "",
+        "sourceRow": 332
+      }
+    ],
+    "cost": 15,
+    "imageDataUrl": "",
+    "imageNote": "原表图片公式不兼容，待补充",
+    "sourceRow": 332,
+    "updatedAt": "2026-10-11T22:34:58.000+08:00"
+  },
+  {
+    "id": "P0151",
+    "category": "灯串",
+    "sourceCategory": "单功能电池盒树枝灯类",
+    "productName": "电池盒粉色梅花棕色树枝灯 单根2件装",
+    "specs": [
+      {
+        "id": "P0151-spec-1",
+        "name": "2*20灯",
+        "cost": 15,
+        "packageSize": "",
+        "itemWeight": "",
+        "packageWeight": "",
+        "cartonQty": "",
+        "sourceRow": 333
+      }
+    ],
+    "cost": 15,
+    "imageDataUrl": "",
+    "imageNote": "原表图片公式不兼容，待补充",
+    "sourceRow": 333,
+    "updatedAt": "2026-10-11T22:34:58.000+08:00"
   }
 ];
