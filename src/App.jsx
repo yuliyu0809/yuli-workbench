@@ -4,6 +4,7 @@ import { prepareWorkspaceForCloud, retainLocalOriginalImages } from './lib/cloud
 import { readIndexedWorkspace, writeIndexedWorkspace } from './lib/localWorkspaceStore.js';
 import { normalizeProductLinks } from './lib/productLinkMerge.js';
 import { creationTimeForLink, sortProductLinksNewestFirst } from './lib/productLinkOrder.js';
+import { skcsForClipboard } from './lib/skcClipboard.js';
 import { matchesDiscountTier } from './lib/discountClassification.js';
 import { focusCoverage, mergeProductFocus } from './lib/productFocus.js';
 import { removeAdSkuPreservingTotals, summarizeSkcAdRows } from './lib/skcAdSummary.js';
@@ -1315,6 +1316,7 @@ function ManualActivityChips({ activities, link, onAdd, onQuote, onEdit, onDelet
 
 function DiscountActivity({ records, manualRecords, search, setSearch, onAdd, onEdit, onQuote, onDelete, onAddManualForLink, onEditManual, onDeleteManual }) {
   const [tierFilter, setTierFilter] = useState(null);
+  const [copyStatus, setCopyStatus] = useState(null);
   const matchesCategory = (item, tier) => matchesDiscountTier(
     manualRecords.filter((record) => normalizeSkc(record.productCode) === normalizeSkc(item.productCode)).map(manualActivityDiscount),
     recordRecommended(item), tier,
@@ -1325,7 +1327,18 @@ function DiscountActivity({ records, manualRecords, search, setSearch, onAdd, on
     const matchesTier = tierFilter === null || matchesCategory(item, tierFilter);
     return matchesSearch && matchesTier;
   }));
+  const visibleSkcs = skcsForClipboard(filtered);
+  const copySignature = `${tierFilter}:${visibleSkcs.join('\u0000')}`;
   const toggleTier = (tier) => setTierFilter((current) => current === tier ? null : tier);
+  const copyTierSkcs = async () => {
+    if (tierFilter === null || !visibleSkcs.length) return;
+    try {
+      await navigator.clipboard.writeText(visibleSkcs.join('、'));
+      setCopyStatus({ signature: copySignature, message: `已复制 ${visibleSkcs.length} 个 SKC` });
+    } catch {
+      setCopyStatus({ signature: copySignature, message: '复制失败，请检查浏览器剪贴板权限' });
+    }
+  };
 
   return <>
     <div className="metrics tier-metrics">
@@ -1339,7 +1352,7 @@ function DiscountActivity({ records, manualRecords, search, setSearch, onAdd, on
         </button>;
       })}
     </div>
-    <TableShell title="商品链接记录" subtitle={`每个 SKC 对应一条商品；“最低可报”是自动核算，“我的可报活动”是你单独记录的折扣${tierFilter ? ` · 当前查看可报 ${discountText(tierFilter)} 的商品` : ''}`} search={search} setSearch={setSearch} action={<button className="primary" type="button" onClick={onAdd}>＋ 新增链接</button>}>
+    <TableShell title="商品链接记录" subtitle={`每个 SKC 对应一条商品；“最低可报”是自动核算，“我的可报活动”是你单独记录的折扣${tierFilter ? ` · 当前查看可报 ${discountText(tierFilter)} 的商品` : ''}`} search={search} setSearch={setSearch} action={<><button className="copy-tier-skcs" type="button" onClick={copyTierSkcs} disabled={tierFilter === null || !visibleSkcs.length} title={tierFilter === null ? '先选择一个可报折扣档位' : `复制当前表格中可报 ${discountText(tierFilter)} 的 SKC`}>复制本档 SKC</button>{copyStatus?.signature === copySignature && <span className="copy-tier-status" role="status">{copyStatus.message}</span>}<button className="primary" type="button" onClick={onAdd}>＋ 新增链接</button></>}>
       <table><thead><tr><th>商品（含我的可报活动）</th><th>店铺</th><th>供货价</th><th>当前售价</th><th>最低售价</th><th>最低折扣</th><th>最低可报</th><th>活动价</th><th>预计利润</th><th>操作</th></tr></thead><tbody>
         {filtered.map((item) => {
           const specs = normalizeDiscountSpecs(item);
