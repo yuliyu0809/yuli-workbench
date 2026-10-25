@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import { cloudWorkspace } from './lib/cloudWorkspaceClient.js';
 import { prepareWorkspaceForCloud, retainLocalOriginalImages } from './lib/cloudWorkspacePayload.js';
 import { readIndexedWorkspace, writeIndexedWorkspace } from './lib/localWorkspaceStore.js';
@@ -1253,6 +1253,13 @@ function AdRecordForm({ editing, initialDate, products, links, adRecords = [], c
 
 function Products({ records, productFocus, search, setSearch, onToggleFocus, onEdit, onDelete }) {
   const [categoryFilter, setCategoryFilter] = useState('全部商品');
+  const [expandedProductIds, setExpandedProductIds] = useState(() => new Set());
+  const toggleProductSpecs = (id) => setExpandedProductIds((current) => {
+    const next = new Set(current);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    return next;
+  });
   const totalSpecs = records.reduce((total, item) => total + normalizeProductSpecs(item).length, 0);
   const sourceCategories = [...new Set([...sourceProductCategories, ...records.map((item) => item.sourceCategory).filter(Boolean)])];
   const filtered = records.filter((item) => {
@@ -1270,7 +1277,20 @@ function Products({ records, productFocus, search, setSearch, onToggleFocus, onE
       const count = category === '全部商品' ? records.length : records.filter((item) => item.sourceCategory === category).length;
       return <button type="button" key={category} className={categoryFilter === category ? 'selected' : ''} onClick={() => setCategoryFilter(category)}><span>{category}</span><b>{count}</b></button>;
     })}</div>
-    <TableShell title="利润核算参考表" subtitle={`当前查看：${categoryFilter}；点击规格数量展开表格中的全部核算数据`} search={search} setSearch={setSearch}><table className="profit-catalog-table"><thead><tr><th>分类标题</th><th>商品名称</th><th>重点关注</th><th>规格利润核算</th><th>供货价范围</th><th>最低售价范围</th><th>操作</th></tr></thead><tbody>{filtered.map((item) => { const specs = normalizeProductSpecs(item); const focused = Boolean(productFocus[item.id]?.active); return <tr key={item.id}><td><Badge>{item.sourceCategory || '未分类'}</Badge></td><td><strong>{item.productName}</strong></td><td><button type="button" className={`focus-toggle ${focused ? 'is-focused' : ''}`} onClick={() => onToggleFocus(item)} aria-pressed={focused}>{focused ? '★ 重点' : '☆ 标记重点'}</button></td><td><details className="catalog-specs profit-specs"><summary>{specs.length} 个规格</summary><div className="profit-spec-table"><div className="profit-spec-head"><b>规格</b><b>供货价</b><b>售后5%</b><b>广告12.5%</b><b>利润</b><b>8.5折日常价</b><b>9折日常价</b><b>最低售价</b></div>{specs.map((spec) => <div className="profit-spec-row" key={spec.id}><strong>{spec.name}</strong><span>{money(spec.cost)}</span><span>{money(spec.afterSalesCost)}</span><span>{money(spec.advertisingCost)}</span><span>{money(spec.targetProfit)}</span><span>{money(spec.dailyPrice85)}</span><span>{money(spec.dailyPrice90)}</span><b>{money(spec.minimumSalePrice)}</b></div>)}</div></details></td><td><strong>{valueRange(specs.map((spec) => spec.cost), money)}</strong></td><td><strong>{valueRange(specs.map((spec) => spec.minimumSalePrice), money)}</strong></td><td><RowActions onEdit={() => onEdit(item)} onDelete={() => onDelete(item)} /></td></tr>; })}{!filtered.length && <tr><td colSpan="7"><Empty text={categoryFilter === '全部商品' ? '暂无商品档案，点击“新增商品”开始录入' : `暂无“${categoryFilter}”商品`} /></td></tr>}</tbody></table></TableShell>
+    <TableShell title="利润核算参考表" subtitle={`当前查看：${categoryFilter}；点击规格数量展开表格中的全部核算数据`} search={search} setSearch={setSearch}>
+      <table className="profit-catalog-table"><thead><tr><th>分类标题</th><th>商品名称</th><th>重点关注</th><th>规格利润核算</th><th>供货价范围</th><th>最低售价范围</th><th>操作</th></tr></thead><tbody>
+        {filtered.map((item) => {
+          const specs = normalizeProductSpecs(item);
+          const focused = Boolean(productFocus[item.id]?.active);
+          const expanded = expandedProductIds.has(item.id);
+          return <Fragment key={item.id}>
+            <tr><td><Badge>{item.sourceCategory || '未分类'}</Badge></td><td><strong>{item.productName}</strong></td><td><button type="button" className={`focus-toggle ${focused ? 'is-focused' : ''}`} onClick={() => onToggleFocus(item)} aria-pressed={focused}>{focused ? '★ 重点' : '☆ 标记重点'}</button></td><td><button type="button" className="profit-spec-toggle" onClick={() => toggleProductSpecs(item.id)} aria-expanded={expanded} aria-controls={`profit-specs-${item.id}`}>{expanded ? '▾' : '▸'} {specs.length} 个规格</button></td><td><strong>{valueRange(specs.map((spec) => spec.cost), money)}</strong></td><td><strong>{valueRange(specs.map((spec) => spec.minimumSalePrice), money)}</strong></td><td><RowActions onEdit={() => onEdit(item)} onDelete={() => onDelete(item)} /></td></tr>
+            {expanded && <tr className="profit-spec-detail-row" id={`profit-specs-${item.id}`}><td colSpan="7"><div className="profit-spec-detail"><div className="profit-spec-table"><div className="profit-spec-head"><b>规格</b><b>供货价</b><b>售后5%</b><b>广告12.5%</b><b>利润</b><b>8.5折日常价</b><b>9折日常价</b><b>最低售价</b></div>{specs.map((spec) => <div className="profit-spec-row" key={spec.id}><strong>{spec.name}</strong><span>{money(spec.cost)}</span><span>{money(spec.afterSalesCost)}</span><span>{money(spec.advertisingCost)}</span><span>{money(spec.targetProfit)}</span><span>{money(spec.dailyPrice85)}</span><span>{money(spec.dailyPrice90)}</span><b>{money(spec.minimumSalePrice)}</b></div>)}</div></div></td></tr>}
+          </Fragment>;
+        })}
+        {!filtered.length && <tr><td colSpan="7"><Empty text={categoryFilter === '全部商品' ? '暂无商品档案，点击“新增商品”开始录入' : `暂无“${categoryFilter}”商品`} /></td></tr>}
+      </tbody></table>
+    </TableShell>
   </>;
 }
 function Tasks({ records, update, onEdit, onDelete }) {
