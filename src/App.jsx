@@ -6,7 +6,7 @@ import { normalizeProductLinks } from './lib/productLinkMerge.js';
 import { creationTimeForLink, sortProductLinksNewestFirst } from './lib/productLinkOrder.js';
 import { skcsForClipboard } from './lib/skcClipboard.js';
 import { matchesDiscountTier } from './lib/discountClassification.js';
-import { quoteDiscountLimit, visibleQuoteDiscounts } from './lib/quoteMatrix.js';
+import { missingQuoteDiscounts, quoteDiscountLimit, visibleQuoteDiscounts } from './lib/quoteMatrix.js';
 import { focusCoverage, mergeProductFocus } from './lib/productFocus.js';
 import { removeAdSkuPreservingTotals, summarizeSkcAdRows } from './lib/skcAdSummary.js';
 import { createTitleTranslationController } from './lib/titleTranslation.js';
@@ -868,17 +868,17 @@ export default function App() {
       ...(editing.endDate ? { endDate: editing.endDate } : {}),
     } : {};
     const savedAt = new Date().toISOString();
-    const next = { id: editing?.id || uid(), store: data.get('store'), productCode: skc, productId: catalogProduct?.id || '', productName, specs: summary.specs, limitingSpecName: limitingSpec?.name || '默认规格', cost: limitingSpec?.cost || 0, salePrice: limitingSpec?.salePrice || 0, minimumRatio: summary.minimumRatio, recommendedDiscount: reportableDiscount, discountedPrice: reportableDiscount ? limitingSpec?.salePrice * reportableDiscount : 0, profit: profits.length ? Math.min(...profits) : 0, note: data.get('note'), imageDataUrl, manualPriceMatrix: editing?.manualPriceMatrix || [], manualPriceUpdatedAt: editing?.manualPriceUpdatedAt || '', createdAt: creationTimeForLink(editing, savedAt), updatedAt: savedAt, ...legacyFields };
+    const next = { id: editing?.id || uid(), store: data.get('store'), productCode: skc, productId: catalogProduct?.id || '', productName, specs: summary.specs, limitingSpecName: limitingSpec?.name || '默认规格', cost: limitingSpec?.cost || 0, salePrice: limitingSpec?.salePrice || 0, minimumRatio: summary.minimumRatio, recommendedDiscount: reportableDiscount, discountedPrice: reportableDiscount ? limitingSpec?.salePrice * reportableDiscount : 0, profit: profits.length ? Math.min(...profits) : 0, note: data.get('note'), imageDataUrl, manualPriceMatrix: editing?.manualPriceMatrix || [], manualPriceUpdatedAt: editing?.manualPriceUpdatedAt || '', manualPriceMatrixVersion: editing?.manualPriceMatrixVersion, manualPriceFloor: editing?.manualPriceFloor, createdAt: creationTimeForLink(editing, savedAt), updatedAt: savedAt, ...legacyFields };
     update('discounts', editing ? workspace.discounts.map((item) => item.id === editing.id ? next : item) : [next, ...workspace.discounts]); closeModal(); notify('商品链接已保存');
   };
-  const saveManualPriceMatrix = (rows) => {
+  const saveManualPriceMatrix = (rows, discountLimit) => {
     if (!editing?.id) return;
     const nextRows = rows.map((row) => ({
       discount: Number(row.discount),
       prices: row.prices.filter((price) => price.amount !== '').map((price) => ({ ...price, amount: Number(price.amount) })),
     }));
     update('discounts', workspace.discounts.map((item) => item.id === editing.id
-      ? { ...item, manualPriceMatrix: nextRows, manualPriceUpdatedAt: new Date().toISOString() }
+      ? { ...item, manualPriceMatrix: nextRows, manualPriceUpdatedAt: new Date().toISOString(), manualPriceMatrixVersion: 2, manualPriceFloor: discountLimit }
       : item));
     closeModal(); notify('手动可报价已保存');
   };
@@ -1482,9 +1482,10 @@ function ManualPriceMatrixForm({ link, manualActivities, onSave, onClose }) {
     .filter((activity) => normalizeSkc(activity.productCode) === normalizeSkc(link.productCode))
     .map(manualActivityDiscount));
   const [rows, setRows] = useState(() => {
-    const defaults = [...new Set([...initialQuoteDiscounts, ...(discountLimit == null ? [] : [discountLimit])])];
+    const defaults = initialQuoteDiscounts;
     const saved = link.manualPriceUpdatedAt ? (link.manualPriceMatrix || []) : defaults.map((discount) => ({ discount, prices: [] }));
-    return saved.map((row) => ({
+    const additions = missingQuoteDiscounts(saved, discountLimit, link.manualPriceFloor, !link.manualPriceMatrixVersion);
+    return [...saved, ...additions.map((discount) => ({ discount, prices: [] }))].map((row) => ({
       discount: Number(row.discount),
       prices: specs.map((spec) => {
         const prior = (row.prices || []).find((price) => price.specId === spec.id)
@@ -1508,7 +1509,7 @@ function ManualPriceMatrixForm({ link, manualActivities, onSave, onClose }) {
   const submit = (event) => {
     event.preventDefault();
     if (rows.some((row) => row.prices.some((price) => price.amount !== '' && (!Number.isFinite(Number(price.amount)) || Number(price.amount) <= 0)))) return;
-    onSave(rows);
+    onSave(rows, discountLimit);
   };
   return <Modal title="可报价记录表" onClose={onClose} className="quote-modal"><form className="quote-matrix-form" onSubmit={submit}>
     <div className="quote-product-heading"><span className="quote-product-image">{link.imageDataUrl ? <img src={link.imageDataUrl} alt="" /> : '链'}</span><div><small>{link.store} 店 · SKC {link.productCode || '待填写'}</small><strong>{link.productName}</strong><p>每个折扣和规格的价格由你手动填写，不影响自动活动折扣。</p><div className="quote-minimum-summary">各规格最低售价：<b>{valueRange(specs.map((spec) => profitMetrics(spec.cost).minimumSalePrice), money)}</b></div></div></div>

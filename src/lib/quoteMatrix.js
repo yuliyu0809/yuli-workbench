@@ -8,3 +8,15 @@ export function quoteDiscountLimit(manualDiscounts) {
 export function visibleQuoteDiscounts(discounts, limit) {
   return limit == null ? discounts : discounts.filter((item) => Number(item?.discount ?? item) >= limit);
 }
+
+export function missingQuoteDiscounts(rows, limit, previousLimit = null, legacy = false) {
+  if (limit == null) return [];
+  if (!legacy && (previousLimit == null || limit >= previousLimit)) return [];
+  const upper = legacy ? 9 : Math.min(9, previousLimit - 0.5);
+  const existing = new Set(rows.map((row) => Number(row.discount ?? row)));
+  const missing = [];
+  for (let discount = limit; discount <= upper; discount = Number((discount + 0.5).toFixed(1))) {
+    if (!existing.has(discount)) missing.push(discount);
+  }
+  return missing;
+}
