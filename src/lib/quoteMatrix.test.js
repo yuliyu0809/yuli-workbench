@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { missingQuoteDiscounts, quoteDiscountLimit, visibleQuoteDiscounts } from './quoteMatrix.js';
+import { missingQuoteDiscounts, quoteDiscountLimit, recommendedQuotePrice, visibleQuoteDiscounts } from './quoteMatrix.js';
 
 test('8.5 discount annotation shows 8.5 and higher quote rows, never 8', () => {
   const limit = quoteDiscountLimit([0.85]);
@@ -32,4 +32,11 @@ test('a saved matrix respects removed rows unless the marked minimum moves lower
   const saved = [7, 8, 8.5, 9].map((discount) => ({ discount }));
   assert.deepEqual(missingQuoteDiscounts(saved, 7, 7), []);
   assert.deepEqual(missingQuoteDiscounts(saved, 6, 7), [6, 6.5]);
+});
+
+test('recommended quote price truncates to two decimals for each specification and discount', () => {
+  assert.equal(recommendedQuotePrice(14.75, 8.5), 12.53);
+  assert.equal(recommendedQuotePrice(16.66, 8.5), 14.16);
+  assert.equal(recommendedQuotePrice(19.06, 9), 17.15);
+  assert.equal(recommendedQuotePrice('', 8.5), null);
 });

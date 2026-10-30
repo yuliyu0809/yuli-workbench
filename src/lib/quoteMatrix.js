@@ -20,3 +20,10 @@ export function missingQuoteDiscounts(rows, limit, previousLimit = null, legacy 
   }
   return missing;
 }
+
+export function recommendedQuotePrice(salePrice, discount) {
+  const price = Number(salePrice);
+  const rate = Number(discount);
+  if (!Number.isFinite(price) || price <= 0 || !Number.isFinite(rate) || rate <= 0) return null;
+  return Math.floor(price * rate * 10 + 1e-8) / 100;
+}
