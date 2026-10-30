@@ -7,6 +7,7 @@ import { creationTimeForLink, sortProductLinksNewestFirst } from './lib/productL
 import { skcsForClipboard } from './lib/skcClipboard.js';
 import { matchesDiscountTier } from './lib/discountClassification.js';
 import { missingQuoteDiscounts, quoteDiscountLimit, recommendedQuotePrice, visibleQuoteDiscounts } from './lib/quoteMatrix.js';
+import { novemberPriceFor, novemberPricingActive } from './lib/seasonalPrices.js';
 import { focusCoverage, mergeProductFocus } from './lib/productFocus.js';
 import { removeAdSkuPreservingTotals, summarizeSkcAdRows } from './lib/skcAdSummary.js';
 import { createTitleTranslationController } from './lib/titleTranslation.js';
@@ -45,6 +46,7 @@ const today = () => {
   const day = String(date.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
 };
+const pricingDateFor = (day) => /^\d{4}-\d{2}-\d{2}$/.test(String(day || '')) ? new Date(`${day}T12:00:00+08:00`) : new Date();
 const launchQuantity = (item) => Math.max(1, Number(item?.quantity) || 1);
 const money = (value) => `¥${Number(value || 0).toLocaleString('zh-CN', { maximumFractionDigits: 2 })}`;
 const signedMoney = (value) => `${Number(value) > 0 ? '+' : Number(value) < 0 ? '−' : ''}${money(Math.abs(Number(value) || 0))}`;
@@ -79,6 +81,7 @@ const profitMetrics = (cost) => {
     minimumSalePrice,
   };
 };
+const minimumForSpec = (spec) => Number(spec?.minimumSalePrice) > 0 ? Number(spec.minimumSalePrice) : profitMetrics(spec?.cost).minimumSalePrice;
 const referenceAfterSalesPerOrder = (spec) => spec
   ? (Math.round(profitMetrics(spec.cost).afterSalesCost * 100) / 100).toFixed(2)
   : '';
@@ -157,19 +160,19 @@ const mergeBackupWorkspaces = (currentData, backupData) => {
     adRecords: mergeRecordLists(current.adRecords, backup.adRecords),
   });
 };
-const getRecommended = (cost, salePrice) => {
-  const minimum = profitMetrics(cost).minimumSalePrice / Number(salePrice);
+const getRecommended = (cost, salePrice, minimumSalePrice = profitMetrics(cost).minimumSalePrice) => {
+  const minimum = minimumSalePrice / Number(salePrice);
   if (!Number.isFinite(minimum) || minimum <= 0 || minimum > tiers[0]) return null;
   return Math.ceil((minimum * 20) - 1e-9) / 20;
 };
-const normalizeProductSpecs = (product) => Array.isArray(product?.specs) && product.specs.length
-  ? product.specs.map((spec) => ({
-      ...spec,
-      id: spec.id || uid(),
-      name: spec.name || '默认规格',
-      cost: Number(spec.cost || 0),
-      ...profitMetrics(spec.cost),
-    }))
+const normalizeProductSpecs = (product, effective = true, date = new Date()) => Array.isArray(product?.specs) && product.specs.length
+  ? product.specs.map((spec) => {
+      const seasonal = effective ? novemberPriceFor(product, spec, date) : null;
+      const cost = seasonal?.cost ?? Number(spec.cost || 0);
+      const metrics = profitMetrics(cost);
+      const minimumSalePrice = seasonal?.minimumSalePrice ?? metrics.minimumSalePrice;
+      return { ...spec, id: spec.id || uid(), name: spec.name || '默认规格', cost, ...metrics, minimumSalePrice, dailyPrice85: minimumSalePrice / 0.85, dailyPrice90: minimumSalePrice / 0.9 };
+    })
   : [{ id: `${product?.id || uid()}-default`, name: '默认规格', cost: Number(product?.cost || 0), ...profitMetrics(product?.cost) }];
 const productCategoryOf = (product) => product?.category === '地插灯' ? '地插灯' : '灯串';
 const productPackOptions = (product) => {
@@ -180,8 +183,8 @@ const productPackOptions = (product) => {
   const quantities = match[1].split(/[\/／]/).map(Number).filter((value) => Number.isInteger(value) && value > 0);
   return [...new Set([1, ...quantities])].sort((left, right) => left - right);
 };
-const expandProductSpecsForPacks = (product) => {
-  const baseSpecs = normalizeProductSpecs(product);
+const expandProductSpecsForPacks = (product, effective = true, date = new Date()) => {
+  const baseSpecs = normalizeProductSpecs(product, effective, date);
   const packOptions = productPackOptions(product);
   const hasMultiplePacks = packOptions.length > 1;
   return baseSpecs.flatMap((spec) => packOptions.map((packQuantity) => {
@@ -195,6 +198,7 @@ const expandProductSpecsForPacks = (product) => {
       unitCost,
       packQuantity,
       cost: Number((unitCost * packQuantity).toFixed(2)),
+      minimumSalePrice: packQuantity === 1 ? spec.minimumSalePrice : profitMetrics(unitCost * packQuantity).minimumSalePrice,
       salePrice: '',
     };
   }));
@@ -202,23 +206,26 @@ const expandProductSpecsForPacks = (product) => {
 const findExpandedProductSpec = (product, record) => {
   const targetPackQuantity = Math.max(1, Number(record?.packQuantity) || 1);
   const targetBaseSpecId = record?.baseSpecId || record?.sourceSpecId || record?.specId;
-  const expandedSpecs = expandProductSpecsForPacks(product);
+  const expandedSpecs = expandProductSpecsForPacks(product, true, pricingDateFor(record?.recordDate));
   return expandedSpecs.find((spec) => spec.id === record?.specId)
     || expandedSpecs.find((spec) => spec.baseSpecId === targetBaseSpecId && spec.packQuantity === targetPackQuantity)
     || null;
 };
-const normalizeDiscountSpecs = (record) => Array.isArray(record?.specs) && record.specs.length
+const normalizeDiscountSpecs = (record, effective = true) => Array.isArray(record?.specs) && record.specs.length
   ? record.specs.map((spec) => {
-      const cost = Number(spec.cost || 0); const salePrice = Number(spec.salePrice || 0);
+      const seasonal = effective ? novemberPriceFor(record, spec) : null;
+      const cost = seasonal?.cost ?? Number(spec.cost || 0); const salePrice = Number(spec.salePrice || 0);
       const packQuantity = Math.max(1, Number(spec.packQuantity || record?.packQuantity) || 1);
       const unitCost = Number(spec.unitCost ?? (cost / packQuantity));
-      return { ...spec, id: spec.id || uid(), name: spec.name || '默认规格', unitCost, packQuantity, cost, salePrice, minimumRatio: salePrice > 0 ? profitMetrics(cost).minimumSalePrice / salePrice : null, recommendedDiscount: salePrice > 0 ? getRecommended(cost, salePrice) : null };
+      const minimumSalePrice = seasonal?.minimumSalePrice ?? profitMetrics(cost).minimumSalePrice;
+      return { ...spec, id: spec.id || uid(), name: spec.name || '默认规格', unitCost: seasonal ? cost / packQuantity : unitCost, packQuantity, cost, salePrice, minimumSalePrice, minimumRatio: salePrice > 0 ? minimumSalePrice / salePrice : null, recommendedDiscount: salePrice > 0 ? getRecommended(cost, salePrice, minimumSalePrice) : null };
     })
   : [{ id: `${record?.id || uid()}-default`, name: '默认规格', unitCost: Number(record?.cost || 0) / Math.max(1, Number(record?.packQuantity) || 1), packQuantity: Math.max(1, Number(record?.packQuantity) || 1), cost: Number(record?.cost || 0), salePrice: Number(record?.salePrice || 0), minimumRatio: Number(record?.minimumRatio || 0), recommendedDiscount: record?.recommendedDiscount ?? null }];
 const summarizeDiscountSpecs = (specs) => {
   const calculated = specs.map((spec) => {
     const cost = Number(spec.cost); const salePrice = Number(spec.salePrice);
-    return { ...spec, cost, salePrice, minimumRatio: profitMetrics(cost).minimumSalePrice / salePrice, recommendedDiscount: getRecommended(cost, salePrice) };
+    const minimumSalePrice = minimumForSpec(spec);
+    return { ...spec, cost, salePrice, minimumSalePrice, minimumRatio: minimumSalePrice / salePrice, recommendedDiscount: getRecommended(cost, salePrice, minimumSalePrice) };
   });
   const limitingSpec = calculated.reduce((worst, spec) => !worst || spec.minimumRatio > worst.minimumRatio ? spec : worst, null);
   const recommendedDiscount = calculated.some((spec) => spec.recommendedDiscount === null) ? null : Math.max(...calculated.map((spec) => spec.recommendedDiscount));
@@ -341,6 +348,7 @@ function Empty({ text }) { return <div className="empty">{text}</div>; }
 export default function App() {
   const [page, setPage] = useState('overview');
   const [store, setStore] = useState(STORE_ALL);
+  const [, setNovemberActive] = useState(novemberPricingActive);
   const [workspace, setWorkspace] = useState(readLocal);
   const [modal, setModal] = useState(null);
   const [editing, setEditing] = useState(null);
@@ -364,6 +372,10 @@ export default function App() {
   const editRevision = useRef(0);
   const backgroundSyncRef = useRef(false);
   const lastCloudUpdatedAtRef = useRef('');
+  useEffect(() => {
+    const timer = window.setInterval(() => setNovemberActive(novemberPricingActive()), 30_000);
+    return () => window.clearInterval(timer);
+  }, []);
   const backupInputRef = useRef(null);
   const titleTranslationRef = useRef(null);
   const titleInputRef = useRef(null);
@@ -807,7 +819,7 @@ export default function App() {
     const specIds = data.getAll('specId').map(String);
     if (!product || !specIds.length) { notify('请选择商品链接和规格 SKU'); return; }
     if (new Set(specIds).size !== specIds.length) { notify('同一规格 SKU 不能重复添加'); return; }
-    const specs = expandProductSpecsForPacks(product);
+    const specs = expandProductSpecsForPacks(product, true, pricingDateFor(recordDate));
     const selectedSpecs = specIds.map((id) => specs.find((item) => item.id === id));
     if (selectedSpecs.some((spec) => !spec)) { notify('请检查每一行的规格 SKU'); return; }
     const currentRecords = workspace.adRecords || [];
@@ -1194,6 +1206,7 @@ function PricingHistoryForm({ editing, products, links, currentStore, onSubmit, 
 
 function AdRecordForm({ editing, initialDate, products, links, adRecords = [], currentStore, onSubmit, onClose }) {
   const initialProductId = editing?.productId || products[0]?.id || '';
+  const [entryDate, setEntryDate] = useState(editing?.recordDate || initialDate || today());
   const [productId, setProductId] = useState(initialProductId);
   const [skc, setSkc] = useState(editing?.skc || '');
   const [selectedStore, setSelectedStore] = useState(editing?.store || (currentStore === STORE_ALL ? 'AG' : currentStore));
@@ -1205,13 +1218,24 @@ function AdRecordForm({ editing, initialDate, products, links, adRecords = [], c
   }).sort((a, b) => Number(b.store === selectedStore) - Number(a.store === selectedStore)).slice(0, 8);
   const linkedProduct = findLinkBySkc(links, skc);
   const selectedProduct = products.find((item) => item.id === productId);
-  const specs = expandProductSpecsForPacks(selectedProduct);
+  const specs = expandProductSpecsForPacks(selectedProduct, true, pricingDateFor(entryDate));
   const editingSpec = selectedProduct ? findExpandedProductSpec(selectedProduct, editing) : null;
   const editingGroup = editing ? adRecords.filter((item) => item.recordDate === editing.recordDate && item.store === editing.store && item.productId === editing.productId && normalizeSkc(item.skc) === normalizeSkc(editing.skc)) : [];
   const [skcAdSpend, setSkcAdSpend] = useState(() => editingGroup.length ? editingGroup.reduce((sum, item) => sum + Number(item.adSpend || 0), 0).toFixed(2) : '');
   const [skcAdSales, setSkcAdSales] = useState(() => editingGroup.length ? editingGroup.reduce((sum, item) => sum + Number(item.adSales || 0), 0).toFixed(2) : '');
   const blankRow = (spec = null) => ({ key: uid(), specId: spec?.id || '', afterSalesLogistics: referenceAfterSalesPerOrder(spec), adOrders: '' });
   const [skuRows, setSkuRows] = useState(() => editingGroup.length ? editingGroup.map((item) => ({ key: uid(), specId: findExpandedProductSpec(selectedProduct, item)?.id || editingSpec?.id || specs[0]?.id || '', afterSalesLogistics: item.afterSalesLogistics ?? referenceAfterSalesPerOrder(findExpandedProductSpec(selectedProduct, item)), adOrders: item.adOrders ?? '' })) : [blankRow(specs[0])]);
+  const changeEntryDate = (nextDate) => {
+    const nextSpecs = expandProductSpecsForPacks(selectedProduct, true, pricingDateFor(nextDate));
+    setSkuRows((current) => current.map((row) => {
+      const previous = specs.find((spec) => spec.id === row.specId);
+      const next = nextSpecs.find((spec) => spec.id === row.specId);
+      return String(row.afterSalesLogistics) === referenceAfterSalesPerOrder(previous)
+        ? { ...row, afterSalesLogistics: referenceAfterSalesPerOrder(next) }
+        : row;
+    }));
+    setEntryDate(nextDate);
+  };
   const changeSkc = (value) => {
     setSkc(value);
     const found = findLinkBySkc(links, value);
@@ -1219,7 +1243,7 @@ function AdRecordForm({ editing, initialDate, products, links, adRecords = [], c
     const catalogProduct = products.find((item) => item.id === found.productId || item.productName === found.productName);
     if (catalogProduct && catalogProduct.id !== productId) {
       setProductId(catalogProduct.id);
-      const nextSpecs = expandProductSpecsForPacks(catalogProduct);
+      const nextSpecs = expandProductSpecsForPacks(catalogProduct, true, pricingDateFor(entryDate));
       setSkuRows([blankRow(nextSpecs[0])]);
     }
     setSelectedStore(found.store);
@@ -1227,7 +1251,7 @@ function AdRecordForm({ editing, initialDate, products, links, adRecords = [], c
   const changeProduct = (nextProductId) => {
     setProductId(nextProductId);
     setSkc('');
-    const nextSpecs = expandProductSpecsForPacks(products.find((item) => item.id === nextProductId));
+    const nextSpecs = expandProductSpecsForPacks(products.find((item) => item.id === nextProductId), true, pricingDateFor(entryDate));
     setSkuRows([blankRow(nextSpecs[0])]);
   };
   const changeSkuRow = (key, field, value) => setSkuRows((rows) => rows.map((row) => row.key === key
@@ -1241,7 +1265,7 @@ function AdRecordForm({ editing, initialDate, products, links, adRecords = [], c
   const removeSkuRow = (key) => setSkuRows((rows) => rows.length > 1 ? rows.filter((row) => row.key !== key) : rows);
   const allSpecsAdded = skuRows.length >= specs.length;
   return <Modal title={editing ? '修改 SKC 广告记录' : '记录 SKC 广告数据'} onClose={onClose}>{products.length ? <form onSubmit={onSubmit}>
-    <div className="form-grid"><Field label="店铺"><select name="store" value={selectedStore} onChange={(event) => setSelectedStore(event.target.value)}>{stores.map((name) => <option key={name}>{name}</option>)}</select></Field><Field label="日期"><input name="recordDate" type="date" defaultValue={editing?.recordDate || initialDate || today()} required /></Field></div>
+    <div className="form-grid"><Field label="店铺"><select name="store" value={selectedStore} onChange={(event) => setSelectedStore(event.target.value)}>{stores.map((name) => <option key={name}>{name}</option>)}</select></Field><Field label="日期"><input name="recordDate" type="date" value={entryDate} onChange={(event) => changeEntryDate(event.target.value)} required /></Field></div>
     <div className="field skc-image-picker" onBlur={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) setShowSkcSuggestions(false); }}><label htmlFor="ad-record-skc">SKC（可按编号或商品名称查找）</label><input id="ad-record-skc" name="skc" autoComplete="off" value={skc} onFocus={() => setShowSkcSuggestions(true)} onChange={(event) => { changeSkc(event.target.value); setShowSkcSuggestions(true); }} onKeyDown={(event) => { if (event.key === 'Escape') setShowSkcSuggestions(false); }} placeholder="输入或选择商品链接的 SKC" />{showSkcSuggestions && skcSuggestions.length > 0 && <div className="skc-image-options">{skcSuggestions.map((link) => { const code = String(link.productCode || link.skc).trim(); const product = products.find((item) => item.id === link.productId || item.productName === link.productName); const image = link.imageDataUrl || product?.imageDataUrl; return <button type="button" key={link.id || `${link.store}-${code}`} onMouseDown={(event) => event.preventDefault()} onClick={() => { changeSkc(code); setShowSkcSuggestions(false); }}><span className="skc-option-image">{image ? <img src={image} alt="" /> : '链'}</span><span className="skc-option-detail"><strong>{link.productName || product?.productName || '商品链接'}</strong><small>{link.store} 店 · SKC {code}</small></span></button>; })}</div>}</div>
     {linkedProduct && <p className="skc-match">已找到 {linkedProduct.store} 店商品链接：{linkedProduct.productName}</p>}
     <Field label="商品链接"><select name="productId" value={productId} onChange={(event) => changeProduct(event.target.value)} required>{products.map((item) => <option key={item.id} value={item.id}>{productCategoryOf(item)} · {item.productName}</option>)}</select></Field>
@@ -1286,7 +1310,10 @@ function Products({ records, productFocus, search, setSearch, onToggleFocus, onE
           const expanded = expandedProductIds.has(item.id);
           return <Fragment key={item.id}>
             <tr><td><Badge>{item.sourceCategory || '未分类'}</Badge></td><td><strong>{item.productName}</strong></td><td><button type="button" className={`focus-toggle ${focused ? 'is-focused' : ''}`} onClick={() => onToggleFocus(item)} aria-pressed={focused}>{focused ? '★ 重点' : '☆ 标记重点'}</button></td><td><button type="button" className="profit-spec-toggle" onClick={() => toggleProductSpecs(item.id)} aria-expanded={expanded} aria-controls={`profit-specs-${item.id}`}>{expanded ? '▾' : '▸'} {specs.length} 个规格</button></td><td><strong>{valueRange(specs.map((spec) => spec.cost), money)}</strong></td><td><strong>{valueRange(specs.map((spec) => spec.minimumSalePrice), money)}</strong></td><td><RowActions onEdit={() => onEdit(item)} onDelete={() => onDelete(item)} /></td></tr>
-            {expanded && <tr className="profit-spec-detail-row" id={`profit-specs-${item.id}`}><td colSpan="7"><div className="profit-spec-detail"><div className="profit-spec-table"><div className="profit-spec-head"><b>规格</b><b>供货价</b><b>售后5%</b><b>广告12.5%</b><b>利润</b><b>8.5折日常价</b><b>9折日常价</b><b>最低售价</b></div>{specs.map((spec) => <div className="profit-spec-row" key={spec.id}><strong>{spec.name}</strong><span>{money(spec.cost)}</span><span>{money(spec.afterSalesCost)}</span><span>{money(spec.advertisingCost)}</span><span>{money(spec.targetProfit)}</span><span>{money(spec.dailyPrice85)}</span><span>{money(spec.dailyPrice90)}</span><b>{money(spec.minimumSalePrice)}</b></div>)}</div></div></td></tr>}
+            {expanded && <tr className="profit-spec-detail-row" id={`profit-specs-${item.id}`}><td colSpan="7"><div className="profit-spec-detail"><div className="profit-spec-table"><div className="profit-spec-head"><b>规格</b><b>供货价</b><b>售后5%</b><b>广告12.5%</b><b>利润</b><b>8.5折日常价</b><b>9折日常价</b><b>最低售价</b></div>{specs.map((spec) => {
+              const novemberPrice = novemberPriceFor(item, spec, new Date('2026-11-15T00:00:00+08:00'));
+              return <div className="profit-spec-row" key={spec.id}><strong>{spec.name}{novemberPrice && <small className="seasonal-spec-preview">11月：供货 {money(novemberPrice.cost)} · 最低 {money(novemberPrice.minimumSalePrice)}</small>}</strong><span>{money(spec.cost)}</span><span>{money(spec.afterSalesCost)}</span><span>{money(spec.advertisingCost)}</span><span>{money(spec.targetProfit)}</span><span>{money(spec.dailyPrice85)}</span><span>{money(spec.dailyPrice90)}</span><b>{money(spec.minimumSalePrice)}</b></div>;
+            })}</div></div></td></tr>}
           </Fragment>;
         })}
         {!filtered.length && <tr><td colSpan="7"><Empty text={categoryFilter === '全部商品' ? '暂无商品档案，点击“新增商品”开始录入' : `暂无“${categoryFilter}”商品`} /></td></tr>}
@@ -1382,11 +1409,11 @@ function DiscountActivity({ records, manualRecords, search, setSearch, onAdd, on
           const profits = reportableDiscount ? specs.map((spec) => netProfitAtPrice(spec.cost, spec.salePrice * reportableDiscount)) : [];
           const activities = manualRecords.filter((record) => normalizeSkc(record.productCode) === normalizeSkc(item.productCode));
           return <tr key={item.id}>
-            <td><div className="product-cell"><span className="thumb">{item.imageDataUrl ? <img src={item.imageDataUrl} alt="" /> : '链'}</span><div className="product-cell-main"><strong>{item.productName}</strong><small>SKC {item.productCode || '待填写'}{specs.length > 1 ? ` · ${specs.length}个规格 · 限制规格：${summary.limitingSpec?.name}` : ` · ${specs[0]?.name}`}</small><ManualActivityChips activities={activities} link={item} onAdd={onAddManualForLink} onQuote={onQuote} onEdit={onEditManual} onDelete={onDeleteManual} /></div></div></td>
+            <td><div className="product-cell"><span className="thumb">{item.imageDataUrl ? <img src={item.imageDataUrl} alt="" /> : '链'}</span><div className="product-cell-main"><strong>{item.productName}</strong><small>SKC {item.productCode || '待填写'}{specs.length > 1 ? ` · ${specs.length}个规格 · 限制规格：${summary.limitingSpec?.name}` : ` · ${specs[0]?.name}`}{novemberPricingActive() && novemberPriceFor(item, specs[0]) ? ' · 11月临时价生效中' : ''}</small><ManualActivityChips activities={activities} link={item} onAdd={onAddManualForLink} onQuote={onQuote} onEdit={onEditManual} onDelete={onDeleteManual} /></div></div></td>
             <td><Badge>{item.store}</Badge></td>
             <td>{valueRange(specs.map((spec) => spec.cost), money)}</td>
             <td>{valueRange(specs.map((spec) => spec.salePrice), money)}</td>
-            <td>{valueRange(specs.map((spec) => profitMetrics(spec.cost).minimumSalePrice), money)}</td>
+            <td>{valueRange(specs.map(minimumForSpec), money)}</td>
             <td>{discountText(summary.minimumRatio)}</td>
             <td><Badge>{discountText(reportableDiscount)}</Badge></td>
             <td>{reportableDiscount ? valueRange(specs.map((spec) => spec.salePrice * reportableDiscount), money) : '—'}</td>
@@ -1446,7 +1473,7 @@ function PriceReferences({ discounts, allDiscounts, products, references, search
   </>;
 }
 function ProductForm({ editing, onSubmit, onClose }) {
-  const [specRows, setSpecRows] = useState(() => normalizeProductSpecs(editing));
+  const [specRows, setSpecRows] = useState(() => normalizeProductSpecs(editing, false));
   const updateSpec = (id, key, value) => setSpecRows((rows) => rows.map((row) => row.id === id ? { ...row, [key]: value } : row));
   const addSpec = () => setSpecRows((rows) => [...rows, { id: uid(), name: '', cost: '' }]);
   const removeSpec = (id) => setSpecRows((rows) => rows.length === 1 ? rows : rows.filter((row) => row.id !== id));
@@ -1459,19 +1486,19 @@ function DiscountForm({ editing, prefill, products, links, currentStore, onSubmi
   const duplicateLink = findLinkBySkc(links.filter((item) => item.id !== editing?.id), skc);
   const [specRows, setSpecRows] = useState(() => {
     const product = products.find((item) => item.productName === prefill?.productName);
-    return !editing && product ? expandProductSpecsForPacks(product) : normalizeDiscountSpecs(editing);
+    return !editing && product ? expandProductSpecsForPacks(product, false) : normalizeDiscountSpecs(editing, false);
   });
   const completedSpecs = specRows.filter((spec) => spec.name && Number(spec.salePrice) > 0);
   const summary = completedSpecs.length ? summarizeDiscountSpecs(completedSpecs) : null;
   const updateSpec = (id, key, value) => setSpecRows((rows) => rows.map((row) => {
     if (row.id !== id) return row;
-    if (key === 'cost') return { ...row, cost: value, unitCost: Number(value) / Math.max(1, Number(row.packQuantity) || 1) };
+    if (key === 'cost') return { ...row, cost: value, unitCost: Number(value) / Math.max(1, Number(row.packQuantity) || 1), minimumSalePrice: profitMetrics(value).minimumSalePrice };
     return { ...row, [key]: value };
   }));
   const removeSpec = (id) => setSpecRows((rows) => rows.length === 1 ? rows : rows.filter((row) => row.id !== id));
   const selectProduct = (name) => {
     setProductName(name); const found = products.find((item) => item.productName === name);
-    if (found) setSpecRows(expandProductSpecsForPacks(found));
+    if (found) setSpecRows(expandProductSpecsForPacks(found, false));
   };
   return <Modal title={editing ? '修改商品链接' : '新增商品链接'} onClose={onClose}><form onSubmit={onSubmit}><div className="form-grid"><Field label="店铺"><select name="store" defaultValue={editing?.store || (currentStore === STORE_ALL ? 'AG' : currentStore)}>{stores.map((name) => <option key={name}>{name}</option>)}</select></Field><Field label="SKC（每条链接唯一）"><input name="productCode" value={skc} onChange={(event) => setSkc(event.target.value)} placeholder="输入商品链接的 SKC" required /></Field></div>{duplicateLink && <p className="skc-warning" role="alert">SKC {skc.trim()} 已用于 {duplicateLink.store} 店的“{duplicateLink.productName}”，请检查，不能重复保存。</p>}<Field label="商品名称"><ProductNamePicker products={products} value={productName} onChange={selectProduct} /></Field><div className="spec-editor discount-spec-editor"><div className="spec-editor-head"><b>各规格供货价、当前售价与最低售价</b><small>已按可做件装数展开；每个件装独立填售价，核不过的可以移除</small></div>{specRows.map((spec, index) => <div className="discount-spec-row" key={spec.id}><span>{index + 1}</span><input type="hidden" name="specId" value={spec.id} /><input type="hidden" name="specUnitCost" value={spec.unitCost ?? spec.cost} /><input type="hidden" name="specPackQuantity" value={spec.packQuantity || 1} /><input name="specName" value={spec.name} onChange={(event) => updateSpec(spec.id, 'name', event.target.value)} placeholder="规格" required /><input name="specCost" type="number" min="0" step="0.01" value={spec.cost} onChange={(event) => updateSpec(spec.id, 'cost', event.target.value)} placeholder="供货价" aria-label={`${spec.name || '规格'}供货价`} required /><input name="specSalePrice" type="number" min="0.01" step="0.01" value={spec.salePrice} onChange={(event) => updateSpec(spec.id, 'salePrice', event.target.value)} placeholder="当前售价" required /><div className="discount-spec-minimum"><small>最低售价</small><strong>{spec.cost === '' ? '—' : money(profitMetrics(spec.cost).minimumSalePrice)}</strong></div><b>{Number(spec.salePrice) > 0 ? discountText(getRecommended(spec.cost, spec.salePrice)) : '—'}</b><button type="button" className="remove-spec" disabled={specRows.length === 1} onClick={() => removeSpec(spec.id)}>移除</button></div>)}</div><div className="calc-note">未单独标价的两件装按同规格一件装供货价 × 2，单独标价的按实价；最低售价按售后 5%、广告 12.5% 和成本分档利润率计算。　利润表最低售价：{summary?.limitingSpec ? money(profitMetrics(summary.limitingSpec.cost).minimumSalePrice) : '—'}　产品最低折扣：{summary ? discountText(summary.minimumRatio) : '—'}　产品最低可报：<b>{summary ? discountText(summary.recommendedDiscount) : '—'}</b>{summary?.limitingSpec && <span>　限制规格：{summary.limitingSpec.name}</span>}</div><Field label="商品图片"><input name="image" type="file" accept="image/*" /></Field><Field label="备注"><textarea name="note" defaultValue={editing?.note} /></Field><FormActions onClose={onClose} /></form></Modal>;
 }
@@ -1512,9 +1539,9 @@ function ManualPriceMatrixForm({ link, manualActivities, onSave, onClose }) {
     onSave(rows, discountLimit);
   };
   return <Modal title="可报价记录表" onClose={onClose} className="quote-modal"><form className="quote-matrix-form" onSubmit={submit}>
-    <div className="quote-product-heading"><span className="quote-product-image">{link.imageDataUrl ? <img src={link.imageDataUrl} alt="" /> : '链'}</span><div><small>{link.store} 店 · SKC {link.productCode || '待填写'}</small><strong>{link.productName}</strong><p>每个折扣和规格的价格由你手动填写，不影响自动活动折扣。</p><div className="quote-minimum-summary">各规格最低售价：<b>{valueRange(specs.map((spec) => profitMetrics(spec.cost).minimumSalePrice), money)}</b></div></div></div>
+    <div className="quote-product-heading"><span className="quote-product-image">{link.imageDataUrl ? <img src={link.imageDataUrl} alt="" /> : '链'}</span><div><small>{link.store} 店 · SKC {link.productCode || '待填写'}</small><strong>{link.productName}</strong><p>每个折扣和规格的价格由你手动填写，不影响自动活动折扣。</p><div className="quote-minimum-summary">各规格最低售价：<b>{valueRange(specs.map(minimumForSpec), money)}</b></div></div></div>
     {discountLimit != null && <p className="quote-discount-limit">已标注最低 {discountLimit}折，仅显示 {discountLimit}折及以上的报价行；隐藏的原报价会保留。</p>}
-    <div className="quote-matrix-scroll"><table className="quote-matrix-table"><thead><tr><th>折扣</th>{specs.map((spec) => <th key={spec.id}><span className="quote-spec-name">{spec.name}</span><small className="quote-spec-own-price">当前售价 {Number(spec.salePrice) > 0 ? money(spec.salePrice) : "—"}</small><small className="quote-spec-minimum">最低售价 {money(profitMetrics(spec.cost).minimumSalePrice)}</small></th>)}<th>操作</th></tr></thead><tbody>{visibleRows.map((row) => <tr key={row.discount}><th>{row.discount}折</th>{row.prices.map((price) => {
+    <div className="quote-matrix-scroll"><table className="quote-matrix-table"><thead><tr><th>折扣</th>{specs.map((spec) => <th key={spec.id}><span className="quote-spec-name">{spec.name}</span><small className="quote-spec-own-price">当前售价 {Number(spec.salePrice) > 0 ? money(spec.salePrice) : "—"}</small><small className="quote-spec-minimum">最低售价 {money(minimumForSpec(spec))}</small></th>)}<th>操作</th></tr></thead><tbody>{visibleRows.map((row) => <tr key={row.discount}><th>{row.discount}折</th>{row.prices.map((price) => {
       const spec = specs.find((item) => item.id === price.specId);
       const recommended = recommendedQuotePrice(spec?.salePrice, row.discount);
       return <td key={price.specId}><div className="quote-price-cell"><input type="number" min="0.01" step="0.01" inputMode="decimal" value={price.amount} onChange={(event) => changePrice(row.discount, price.specId, event.target.value)} placeholder="—" aria-label={`${row.discount}折 ${price.specName} 的可报价`} /><span className="quote-recommended-price" title="当前售价 × 本行折扣，截取两位小数"><small>系统推荐售价</small><strong>{recommended == null ? '—' : `¥${recommended.toFixed(2)}`}</strong></span></div></td>;
